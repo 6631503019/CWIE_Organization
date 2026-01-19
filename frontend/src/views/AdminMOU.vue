@@ -72,14 +72,16 @@
       </div>
       
       <!-- Pagination Component -->
-      <Pagination 
-        :current-page="state.currentPage"
-        :total-pages="totalPages"
-        :total-items="filteredMous.length"
-        :loading="state.loading"
-        :show-info="false"
-        @page-change="handlePageChange"
-      />
+      <div class="mou-pagination-container">
+        <Pagination 
+          :current-page="state.currentPage"
+          :total-pages="totalPages"
+          :total-items="filteredMous.length"
+          :loading="state.loading"
+          :show-info="false"
+          @page-change="handlePageChange"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -245,15 +247,13 @@ onBeforeUnmount(() => {
   padding: 20px;
   height: calc(100vh - 40px);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .page-title {
-  position: absolute;
-  width: 94px;
-  height: 50px;
-  left: 251px;
-  top: 58px;
-  margin: 0;
+  margin: 0 0 20px 0;
   
   font-family: 'Outfit', sans-serif;
   font-style: normal;
@@ -264,15 +264,12 @@ onBeforeUnmount(() => {
 }
 
 .search-filter-section {
-  position: absolute;
-  width: 1135px;
-  height: 81px;
-  left: 251px;
-  top: 125px;
-  
+  width: 100%;
+  max-width: 1135px;
   background: #FFFFFF;
   box-shadow: 0px 4px 4px rgba(118, 118, 118, 0.5);
   border-radius: 8px;
+  margin-bottom: 20px;
 }
 
 .search-controls {
@@ -428,17 +425,13 @@ onBeforeUnmount(() => {
 }
 
 .mou-cards-grid {
-  position: absolute;
-  width: 849px;
-  height: 250px;
-  left: 250px;
-  top: 267px;
-  
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   padding: 0px;
   gap: 42px;
+  flex-wrap: wrap;
+  margin-bottom: 30px;
 }
 
 .mou-card {
@@ -579,5 +572,14 @@ onBeforeUnmount(() => {
   background: #666;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") no-repeat;
   mask-size: contain;
+}
+
+/* MOU Pagination Container */
+.mou-pagination-container {
+  position: absolute;
+  left: 1090px;
+  top: 560px;
+  width: 218px;
+  height: 28px;
 }
 </style>

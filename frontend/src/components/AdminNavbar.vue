@@ -59,40 +59,59 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 
-// Current route detection
-const currentRoute = ref('dashboard')
+// Force reactivity with ref
+const forceUpdate = ref(0)
 
-const updateCurrentRoute = () => {
-  const path = window.location.pathname
-  if (path.includes('dashboard')) {
-    currentRoute.value = 'dashboard'
-  } else if (path.includes('organization')) {
-    currentRoute.value = 'organization'
-  } else if (path.includes('mou')) {
-    currentRoute.value = 'mou'
-  } else if (path.includes('roadshow')) {
-    currentRoute.value = 'roadshow'
+// Current route detection using Vue Router
+const currentRoute = computed(() => {
+  // Access forceUpdate to ensure reactivity
+  forceUpdate.value
+  
+  const path = route.path
+  console.log('Current path:', path) // Debug log
+  
+  if (path === '/admin/organization' || path.startsWith('/admin/organization/')) {
+    console.log('Setting route to: organization')
+    return 'organization'
+  } else if (path === '/admin/mou' || path.startsWith('/admin/mou/')) {
+    console.log('Setting route to: mou')
+    return 'mou'
+  } else if (path === '/admin/roadshow' || path.startsWith('/admin/roadshow/')) {
+    console.log('Setting route to: roadshow')
+    return 'roadshow'
+  } else if (path === '/admin/dashboard' || path.startsWith('/admin/dashboard/')) {
+    console.log('Setting route to: dashboard')
+    return 'dashboard'
   }
-}
-
-onMounted(() => {
-  updateCurrentRoute()
+  
+  // Default fallback
+  console.log('Setting route to: dashboard (default)')
+  return 'dashboard'
 })
 
+// Watch route changes and force update
+watch(
+  () => route.path,
+  async (newPath) => {
+    console.log('Route changed to:', newPath)
+    forceUpdate.value++
+    await nextTick()
+  },
+  { immediate: true }
+)
+
 const navigateTo = (path: string) => {
+  console.log('Navigating to:', path)
   // Use Vue Router for navigation
   router.push(path)
-  // Update current route after navigation
-  setTimeout(() => {
-    updateCurrentRoute()
-  }, 100)
 }
 </script>
 
@@ -164,7 +183,7 @@ const navigateTo = (path: string) => {
   font-weight: 600;
   font-size: 22px;
   line-height: 28px;
-  color: #C70000;
+  color: #000000;
   text-decoration: none;
 }
 

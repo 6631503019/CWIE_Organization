@@ -2,10 +2,21 @@
   <div class="pagination-wrapper">
     <div class="pagination">
       <button 
+        class="page-btn first-btn" 
+        @click="changePage(1)" 
+        :disabled="currentPage <= 1 || loading"
+        :class="{ disabled: currentPage <= 1 }"
+        title="First Page"
+      >
+        &lt;&lt;
+      </button>
+      
+      <button 
         class="page-btn prev-btn" 
         @click="changePage(currentPage - 1)" 
         :disabled="currentPage <= 1 || loading"
         :class="{ disabled: currentPage <= 1 }"
+        title="Previous Page"
       >
         &lt;
       </button>
@@ -28,8 +39,19 @@
         @click="changePage(currentPage + 1)" 
         :disabled="currentPage >= totalPages || loading"
         :class="{ disabled: currentPage >= totalPages }"
+        title="Next Page"
       >
         &gt;
+      </button>
+      
+      <button 
+        class="page-btn last-btn" 
+        @click="changePage(totalPages)" 
+        :disabled="currentPage >= totalPages || loading"
+        :class="{ disabled: currentPage >= totalPages }"
+        title="Last Page"
+      >
+        &gt;&gt;
       </button>
     </div>
     
@@ -40,7 +62,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineEmits, defineProps } from 'vue'
+import { computed } from 'vue'
 
 // Props
 const props = defineProps<{
@@ -109,6 +131,7 @@ const changePage = (page: number) => {
 }
 
 .page-btn {
+  box-sizing: border-box;
   width: 28px;
   height: 28px;
   background: #FFFFFF;
@@ -119,6 +142,7 @@ const changePage = (page: number) => {
   justify-content: center;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
+  font-style: normal;
   font-weight: 500;
   font-size: 14px;
   line-height: 17px;

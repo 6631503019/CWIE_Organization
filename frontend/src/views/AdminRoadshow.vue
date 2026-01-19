@@ -4,44 +4,52 @@
     
     <!-- Main Content Area -->
     <div class="main-content">
-      <!-- Page Title -->
-      <h1 class="page-title">Roadshow</h1>
-      
-      <!-- Add Roadshow Button -->
-      <button class="add-roadshow-btn" @click="showCreateModal = true">
-        <div class="plus-icon">
-          <div class="plus-line-h"></div>
-          <div class="plus-line-v"></div>
-        </div>
-        <span class="button-text">Add Roadshow</span>
-      </button>
-      
-      <!-- Main Roadshow Card -->
-      <div class="roadshow-card">
-        <div class="roadshow-image">
-          <img :src="currentRoadshow.image" :alt="currentRoadshow.title" />
-        </div>
+      <!-- Header Section -->
+      <div class="header-section">
+        <h1 class="page-title">Roadshow</h1>
         
-        <div class="roadshow-content">
-          <h2 class="roadshow-title">{{ currentRoadshow.title }}</h2>
-          <p class="roadshow-description">{{ currentRoadshow.description }}</p>
-        </div>
-        
-        <!-- Edit Icon -->
-        <div class="edit-icon bottom-edit" @click="editRoadshow(currentRoadshow)">
-          <div class="pencil-icon"></div>
+        <!-- Add Roadshow Button -->
+        <button class="add-roadshow-btn" @click="showCreateModal = true">
+          <div class="plus-icon"></div>
+          <span class="button-text">Add Roadshow</span>
+        </button>
+      </div>
+      
+      <!-- Roadshow Cards Grid -->
+      <div class="roadshow-cards-grid">
+        <div 
+          v-for="roadshow in paginatedRoadshows" 
+          :key="roadshow.id" 
+          class="roadshow-card"
+          @click="editRoadshow(roadshow)"
+        >
+          <!-- Roadshow Image -->
+          <div class="roadshow-image">
+            <img :src="roadshow.image" :alt="roadshow.title" />
+          </div>
+          
+          <!-- Roadshow Info -->
+          <div class="roadshow-title">{{ roadshow.title }}</div>
+          <div class="roadshow-date">{{ roadshow.createdDate }}</div>
+          
+          <!-- Edit Icon -->
+          <div class="edit-icon">
+            <div class="pencil-icon"></div>
+          </div>
         </div>
       </div>
       
       <!-- Pagination -->
-      <Pagination 
-        :current-page="state.currentPage"
-        :total-pages="totalPages"
-        :total-items="roadshows.length"
-        :loading="state.loading"
-        :show-info="false"
-        @page-change="handlePageChange"
-      />
+      <div class="roadshow-pagination-container">
+        <Pagination 
+          :current-page="state.currentPage"
+          :total-pages="totalPages"
+          :total-items="roadshows.length"
+          :loading="state.loading"
+          :show-info="false"
+          @page-change="handlePageChange"
+        />
+      </div>
     </div>
     
     <!-- Create/Edit Modal -->
@@ -102,7 +110,7 @@ const state = reactive({
   loading: false,
   error: null as string | null,
   currentPage: 1,
-  itemsPerPage: 1,
+  itemsPerPage: 3,
   autoRefreshInterval: null as number | null
 })
 
@@ -125,16 +133,33 @@ const roadshows = ref([
     description: 'Professional development workshop for students and recent graduates',
     image: '/api/placeholder/271/272',
     createdDate: '2025-01-15'
+  },
+  {
+    id: 3,
+    title: 'Technology Showcase Event',
+    description: 'Showcasing the latest technology trends and innovations',
+    image: '/api/placeholder/271/272',
+    createdDate: '2025-01-10'
+  },
+  {
+    id: 4,
+    title: 'Startup Pitch Competition',
+    description: 'Students present their startup ideas to industry experts',
+    image: '/api/placeholder/271/272',
+    createdDate: '2025-01-05'
   }
 ])
 
-// Computed properties
-const currentRoadshow = computed(() => {
-  const index = (state.currentPage - 1) % roadshows.value.length
-  return roadshows.value[index] || roadshows.value[0]
-})
+// Computed properties for pagination
+const totalPages = computed(() => 
+  Math.ceil(roadshows.value.length / state.itemsPerPage)
+)
 
-const totalPages = computed(() => roadshows.value.length)
+const paginatedRoadshows = computed(() => {
+  const start = (state.currentPage - 1) * state.itemsPerPage
+  const end = start + state.itemsPerPage
+  return roadshows.value.slice(start, end)
+})
 
 // Watchers for reactive updates
 watch(() => state.currentPage, (newPage) => {
@@ -281,16 +306,21 @@ onBeforeUnmount(() => {
   padding: 20px;
   height: calc(100vh - 40px);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Header Section */
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
 }
 
 .page-title {
-  position: absolute;
-  width: 188px;
-  height: 50px;
-  left: 251px;
-  top: 58px;
   margin: 0;
-  
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -302,26 +332,166 @@ onBeforeUnmount(() => {
 .add-roadshow-btn {
   display: flex;
   flex-direction: row;
+  justify-content: center;
   align-items: center;
   padding: 6px 10px;
   gap: 6px;
-  
-  position: absolute;
-  width: 145px;
+  width: 166px;
   height: 32px;
-  left: 1156px;
-  top: 66px;
-  
   background: #C70000;
-  border-radius: 6px;
   border: none;
+  border-radius: 6px;
   cursor: pointer;
+  color: #FFFFFF;
 }
 
 .plus-icon {
-  position: relative;
   width: 20px;
   height: 20px;
+  position: relative;
+}
+
+.plus-icon::before,
+.plus-icon::after {
+  content: '';
+  position: absolute;
+  background: #FFFFFF;
+  border-radius: 1px;
+}
+
+.plus-icon::before {
+  width: 12px;
+  height: 2px;
+  left: 4px;
+  top: 9px;
+}
+
+.plus-icon::after {
+  width: 2px;
+  height: 12px;
+  left: 9px;
+  top: 4px;
+}
+
+.button-text {
+  font-family: 'DM Sans', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #FFFFFF;
+}
+
+/* Roadshow Cards Grid */
+.roadshow-cards-grid {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  padding: 0px;
+  gap: 42px;
+  flex-wrap: wrap;
+  margin-bottom: 30px;
+}
+
+.roadshow-card {
+  position: relative;
+  width: 271px;
+  height: 350px;
+  background: #FFFFFF;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  overflow: hidden;
+}
+
+.roadshow-card:hover {
+  transform: translateY(-2px);
+}
+
+.roadshow-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.roadshow-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.roadshow-title {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 220px;
+  z-index: 2;
+  
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 20px;
+  color: #000000;
+  text-align: center;
+  max-width: 230px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.roadshow-date {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 250px;
+  z-index: 2;
+  
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: #767676;
+  text-align: center;
+}
+
+.edit-icon {
+  position: absolute;
+  width: 21px;
+  height: 21px;
+  right: 15px;
+  top: 15px;
+  z-index: 3;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.edit-icon:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.pencil-icon {
+  width: 12px;
+  height: 12px;
+  background: #666;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") no-repeat;
+  mask-size: contain;
+}
+
+/* Roadshow Pagination Container */
+.roadshow-pagination-container {
+  position: absolute;
+  left: 1090px;
+  top: 700px;
+  width: 218px;
+  height: 28px;
 }
 
 .plus-line-h, .plus-line-v {
@@ -369,11 +539,9 @@ onBeforeUnmount(() => {
 }
 
 .roadshow-image {
-  position: absolute;
-  width: 270.72px;
-  height: 271.7px;
-  left: 37.52px;
-  top: 7.83px;
+  width: 350px;
+  height: 272px;
+  flex-shrink: 0;
 }
 
 .roadshow-image img {
@@ -385,15 +553,13 @@ onBeforeUnmount(() => {
 }
 
 .roadshow-content {
-  position: absolute;
-  left: 417.6px;
-  top: 17.24px;
-  width: 597.75px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
 }
 
 .roadshow-title {
-  width: 469.19px;
-  height: 37.06px;
   margin: 0 0 24px 0;
   
   font-family: 'Outfit', sans-serif;
@@ -405,8 +571,6 @@ onBeforeUnmount(() => {
 }
 
 .roadshow-description {
-  width: 597.75px;
-  height: 114.63px;
   margin: 0;
   
   font-family: 'Outfit', sans-serif;
@@ -415,6 +579,7 @@ onBeforeUnmount(() => {
   font-size: 20px;
   line-height: 25px;
   color: #000000;
+  max-width: 600px;
 }
 
 .edit-icon {

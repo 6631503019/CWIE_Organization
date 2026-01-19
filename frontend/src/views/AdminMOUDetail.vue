@@ -124,10 +124,10 @@
       
       <!-- Pagination Component -->
       <Pagination 
-        :currentPage="currentPage"
+        :currentPage="state.currentPage"
         :totalPages="totalPages"
         :totalItems="totalItems"
-        :loading="loading"
+        :loading="state.loading"
         @page-change="handlePageChange"
       /> 
         :current-page="state.currentPage"
@@ -217,6 +217,10 @@ const selectedMou = computed(() => {
   const mouId = parseInt(route.params.id as string)
   return allMous.value.find(m => m.id === mouId) || allMous.value[0]
 })
+
+// Pagination computed properties
+const totalPages = computed(() => Math.ceil(allMous.value.length / state.itemsPerPage))
+const totalItems = computed(() => allMous.value.length)
 
 // Methods
 const handlePageChange = async (page: number) => {
@@ -769,5 +773,14 @@ onBeforeUnmount(() => {
   top: 1193px;
   display: flex;
   gap: 64px;
+}
+
+/* MOU Detail Pagination Container */
+.mou-detail-pagination-container {
+  position: absolute;
+  left: 453px;
+  top: 1454px;
+  width: 218px;
+  height: 28px;
 }
 </style>

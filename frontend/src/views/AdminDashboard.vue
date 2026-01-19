@@ -160,22 +160,15 @@
       </div>
     </div>
     
-    <!-- Pagination -->
-    <div class="pagination">
-      <div class="pagination-btn first">
-        <i class="pi pi-angle-double-left"></i>
-      </div>
-      <div class="pagination-btn prev">
-        <i class="pi pi-angle-left"></i>
-      </div>
-      <div class="pagination-btn active">1</div>
-      <div class="pagination-btn">2</div>
-      <div class="pagination-btn next">
-        <i class="pi pi-angle-right"></i>
-      </div>
-      <div class="pagination-btn last">
-        <i class="pi pi-angle-double-right"></i>
-      </div>
+    <!-- Pagination Component -->
+    <div class="dashboard-pagination-container">
+      <Pagination 
+        :currentPage="1"
+        :totalPages="2"
+        :totalItems="11"
+        :showInfo="false"
+        @page-change="goToPage"
+      />
     </div>
   </div>
 </template>
@@ -184,6 +177,7 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import AdminNavbar from '../components/AdminNavbar.vue'
+import Pagination from '../components/Pagination.vue'
 
 const authStore = useAuthStore()
 
@@ -331,9 +325,9 @@ const deleteNotification = (index: number) => {
   notifications.value.splice(index, 1)
 }
 
-const goToPage = (direction: string) => {
+const goToPage = (page: number) => {
   // Implement pagination logic
-  console.log('Navigate to:', direction)
+  console.log('Navigate to page:', page)
 }
 </script>
 
@@ -804,46 +798,12 @@ const goToPage = (direction: string) => {
   cursor: pointer;
 }
 
-/* Pagination */
-.pagination {
+/* Dashboard Pagination Container */
+.dashboard-pagination-container {
   position: absolute;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  padding: 0px;
-  gap: 10px;
-  width: 218px;
-  height: 28px;
   left: 1182px;
   top: 892px;
-}
-
-.pagination-btn {
-  box-sizing: border-box;
-  width: 28px;
+  width: 218px;
   height: 28px;
-  background: #FFFFFF;
-  border: 1px solid #A1A1A1;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 17px;
-  color: #000000;
-}
-
-.pagination-btn.active {
-  background: #C70000;
-  color: #FFFFFF;
-}
-
-.pagination-btn i {
-  width: 14px;
-  height: 14px;
 }
 </style>

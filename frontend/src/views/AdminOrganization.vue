@@ -155,7 +155,7 @@
         :total-pages="paginationInfo.totalPages"
         :total-items="paginationInfo.totalItems"
         :loading="state.loading"
-        :show-info="true"
+        :show-info="false"
         @page-change="handlePageChange"
       />
     </div>
@@ -369,19 +369,6 @@ const visiblePages = computed(() => {
   
   return pages
 })
-
-const handlePageChange = async (page: number) => {
-  if (page >= 1 && page <= paginationInfo.value.totalPages && !state.loading) {
-    state.loading = true
-    try {
-      state.currentPage = page
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 100))
-    } finally {
-      state.loading = false
-    }
-  }
-}
 
 const handlePageChange = async (page: number) => {
   if (page >= 1 && page <= paginationInfo.value.totalPages && !state.loading) {
