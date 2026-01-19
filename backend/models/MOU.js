@@ -13,6 +13,11 @@ const mouSchema = new mongoose.Schema({
     is_published: {
         type: Boolean,
         default: false
+    },
+    admin_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: [true, 'Admin ID is required']
     }
 }, {
     timestamps: true

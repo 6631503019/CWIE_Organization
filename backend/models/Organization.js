@@ -25,22 +25,16 @@ const organizationSchema = new mongoose.Schema({
         enum: ['government', 'private', 'ngo', 'education', 'other']
     },
     industry_category_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'IndustryCategory',
-        required: true
+        type: String
     },
     country_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Country',
-        required: true
+        type: String
     },
     geography_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Geography'
+        type: String
     },
     province_id: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Province'
+        type: String
     },
     email: {
         type: String,
@@ -68,6 +62,11 @@ const organizationSchema = new mongoose.Schema({
     },
     logo_path: {
         type: String
+    },
+    admin_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: [true, 'Admin ID is required']
     }
 }, {
     timestamps: true

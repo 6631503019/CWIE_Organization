@@ -13,6 +13,12 @@
 
     <!-- Roadshow Cards Container -->
     <div class="roadshow-cards-container">
+      <div v-if="state.error" class="error-message">
+        {{ state.error }}
+      </div>
+      <div v-if="state.loading && roadshows.length === 0" class="loading-message">
+        Loading roadshows...
+      </div>
       <div 
         v-for="roadshow in paginatedRoadshows" 
         :key="roadshow.id" 
@@ -51,7 +57,7 @@
     <!-- Create/Edit Modal -->
     <div v-if="showCreateModal || showEditModal" class="modal-overlay" @click="closeModals">
       <div class="add-roadshow-modal" @click.stop>
-        <h2 class="modal-title">Add Roadshow</h2>
+        <h2 class="modal-title">{{ showCreateModal ? 'Add Roadshow' : 'Edit Roadshow' }}</h2>
         <div class="form-divider"></div>
 
         <!-- Topic Field -->
@@ -83,7 +89,7 @@
               type="date" 
               v-model="formData.date"
             />
-            <div class="calendar-icon"></div>
+            <span class="calendar-icon">📅</span>
           </div>
         </div>
 
@@ -91,7 +97,7 @@
         <div class="upload-section">
           <label>Add Picture Activity (Not required)</label>
           <label class="upload-btn">
-            <div class="upload-icon"></div>
+            <span class="upload-icon">📤</span>
             <span>Select Photo</span>
             <input 
               type="file" 
@@ -106,7 +112,7 @@
         <div class="upload-section">
           <label>Add Poster</label>
           <label class="upload-btn">
-            <div class="upload-icon"></div>
+            <span class="upload-icon">📄</span>
             <span>Select Poster</span>
             <input 
               type="file" 
@@ -120,9 +126,7 @@
         <!-- Public Toggle -->
         <div class="public-toggle">
           <label>Public</label>
-          <div class="toggle-switch" :class="{ active: formData.isPublic }" @click="formData.isPublic = !formData.isPublic">
-            <div class="toggle-slider"></div>
-          </div>
+          <div class="toggle-switch" :class="{ active: formData.isPublic }" @click="formData.isPublic = !formData.isPublic"></div>
         </div>
 
         <!-- Action Buttons -->
@@ -152,38 +156,10 @@ const state = reactive({
 // Modal states
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
+const editingRoadshowId = ref<string | null>(null)
 
-// Roadshow data array
-const roadshows = ref([
-  {
-    id: 1,
-    title: 'MFU Internship & Job Fair 2025',
-    description: 'Publicizing the MFU Internship & Job Fair 2025 under the theme "Happy Workplace: Where Passion Meets Purpose": A good workplace isn\'t just about having a desk and a job to do. It\'s about providing opportunities for people to grow, enjoy, and find meaning in what they do.',
-    image: '/api/placeholder/271/272',
-    createdDate: '2025-01-19'
-  },
-  {
-    id: 2,
-    title: 'Career Development Workshop',
-    description: 'Professional development workshop for students and recent graduates',
-    image: '/api/placeholder/271/272',
-    createdDate: '2025-01-15'
-  },
-  {
-    id: 3,
-    title: 'Technology Showcase Event',
-    description: 'Showcasing the latest technology trends and innovations',
-    image: '/api/placeholder/271/272',
-    createdDate: '2025-01-10'
-  },
-  {
-    id: 4,
-    title: 'Startup Pitch Competition',
-    description: 'Students present their startup ideas to industry experts',
-    image: '/api/placeholder/271/272',
-    createdDate: '2025-01-05'
-  }
-])
+// Roadshow data array - will be populated from backend
+const roadshows = ref<any[]>([])
 
 // Computed properties for pagination
 const totalPages = computed(() => 
@@ -222,50 +198,22 @@ const formData = reactive({
 
 const handlePageChange = async (page: number) => {
   if (page >= 1 && page <= totalPages.value && !state.loading) {
-    state.loading = true
-    try {
-      state.currentPage = page
-      // Simulate page load delay
-      await new Promise(resolve => setTimeout(resolve, 200))
-    } finally {
-      state.loading = false
-    }
-  }
-}
-
-const addRoadshow = async () => {
-  if (!formData.title.trim()) return
-  
-  state.loading = true
-  try {
-    const newRoadshow = {
-      id: roadshows.value.length + 1,
-      title: formData.title,
-      description: formData.description,
-      image: formData.image ? URL.createObjectURL(formData.image) : '/api/placeholder/271/272',
-      createdDate: new Date().toISOString().split('T')[0]
-    }
-    
-    roadshows.value.push(newRoadshow)
-    showCreateModal.value = false
-    resetForm()
-    
-  } catch (error) {
-    state.error = 'Failed to add roadshow'
-  } finally {
-    state.loading = false
+    state.currentPage = page
   }
 }
 
 const editRoadshow = (roadshow: any) => {
-  formData.title = roadshow.title
-  formData.description = roadshow.description
+  editingRoadshowId.value = roadshow.id
+  formData.topic = roadshow.title
+  formData.details = roadshow.description
+  formData.date = roadshow.createdDate
   showEditModal.value = true
 }
 
 const closeModals = () => {
   showCreateModal.value = false
   showEditModal.value = false
+  editingRoadshowId.value = null
   resetForm()
 }
 
@@ -278,15 +226,80 @@ const resetForm = () => {
   formData.isPublic = false
 }
 
-const submitForm = () => {
-  if (showCreateModal.value) {
-    // Handle create roadshow
-    console.log('Creating roadshow:', formData)
-  } else {
-    // Handle update roadshow
-    console.log('Updating roadshow:', formData)
+const submitForm = async () => {
+  if (!formData.topic.trim() || !formData.details.trim() || !formData.date) {
+    state.error = 'Please fill in all required fields'
+    return
   }
-  closeModals()
+
+  state.loading = true
+  try {
+    const formDataToSend = new FormData()
+    formDataToSend.append('topic', formData.topic)
+    formDataToSend.append('details', formData.details)
+    formDataToSend.append('event_date', formData.date)
+    formDataToSend.append('is_public', formData.isPublic)
+
+    if (formData.pictureFile) {
+      formDataToSend.append('activity_image', formData.pictureFile)
+    }
+    if (formData.posterFile) {
+      formDataToSend.append('poster', formData.posterFile)
+    }
+
+    if (showCreateModal.value) {
+      // Create new roadshow
+      const response = await fetch('http://localhost:5000/api/roadshows', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formDataToSend
+      })
+
+      if (!response.ok) throw new Error('Failed to create roadshow')
+      const result = await response.json()
+      
+      roadshows.value.unshift({
+        id: result.data._id,
+        title: result.data.topic,
+        description: result.data.details,
+        image: result.data.activity_image_path || '/api/placeholder/271/272',
+        createdDate: new Date(result.data.event_date).toISOString().split('T')[0]
+      })
+    } else if (showEditModal.value && editingRoadshowId.value) {
+      // Update existing roadshow
+      const response = await fetch(`http://localhost:5000/api/roadshows/${editingRoadshowId.value}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formDataToSend
+      })
+
+      if (!response.ok) throw new Error('Failed to update roadshow')
+      const result = await response.json()
+      
+      const index = roadshows.value.findIndex(r => r.id === editingRoadshowId.value)
+      if (index !== -1) {
+        roadshows.value[index] = {
+          id: result.data._id,
+          title: result.data.topic,
+          description: result.data.details,
+          image: result.data.activity_image_path || '/api/placeholder/271/272',
+          createdDate: new Date(result.data.event_date).toISOString().split('T')[0]
+        }
+      }
+    }
+
+    state.error = null
+    closeModals()
+  } catch (error) {
+    state.error = error.message || 'Failed to save roadshow'
+    console.error('Error:', error)
+  } finally {
+    state.loading = false
+  }
 }
 
 onMounted(async () => {
@@ -294,13 +307,39 @@ onMounted(async () => {
   state.loading = true
   
   try {
-    // Simulate data loading
-    await new Promise(resolve => setTimeout(resolve, 600))
+    // Fetch roadshows from backend
+    const response = await fetch('http://localhost:5000/api/roadshows?limit=100')
+    if (!response.ok) throw new Error('Failed to load roadshows')
+    
+    const result = await response.json()
+    roadshows.value = result.data.map((item: any) => ({
+      id: item._id,
+      title: item.topic,
+      description: item.details,
+      image: item.activity_image_path || '/api/placeholder/271/272',
+      createdDate: new Date(item.event_date).toISOString().split('T')[0]
+    }))
+    
     console.log('Roadshow data loaded:', roadshows.value.length, 'items')
     
     // Setup auto-refresh
-    state.autoRefreshInterval = window.setInterval(() => {
+    state.autoRefreshInterval = window.setInterval(async () => {
       console.log('Auto-refresh roadshows...')
+      try {
+        const res = await fetch('http://localhost:5000/api/roadshows?limit=100')
+        if (res.ok) {
+          const data = await res.json()
+          roadshows.value = data.data.map((item: any) => ({
+            id: item._id,
+            title: item.topic,
+            description: item.details,
+            image: item.activity_image_path || '/api/placeholder/271/272',
+            createdDate: new Date(item.event_date).toISOString().split('T')[0]
+          }))
+        }
+      } catch (err) {
+        console.error('Auto-refresh error:', err)
+      }
     }, 45000) // Every 45 seconds
     
   } catch (error) {
@@ -570,6 +609,25 @@ onBeforeUnmount(() => {
   left: 273px;
   top: 152px;
   width: 1035px;
+}
+
+.error-message {
+  background: #FEE2E2;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  color: #DC2626;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+}
+
+.loading-message {
+  text-align: center;
+  padding: 20px;
+  color: #6B7280;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
 }
 
 /* Large Roadshow Card */

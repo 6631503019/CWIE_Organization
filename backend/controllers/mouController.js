@@ -119,6 +119,9 @@ const createMOU = async (req, res, next) => {
 
         req.body.mou_file_path = req.file.path;
 
+        // Add admin ID from authenticated user
+        req.body.admin_id = req.user._id;
+
         const mou = await MOU.create(req.body);
 
         res.status(201).json({

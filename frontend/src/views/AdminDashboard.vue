@@ -188,14 +188,14 @@ const state = reactive({
   refreshInterval: null as number | null
 })
 
-// Dashboard statistics
+// Dashboard statistics from backend
 const stats = reactive({
-  totalEstablishments: 123,
-  privateCompany: 70,
-  government: 40,
-  overseas: 3,
-  mfu: 10,
-  roadshows: 10
+  totalEstablishments: 0,
+  privateCompany: 0,
+  government: 0,
+  overseas: 0,
+  mfu: 0,
+  roadshows: 0
 })
 
 // Computed properties for dynamic calculations
@@ -214,12 +214,49 @@ watch(() => authStore.isAdmin, (isAdmin) => {
 const refreshStats = async () => {
   state.loading = true
   try {
-    // Simulate API call for fresh stats
-    await new Promise(resolve => setTimeout(resolve, 500))
-    // In real app, fetch from API
+    // Fetch organization statistics
+    const orgResponse = await fetch('http://localhost:5000/api/organizations?limit=1000')
+    if (!orgResponse.ok) throw new Error('Failed to load organizations')
+    
+    const orgData = await orgResponse.json()
+    const orgs = orgData.data || []
+    
+    // Count by type
+    const counts = {
+      private: 0,
+      government: 0,
+      overseas: 0,
+      mfu: 0
+    }
+    
+    orgs.forEach((org: any) => {
+      const type = org.type?.toLowerCase() || 'private'
+      if (type === 'government') counts.government++
+      else if (type === 'overseas') counts.overseas++
+      else if (type === 'mfu') counts.mfu++
+      else counts.private++
+    })
+    
+    // Fetch roadshow count
+    const roadshowResponse = await fetch('http://localhost:5000/api/roadshows?limit=1')
+    let roadshowCount = 0
+    if (roadshowResponse.ok) {
+      const roadshowData = await roadshowResponse.json()
+      roadshowCount = roadshowData.pagination?.total || 0
+    }
+    
+    // Update stats
+    stats.totalEstablishments = orgs.length
+    stats.privateCompany = counts.private
+    stats.government = counts.government
+    stats.overseas = counts.overseas
+    stats.mfu = counts.mfu
+    stats.roadshows = roadshowCount
+    
     console.log('Stats refreshed')
   } catch (error) {
     state.error = 'Failed to refresh statistics'
+    console.error(error)
   } finally {
     state.loading = false
   }

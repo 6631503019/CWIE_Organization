@@ -459,7 +459,8 @@ const state = reactive({
   currentPage: 1,
   itemsPerPage: 5,
   showAddModal: false,
-  activeTab: 'organization' as 'organization' | 'review' | 'mou'
+  activeTab: 'organization' as 'organization' | 'review' | 'mou',
+  editingOrgId: null as string | null
 })
 
 // Search and filter data
@@ -512,54 +513,8 @@ const provinceOptions = [
   'Nonthaburi', 'Pathum Thani', 'Hat Yai', 'Lopburi'
 ]
 
-// Organizations data
-const allOrganizations = ref([
-  {
-    id: 1,
-    status: 'inactive',
-    name: 'District Educational Service A...',
-    category: 'government',
-    province: 'Bangkok',
-    createdDate: '2025-10-23',
-    editedDate: '2025-10-23'
-  },
-  {
-    id: 2,
-    status: 'inactive',
-    name: 'TVD Holdings Public Compan...',
-    category: 'individual',
-    province: 'Bangkok',
-    createdDate: '2025-09-23',
-    editedDate: '2025-10-23'
-  },
-  {
-    id: 3,
-    status: 'active',
-    name: 'Excellent Business Corporation International (E B C I) Ltd.',
-    category: 'individual',
-    province: 'Bangkok',
-    createdDate: '2025-10-23',
-    editedDate: '2025-10-23'
-  },
-  {
-    id: 4,
-    status: 'active',
-    name: 'SUNSU',
-    category: 'individual',
-    province: 'Bangkok',
-    createdDate: '2025-10-23',
-    editedDate: '2025-10-23'
-  },
-  {
-    id: 5,
-    status: 'active',
-    name: 'Mae fah luang university',
-    category: 'School of Applied Digital Technology',
-    province: 'Chiang Rai',
-    createdDate: '2025-10-23',
-    editedDate: '2025-10-23'
-  }
-])
+// Organizations data from backend
+const allOrganizations = ref<any[]>([])
 
 // Computed properties for reactive filtering
 const filteredOrganizations = computed(() => {
@@ -754,10 +709,102 @@ const switchTab = (tab: 'organization' | 'review' | 'mou') => {
   state.activeTab = tab
 }
 
-const saveOrganization = () => {
-  // TODO: Implement save logic
-  console.log('Saving organization:', formData)
-  closeModal()
+const saveOrganization = async () => {
+  // Validate required fields
+  if (!formData.organizationNameEN || !formData.organizationNameTH || !formData.email || !formData.organizationType) {
+    state.error = 'Please fill in all required fields'
+    return
+  }
+
+  state.loading = true
+  try {
+    const formDataToSend = new FormData()
+    formDataToSend.append('name_en', formData.organizationNameEN)
+    formDataToSend.append('name_th', formData.organizationNameTH)
+    formDataToSend.append('address_en', formData.addressEN)
+    formDataToSend.append('address_th', formData.addressTH)
+    formDataToSend.append('organization_type', formData.organizationType)
+    
+    // Only append optional IDs if they have values
+    if (formData.industryCategory) {
+      formDataToSend.append('industry_category_id', formData.industryCategory)
+    }
+    if (formData.country) {
+      formDataToSend.append('country_id', formData.country)
+    }
+    if (formData.geography) {
+      formDataToSend.append('geography_id', formData.geography)
+    }
+    if (formData.province) {
+      formDataToSend.append('province_id', formData.province)
+    }
+    
+    formDataToSend.append('email', formData.email)
+    formDataToSend.append('phone_number', formData.phoneNumber)
+    formDataToSend.append('details', formData.details)
+    formDataToSend.append('is_public', formData.isPublic)
+
+    if (formData.logo) {
+      formDataToSend.append('logo', formData.logo)
+    }
+
+    const response = await fetch(
+      state.editingOrgId 
+        ? `http://localhost:5000/api/organizations/${state.editingOrgId}`
+        : 'http://localhost:5000/api/organizations',
+      {
+        method: state.editingOrgId ? 'PUT' : 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: formDataToSend
+      }
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Backend validation error:', errorData)
+      console.error('Error details:', JSON.stringify(errorData, null, 2))
+      throw new Error(errorData.message || 'Failed to save organization')
+    }
+
+    const result = await response.json()
+    
+    if (state.editingOrgId) {
+      // Update existing organization
+      const index = allOrganizations.value.findIndex(o => o.id === state.editingOrgId)
+      if (index !== -1) {
+        allOrganizations.value[index] = {
+          id: result.data._id,
+          status: result.data.is_public ? 'active' : 'inactive',
+          name: result.data.name_en || result.data.name_th || 'Unknown',
+          category: result.data.organization_type || 'individual',
+          province: result.data.province || 'Bangkok',
+          createdDate: result.data.created_at ? new Date(result.data.created_at).toISOString().split('T')[0] : 'N/A',
+          editedDate: result.data.updated_at ? new Date(result.data.updated_at).toISOString().split('T')[0] : 'N/A'
+        }
+      }
+    } else {
+      // Add new organization to list
+      allOrganizations.value.unshift({
+        id: result.data._id,
+        status: result.data.is_public ? 'active' : 'inactive',
+        name: result.data.name_en || result.data.name_th || 'Unknown',
+        category: result.data.organization_type || 'individual',
+        province: result.data.province || 'Bangkok',
+        createdDate: result.data.created_at ? new Date(result.data.created_at).toISOString().split('T')[0] : 'N/A',
+        editedDate: result.data.updated_at ? new Date(result.data.updated_at).toISOString().split('T')[0] : 'N/A'
+      })
+    }
+
+    state.error = null
+    closeModal()
+  } catch (error) {
+    state.error = error.message || 'Failed to save organization'
+    console.error('Save error:', error)
+  } finally {
+    state.loading = false
+  }
 }
 
 const handleLogoUpload = (event: Event) => {
@@ -795,10 +842,17 @@ const addOrganization = async () => {
   state.activeTab = 'organization'
 }
 
-const editOrganization = async (id: number) => {
+const editOrganization = async (id: string | number) => {
   const org = allOrganizations.value.find(o => o.id === id)
   if (org) {
-    console.log('Edit organization:', org)
+    // Pre-fill form with organization data
+    formData.organizationNameEN = org.name
+    formData.organizationNameTH = org.name
+    formData.organizationType = org.category
+    formData.email = ''
+    state.editingOrgId = id as string
+    state.showAddModal = true
+    state.activeTab = 'organization'
   }
 }
 
@@ -853,13 +907,42 @@ onMounted(async () => {
   state.loading = true
   
   try {
-    // Simulate API data loading
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Fetch organizations from backend
+    const response = await fetch('http://localhost:5000/api/organizations?limit=100')
+    if (!response.ok) throw new Error('Failed to load organizations')
+    
+    const result = await response.json()
+    allOrganizations.value = result.data.map((item: any) => ({
+      id: item._id,
+      status: item.is_active ? 'active' : 'inactive',
+      name: item.name_en || item.name_th || item.name || 'Unknown',
+      category: item.type || 'individual',
+      province: item.province || 'Bangkok',
+      createdDate: item.created_at ? new Date(item.created_at).toISOString().split('T')[0] : 'N/A',
+      editedDate: item.updated_at ? new Date(item.updated_at).toISOString().split('T')[0] : 'N/A'
+    }))
+    
     console.log('Data loaded:', allOrganizations.value.length, 'organizations')
     
-    // Setup auto-refresh (example)
-    intervalId = window.setInterval(() => {
-      console.log('Auto-refresh check...')
+    // Setup auto-refresh
+    intervalId = window.setInterval(async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/organizations?limit=100')
+        if (res.ok) {
+          const data = await res.json()
+          allOrganizations.value = data.data.map((item: any) => ({
+            id: item._id,
+            status: item.is_active ? 'active' : 'inactive',
+            name: item.name_en || item.name_th || item.name || 'Unknown',
+            category: item.type || 'individual',
+            province: item.province || 'Bangkok',
+            createdDate: item.created_at ? new Date(item.created_at).toISOString().split('T')[0] : 'N/A',
+            editedDate: item.updated_at ? new Date(item.updated_at).toISOString().split('T')[0] : 'N/A'
+          }))
+        }
+      } catch (err) {
+        console.error('Auto-refresh error:', err)
+      }
     }, 30000) // Every 30 seconds
     
   } catch (error) {

@@ -11,10 +11,10 @@ const getOrganizations = async (req, res, next) => {
         const skip = (page - 1) * limit;
 
         // Validate pagination parameters
-        if (page < 1 || limit < 1 || limit > 100) {
+        if (page < 1 || limit < 1 || limit > 10000) {
             throw new CustomError(
                 ERROR_CODES.VALIDATION_INVALID_RANGE,
-                'Invalid pagination parameters. Page must be >= 1 and limit between 1-100'
+                'Invalid pagination parameters. Page must be >= 1 and limit between 1-10000'
             );
         }
 
@@ -172,6 +172,9 @@ const createOrganization = async (req, res, next) => {
 
             req.body.logo_path = req.file.path;
         }
+
+        // Add admin ID from authenticated user
+        req.body.admin_id = req.user._id;
 
         const organization = await Organization.create(req.body);
 

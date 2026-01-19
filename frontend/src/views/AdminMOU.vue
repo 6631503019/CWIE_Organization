@@ -108,30 +108,8 @@ const searchText = ref('')
 const selectedStatus = ref('')
 const showStatusDropdown = ref(false)
 
-// Mock MOU data based on Figma
-const mous = ref([
-  {
-    id: 1,
-    name: 'EBCI',
-    status: 'Active',
-    duration: 'Start 2025-09-24\nEnd 2026-08-23',
-    logo: '/api/placeholder/95/95'
-  },
-  {
-    id: 2,
-    name: 'SUNSU',
-    status: 'Active',
-    duration: 'Start 2025-10-23\nEnd 2026-10-23',
-    logo: '/api/placeholder/95/95'
-  },
-  {
-    id: 3,
-    name: 'TVD Holdings Public Company limited',
-    status: 'Active',
-    duration: 'Start 2025-10-23\nEnd 2026-10-23',
-    logo: '/api/placeholder/95/95'
-  }
-])
+// MOU data from backend
+const mous = ref<any[]>([])
 
 // Computed properties for reactive filtering
 const filteredMous = computed(() => {
@@ -206,13 +184,38 @@ onMounted(async () => {
   state.loading = true
   
   try {
-    // Simulate API data loading
-    await new Promise(resolve => setTimeout(resolve, 800))
+    // Fetch MOUs from backend
+    const response = await fetch('http://localhost:5000/api/mou?limit=100')
+    if (!response.ok) throw new Error('Failed to load MOUs')
+    
+    const result = await response.json()
+    mous.value = result.data.map((item: any) => ({
+      id: item._id,
+      name: item.organization_name || item.name,
+      status: item.status || 'Active',
+      duration: `Start ${new Date(item.start_date).toISOString().split('T')[0]}\nEnd ${new Date(item.end_date).toISOString().split('T')[0]}`,
+      logo: item.logo_path || '/api/placeholder/95/95'
+    }))
+    
     console.log('MOU data loaded:', mous.value.length, 'items')
     
     // Setup auto-refresh
-    state.autoRefreshInterval = window.setInterval(() => {
-      console.log('Auto-refresh MOUs...')
+    state.autoRefreshInterval = window.setInterval(async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/mou?limit=100')
+        if (res.ok) {
+          const data = await res.json()
+          mous.value = data.data.map((item: any) => ({
+            id: item._id,
+            name: item.organization_name || item.name,
+            status: item.status || 'Active',
+            duration: `Start ${new Date(item.start_date).toISOString().split('T')[0]}\nEnd ${new Date(item.end_date).toISOString().split('T')[0]}`,
+            logo: item.logo_path || '/api/placeholder/95/95'
+          }))
+        }
+      } catch (err) {
+        console.error('Auto-refresh error:', err)
+      }
     }, 30000) // Every 30 seconds
     
   } catch (error) {

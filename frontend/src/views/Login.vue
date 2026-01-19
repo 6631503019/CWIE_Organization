@@ -129,59 +129,45 @@ const handleLogin = async () => {
   try {
     isLoading.value = true
     
-    // Try to import and use the store dynamically
-    const { useAuthStore } = await import('../stores/auth')
-    const authStore = useAuthStore()
-    
-    const result = await authStore.login({
-      email: email.value,
-      password: password.value
+    // Call backend login API
+    const response = await fetch('http://localhost:5000/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: email.value,
+        password: password.value
+      })
     })
-    
-    if (result.success) {
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Login failed')
+    }
+
+    if (data.success && data.token) {
+      // Store token and user info
+      localStorage.setItem('token', data.token)
+      localStorage.setItem('auth_user', JSON.stringify(data.data))
+
       // Clear form
       email.value = ''
       password.value = ''
-      
-      // Redirect based on user role using Vue Router
-      if (authStore.user?.role === 'admin') {
+
+      // Redirect based on user role
+      if (data.data.role === 'admin') {
         await router.push('/admin/dashboard')
       } else {
-        // For non-admin users, stay on login or redirect to a different page
         error.value = 'Access restricted to admin users only'
       }
     } else {
-      error.value = result.message || 'Invalid ID or password'
+      error.value = data.message || 'Login failed'
     }
   } catch (err) {
-    console.error('Login failed:', err)
-    
-    // Fallback authentication without store
-    const mockUsers = {
-      'admin': { name: 'Admin User', role: 'admin' },
-      'user': { name: 'Regular User', role: 'user' },
-      'test': { name: 'Test User', role: 'test' }
-    }
-    
-    const user = mockUsers[email.value as keyof typeof mockUsers]
-    const validPasswords = { 'admin': 'admin123', 'user': 'user123', 'test': 'test123' }
-    
-    if (user && validPasswords[email.value as keyof typeof validPasswords] === password.value) {
-      // Store basic user info in localStorage
-      localStorage.setItem('auth_user', JSON.stringify(user))
-      localStorage.setItem('auth_token', 'fallback_token')
-      
-      // Redirect based on user role
-      if (user.role === 'admin') {
-        window.location.href = '/admin/dashboard'
-      } else {
-        // For non-admin users, redirect to login since we only have admin functionality
-        alert('This system is currently for administrators only.')
-        return
-      }
-    } else {
-      error.value = 'Invalid ID or password'
-    }
+    console.error('Login error:', err)
+    error.value = err.message || 'Login failed. Please try again.'
   } finally {
     isLoading.value = false
   }

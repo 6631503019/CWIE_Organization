@@ -114,6 +114,9 @@ const createRoadshow = async (req, res, next) => {
             }
         }
 
+        // Add admin ID from authenticated user
+        req.body.admin_id = req.user._id;
+
         const roadshow = await Roadshow.create(req.body);
 
         res.status(201).json({

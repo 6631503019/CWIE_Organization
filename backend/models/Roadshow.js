@@ -24,6 +24,11 @@ const roadshowSchema = new mongoose.Schema({
     is_public: {
         type: Boolean,
         default: true
+    },
+    admin_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: [true, 'Admin ID is required']
     }
 }, {
     timestamps: true

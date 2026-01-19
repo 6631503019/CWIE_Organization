@@ -165,44 +165,8 @@ const selectedStatus = ref('')
 const showStatusDropdown = ref(false)
 const mouDocumentImage = ref('/api/placeholder/291/408')
 
-// Mock MOU data
-const allMous = ref([
-  {
-    id: 1,
-    name: 'EBCI',
-    status: 'Active',
-    duration: 'Start 2025-09-24\nEnd 2026-08-23',
-    logo: '/api/placeholder/95/95'
-  },
-  {
-    id: 2,
-    name: 'SUNSU',
-    status: 'Active',
-    duration: 'Start 2025-10-23\nEnd 2026-10-23',
-    logo: '/api/placeholder/95/95'
-  },
-  {
-    id: 3,
-    name: 'TVD Holdings Public Company limited',
-    status: 'Active',
-    duration: 'Start 2025-10-23\nEnd 2026-10-23',
-    logo: '/api/placeholder/95/95'
-  },
-  {
-    id: 4,
-    name: 'SUNSU',
-    status: 'Active',
-    duration: 'Start 2025-10-23\nEnd 2026-10-23',
-    logo: '/api/placeholder/95/95'
-  },
-  {
-    id: 5,
-    name: 'SUNSU',
-    status: 'Active',
-    duration: 'Start 2025-10-23\nEnd 2026-10-23',
-    logo: '/api/placeholder/95/95'
-  }
-])
+// MOU data from backend
+const allMous = ref<any[]>([])
 
 // Computed properties for layout
 const leftColumnMous = computed(() => {
@@ -258,13 +222,38 @@ onMounted(async () => {
   state.loading = true
   
   try {
-    // Simulate API data loading
-    await new Promise(resolve => setTimeout(resolve, 700))
+    // Fetch MOUs from backend
+    const response = await fetch('http://localhost:5000/api/mou?limit=100')
+    if (!response.ok) throw new Error('Failed to load MOUs')
+    
+    const result = await response.json()
+    allMous.value = result.data.map((item: any) => ({
+      id: item._id,
+      name: item.organization_name || item.name,
+      status: item.status || 'Active',
+      duration: `Start ${new Date(item.start_date).toISOString().split('T')[0]}\nEnd ${new Date(item.end_date).toISOString().split('T')[0]}`,
+      logo: item.logo_path || '/api/placeholder/95/95'
+    }))
+    
     console.log('MOU detail data loaded for ID:', route.params.id)
     
     // Setup refresh interval
-    state.refreshInterval = window.setInterval(() => {
-      console.log('Auto-refresh MOU details...')
+    state.refreshInterval = window.setInterval(async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/mou?limit=100')
+        if (res.ok) {
+          const data = await res.json()
+          allMous.value = data.data.map((item: any) => ({
+            id: item._id,
+            name: item.organization_name || item.name,
+            status: item.status || 'Active',
+            duration: `Start ${new Date(item.start_date).toISOString().split('T')[0]}\nEnd ${new Date(item.end_date).toISOString().split('T')[0]}`,
+            logo: item.logo_path || '/api/placeholder/95/95'
+          }))
+        }
+      } catch (err) {
+        console.error('Auto-refresh error:', err)
+      }
     }, 60000) // Every minute
     
   } catch (error) {
