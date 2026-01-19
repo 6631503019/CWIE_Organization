@@ -160,6 +160,270 @@
       />
     </div>
 
+    <!-- Add Organization Modal -->
+    <div v-if="state.showAddModal" class="modal-overlay" @click="closeModal">
+      <div class="add-org-modal" :class="`${state.activeTab}-active`" @click.stop>
+        <!-- Right side tabs -->
+        <div class="modal-tabs">
+          <div 
+            class="tab-item"
+            :class="{ active: state.activeTab === 'organization' }"
+            @click="switchTab('organization')"
+          >
+            <span>Organization</span>
+          </div>
+          <div 
+            class="tab-item"
+            :class="{ active: state.activeTab === 'review' }"
+            @click="switchTab('review')"
+          >
+            <span>Review</span>
+          </div>
+          <div 
+            class="tab-item"
+            :class="{ active: state.activeTab === 'mou' }"
+            @click="switchTab('mou')"
+          >
+            <span>MOU</span>
+          </div>
+        </div>
+
+        <!-- Modal Content -->
+        <div class="modal-content">
+          <!-- Organization Tab -->
+          <div v-if="state.activeTab === 'organization'" class="organization-tab">
+            <h2 class="modal-title">Add Organization</h2>
+            <div class="form-divider"></div>
+            
+            <!-- Logo Upload -->
+            <div class="logo-upload-section">
+              <div class="upload-area">
+                <div class="upload-icon"></div>
+                <input type="file" @change="handleLogoUpload" accept="image/*" class="file-input" />
+              </div>
+              <span class="upload-text">Upload logo here</span>
+            </div>
+            
+            <!-- Form Fields -->
+            <div class="form-row">
+              <div class="form-group">
+                <label>Organization Name(TH)*</label>
+                <input type="text" v-model="formData.organizationNameTH" />
+              </div>
+              <div class="form-group">
+                <label>Organization Name(EN)*</label>
+                <input type="text" v-model="formData.organizationNameEN" />
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Address(TH)*</label>
+                <textarea class="textarea-md" v-model="formData.addressTH"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Address(EN)*</label>
+                <textarea class="textarea-md" v-model="formData.addressEN"></textarea>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label>Organization Type*</label>
+                <select v-model="formData.organizationType">
+                  <option value="">--Organization Type--</option>
+                  <option value="NGO">NGO</option>
+                  <option value="government">Government</option>
+                  <option value="individual">Individual</option>
+                  <option value="school">School</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group full-width">
+                <label>Industry Category*</label>
+                <select v-model="formData.industryCategory">
+                  <option value="">--Industry Category--</option>
+                  <option value="technology">Technology</option>
+                  <option value="education">Education</option>
+                  <option value="healthcare">Healthcare</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label>Country*</label>
+                <select v-model="formData.country">
+                  <option value="">---Country---</option>
+                  <option value="Thailand">Thailand</option>
+                  <option value="USA">USA</option>
+                  <option value="Japan">Japan</option>
+                  <option value="China">China</option>
+                  <option value="Korea">Korea</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Geography*</label>
+                <select v-model="formData.geography">
+                  <option value="">--Geography--</option>
+                  <option value="Northern Thailand">Northern Thailand</option>
+                  <option value="Central Thailand">Central Thailand</option>
+                  <option value="Southern Thailand">Southern Thailand</option>
+                  <option value="Northeastern Thailand">Northeastern Thailand</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Province*</label>
+                <select v-model="formData.province">
+                  <option value="">--Province--</option>
+                  <option value="Bangkok">Bangkok</option>
+                  <option value="Chiang Mai">Chiang Mai</option>
+                  <option value="Chiang Rai">Chiang Rai</option>
+                  <option value="Mae Hong Son">Mae Hong Son</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" v-model="formData.email" />
+            </div>
+            
+            <div class="form-group">
+              <label>Phone Number</label>
+              <input type="tel" v-model="formData.phoneNumber" />
+            </div>
+            
+            <div class="form-group">
+              <label>Details</label>
+              <textarea class="textarea-lg" v-model="formData.details" rows="4"></textarea>
+            </div>
+            
+            <!-- Public Toggle -->
+            <div class="public-toggle">
+              <label>Public</label>
+              <div class="toggle-switch" :class="{ active: formData.isPublic }" @click="formData.isPublic = !formData.isPublic">
+                <div class="toggle-slider"></div>
+              </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="modal-actions">
+              <button class="btn-cancel" @click="closeModal">Cancel</button>
+              <button class="btn-save" @click="saveOrganization">Save</button>
+            </div>
+          </div>
+          
+          <!-- Review Tab -->
+          <div v-if="state.activeTab === 'review'" class="review-tab">
+            <h2 class="modal-title">Add Review</h2>
+            <div class="form-divider"></div>
+            
+            <!-- Review Form -->
+            <div class="form-row">
+              <div class="form-group">
+                <label>Organization Name *</label>
+                <input 
+                  type="text" 
+                  v-model="reviewData.organizationName" 
+                  placeholder="Enter organization name"
+                />
+              </div>
+              <div class="form-group">
+                <label>Job Position *</label>
+                <input 
+                  type="text" 
+                  v-model="reviewData.jobPosition" 
+                  placeholder="Enter job position"
+                />
+              </div>
+            </div>
+            
+            <!-- Review Text -->
+            <div class="form-group full-width">
+              <label>Review *</label>
+              <textarea 
+                class="textarea-lg"
+                v-model="reviewData.review" 
+                placeholder="Write your review here..."
+                rows="6"
+              ></textarea>
+            </div>
+            
+            <!-- Star Rating -->
+            <div class="rating-section">
+              <div class="star-rating">
+                <span 
+                  v-for="star in 5" 
+                  :key="star"
+                  class="star"
+                  :class="{ active: star <= reviewData.rating }"
+                  @click="setRating(star)"
+                >
+                  ★
+                </span>
+              </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="modal-actions">
+              <button class="btn-cancel" @click="closeModal">Cancel</button>
+              <button class="btn-save" @click="saveReview">Save</button>
+            </div>
+          </div>
+          
+          <!-- MOU Tab -->
+          <div v-if="state.activeTab === 'mou'" class="mou-tab">
+            <div class="mou-header">
+              <h2 class="modal-title">Add MOU</h2>
+              <div class="form-divider"></div>
+            </div>
+
+            <div class="mou-top-row">
+              <label class="mou-upload" aria-label="Upload MOU">
+                <div class="mou-icon"></div>
+                <input
+                  type="file"
+                  class="file-input"
+                  accept=".pdf,.doc,.docx"
+                  @change="handleMOUUpload"
+                />
+              </label>
+              <span class="mou-label">MOU</span>
+            </div>
+
+            <div class="mou-period-row">
+              <div class="form-group period-group wide">
+                <select v-model="mouData.period">
+                  <option value="">--Period--</option>
+                  <option value="6months">6 Months</option>
+                  <option value="1year">1 Year</option>
+                  <option value="2years">2 Years</option>
+                  <option value="3years">3 Years</option>
+                  <option value="5years">5 Years</option>
+                </select>
+                <div class="calendar-icon"></div>
+              </div>
+            </div>
+
+            <div class="publish-toggle mou-publish">
+              <label>Publish MOU</label>
+              <div class="toggle-switch" :class="{ active: mouData.publishMOU }" @click="mouData.publishMOU = !mouData.publishMOU">
+                <div class="toggle-slider"></div>
+              </div>
+            </div>
+
+            <div class="modal-actions mou-actions">
+              <button class="btn-cancel" @click="closeModal">Cancel</button>
+              <button class="btn-save" @click="saveMOU">Save</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Delete Confirmation Modal -->
     <div v-if="showDeleteModal" class="delete-modal-overlay">
       <div class="delete-modal-container">
@@ -193,7 +457,9 @@ const state = reactive({
   loading: false,
   error: null as string | null,
   currentPage: 1,
-  itemsPerPage: 5
+  itemsPerPage: 5,
+  showAddModal: false,
+  activeTab: 'organization' as 'organization' | 'review' | 'mou'
 })
 
 // Search and filter data
@@ -422,17 +688,111 @@ const searchOrganizations = () => {
   console.log('Searching:', filteredOrganizations.value.length, 'results')
 }
 
-const addOrganization = async () => {
-  state.loading = true
-  try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    console.log('Add organization clicked')
-  } catch (error) {
-    state.error = 'Failed to add organization'
-  } finally {
-    state.loading = false
+// Modal form data
+const formData = reactive({
+  logo: null as File | null,
+  organizationNameTH: '',
+  organizationNameEN: '',
+  addressTH: '',
+  addressEN: '',
+  organizationType: '',
+  industryCategory: '',
+  country: '',
+  geography: '',
+  province: '',
+  email: '',
+  phoneNumber: '',
+  details: '',
+  isPublic: false
+})
+
+// Review form data
+const reviewData = reactive({
+  organizationName: '',
+  jobPosition: '',
+  review: '',
+  rating: 0
+})
+
+// MOU form data
+const mouData = reactive({
+  mouFile: null as File | null,
+  period: '',
+  publishMOU: false
+})
+
+// Modal methods
+const closeModal = () => {
+  state.showAddModal = false
+  resetForm()
+}
+
+const resetForm = () => {
+  Object.keys(formData).forEach(key => {
+    if (key === 'isPublic') {
+      formData[key] = false
+    } else if (key === 'logo') {
+      formData[key] = null
+    } else {
+      formData[key] = ''
+    }
+  })
+  
+  // Reset review data
+  reviewData.organizationName = ''
+  reviewData.jobPosition = ''
+  reviewData.review = ''
+  reviewData.rating = 0
+  
+  // Reset MOU data
+  mouData.mouFile = null
+  mouData.period = ''
+  mouData.publishMOU = false
+}
+
+const switchTab = (tab: 'organization' | 'review' | 'mou') => {
+  state.activeTab = tab
+}
+
+const saveOrganization = () => {
+  // TODO: Implement save logic
+  console.log('Saving organization:', formData)
+  closeModal()
+}
+
+const handleLogoUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    formData.logo = target.files[0]
   }
+}
+
+const handleMOUUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    mouData.mouFile = target.files[0]
+  }
+}
+
+const setRating = (rating: number) => {
+  reviewData.rating = rating
+}
+
+const saveReview = () => {
+  console.log('Saving review:', reviewData)
+  // Add review save logic here
+  closeModal()
+}
+
+const saveMOU = () => {
+  console.log('Saving MOU:', mouData)
+  // Add MOU save logic here
+  closeModal()
+}
+
+const addOrganization = async () => {
+  state.showAddModal = true
+  state.activeTab = 'organization'
 }
 
 const editOrganization = async (id: number) => {
@@ -1332,5 +1692,488 @@ onBeforeUnmount(() => {
   .form-row {
     grid-template-columns: 1fr;
   }
+}
+
+/* Add Organization Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(84, 84, 84, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+}
+
+.add-org-modal {
+  position: relative;
+  width: 657px;
+  min-height: 400px;
+  max-height: 657px;
+  background: #FFFFFF;
+  border-radius: 12px;
+  display: flex;
+}
+
+.add-org-modal.organization-active {
+  height: 657px;
+  min-height: 657px;
+  max-height: 657px;
+}
+
+.add-org-modal.review-active,
+.add-org-modal.mou-active {
+  min-height: 400px;
+  max-height: 657px;
+  height: auto;
+}
+
+.modal-tabs {
+  position: absolute;
+  width: 42px;
+  height: 280px;
+  left: 657px;
+  top: 35px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background: transparent;
+}
+
+.tab-item {
+  position: relative;
+  width: 42px;
+  height: 75px;
+  background: #D9D9D9;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 13px;
+  color: #000000;
+}
+
+/* Remove individual positioning for tabs */
+.tab-item:nth-child(1),
+.tab-item:nth-child(2),
+.tab-item:nth-child(3) {
+  position: relative;
+  left: auto;
+  right: auto;
+  top: auto;
+  bottom: auto;
+}
+
+.tab-item span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center center;
+  white-space: nowrap;
+  color: inherit;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 11px;
+  line-height: 13px;
+}
+
+.tab-item.active {
+  background: #AB1C03;
+  color: #FFFFFF;
+}
+
+.tab-item:hover:not(.active) {
+  background: #E0E0E0;
+}
+
+.modal-content {
+  position: absolute;
+  left: 0.8%;
+  right: 6.5%;
+  top: 0%;
+  bottom: 0%;
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 20px;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.modal-title {
+  margin: 0 0 10px 0;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 19px;
+  color: #000000;
+}
+
+.form-divider {
+  width: 100%;
+  height: 1px;
+  background: #767676;
+  margin: 10px 0 20px 0;
+}
+
+.logo-upload-section {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.upload-area {
+  width: 58px;
+  height: 58px;
+  background: #D9D9D9;
+  border-radius: 9px;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-icon {
+  width: 20px;
+  height: 20px;
+  background: #000;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z'/%3E%3C/svg%3E") no-repeat;
+  mask-size: contain;
+}
+
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.upload-text {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  color: #545454;
+}
+
+.form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group.full-width {
+  width: 100%;
+}
+
+.form-group label {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  color: #000000;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  padding: 8px 12px;
+  background: #FFFFFF;
+  border: 1px solid #767676;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #000000;
+}
+
+.form-group input,
+.form-group select {
+  height: 36px;
+  line-height: 20px;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #AB1C03;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.textarea-md {
+  min-height: 96px;
+}
+
+.textarea-lg {
+  min-height: 128px;
+}
+
+.public-toggle {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.public-toggle label {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  color: #000000;
+}
+
+.toggle-switch {
+  width: 36px;
+  height: 18px;
+  background: #A1A1A1;
+  border-radius: 9px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.toggle-switch.active {
+  background: #4CAF50;
+}
+
+.toggle-slider {
+  width: 14px;
+  height: 14px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: transform 0.2s ease;
+}
+
+.toggle-switch.active .toggle-slider {
+  transform: translateX(18px);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  margin-top: 30px;
+}
+
+.btn-cancel,
+.btn-save {
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 13px;
+  line-height: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancel {
+  background: #FFFFFF;
+  border: 1px solid #B1B1B1;
+  color: #000000;
+}
+
+.btn-cancel:hover {
+  background: #F5F5F5;
+}
+
+.btn-save {
+  background: #AB1C03;
+  border: none;
+  color: #FFFFFF;
+}
+
+.btn-save:hover {
+  background: #8A1502;
+}
+
+.review-tab,
+.mou-tab {
+  padding: 10px 8px 0 8px;
+}
+
+/* Star Rating Styles */
+.rating-section {
+  margin: 20px 0;
+}
+
+.star-rating {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.star {
+  font-size: 30px;
+  color: #D9D9D9;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.star.active,
+.star:hover {
+  color: #FFD700;
+}
+
+
+/* MOU Tab Styles */
+.mou-header .form-divider {
+  margin: 6px 0 20px 0;
+}
+
+.mou-top-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.mou-upload {
+  width: 60px;
+  height: 60px;
+  background: #F2F2F2;
+  border: 1px solid #D0D0D0;
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.mou-upload:hover {
+  background: #E9E9E9;
+  border-color: #AB1C03;
+}
+
+.mou-icon {
+  width: 22px;
+  height: 22px;
+  background: #000;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z'/%3E%3C/svg%3E") no-repeat;
+  mask-size: contain;
+}
+
+.mou-label {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  color: #000000;
+}
+
+.mou-period-row {
+  margin-bottom: 24px;
+}
+
+.period-group {
+  position: relative;
+  max-width: 200px;
+}
+
+.period-group.wide {
+  max-width: 260px;
+}
+
+.period-group select {
+  width: 100%;
+  height: 40px;
+  padding: 8px 40px 8px 12px;
+  background: #FFFFFF;
+  border: 1px solid #D0D0D0;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #333333;
+  appearance: none;
+  cursor: pointer;
+}
+
+.calendar-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  background: #666;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19,3H18V1H16V3H8V1H6V3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M19,19H5V8H19V19Z'/%3E%3C/svg%3E") no-repeat;
+  mask-size: contain;
+  pointer-events: none;
+}
+
+.publish-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20px 0;
+  padding: 10px 0;
+}
+
+.publish-toggle.mou-publish {
+  margin: 10px 0 30px 0;
+  padding: 8px 0;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.publish-toggle label {
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 19px;
+  color: #767676;
+}
+
+.publish-toggle.mou-publish label {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: #333333;
+}
+
+.modal-actions.mou-actions {
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
 }
 </style>

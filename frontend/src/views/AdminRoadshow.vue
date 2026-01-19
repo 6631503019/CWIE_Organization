@@ -2,98 +2,133 @@
   <div class="admin-roadshow">
     <AdminNavbar />
     
-    <!-- Main Content Area -->
-    <div class="main-content">
-      <!-- Header Section -->
-      <div class="header-section">
-        <h1 class="page-title">Roadshow</h1>
+    <!-- Roadshow Title -->
+    <h1 class="roadshow-title">Roadshow</h1>
+    
+    <!-- Add Roadshow Button -->
+    <button class="btn-add-roadshow" @click="showCreateModal = true">
+      <div class="plus-icon"></div>
+      <span class="button-text">Add Roadshow</span>
+    </button>
+
+    <!-- Roadshow Cards Container -->
+    <div class="roadshow-cards-container">
+      <div 
+        v-for="roadshow in paginatedRoadshows" 
+        :key="roadshow.id" 
+        class="roadshow-large-card"
+      >
+        <!-- Roadshow Image -->
+        <div class="roadshow-image-large">
+          <img :src="roadshow.image" :alt="roadshow.title" />
+        </div>
         
-        <!-- Add Roadshow Button -->
-        <button class="add-roadshow-btn" @click="showCreateModal = true">
-          <div class="plus-icon"></div>
-          <span class="button-text">Add Roadshow</span>
-        </button>
-      </div>
-      
-      <!-- Roadshow Cards Grid -->
-      <div class="roadshow-cards-grid">
-        <div 
-          v-for="roadshow in paginatedRoadshows" 
-          :key="roadshow.id" 
-          class="roadshow-card"
-          @click="editRoadshow(roadshow)"
-        >
-          <!-- Roadshow Image -->
-          <div class="roadshow-image">
-            <img :src="roadshow.image" :alt="roadshow.title" />
-          </div>
-          
-          <!-- Roadshow Info -->
-          <div class="roadshow-title">{{ roadshow.title }}</div>
-          <div class="roadshow-date">{{ roadshow.createdDate }}</div>
-          
-          <!-- Edit Icon -->
-          <div class="edit-icon">
-            <div class="pencil-icon"></div>
-          </div>
+        <!-- Roadshow Content -->
+        <div class="roadshow-content">
+          <h2 class="roadshow-title-large">{{ roadshow.title }}</h2>
+          <p class="roadshow-description">{{ roadshow.description }}</p>
+        </div>
+        
+        <!-- Edit Icon -->
+        <div class="edit-icon-large" @click="editRoadshow(roadshow)">
+          <div class="pencil-icon-large"></div>
         </div>
       </div>
-      
-      <!-- Pagination -->
-      <div class="roadshow-pagination-container">
-        <Pagination 
-          :current-page="state.currentPage"
-          :total-pages="totalPages"
-          :total-items="roadshows.length"
-          :loading="state.loading"
-          :show-info="false"
-          @page-change="handlePageChange"
-        />
-      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="roadshow-pagination-container">
+      <Pagination 
+        :current-page="state.currentPage"
+        :total-pages="totalPages"
+        :total-items="roadshows.length"
+        :loading="state.loading"
+        :show-info="false"
+        @page-change="handlePageChange"
+      />
     </div>
     
     <!-- Create/Edit Modal -->
     <div v-if="showCreateModal || showEditModal" class="modal-overlay" @click="closeModals">
-      <div class="modal" @click.stop>
-        <div class="modal-header">
-          <h2>{{ showCreateModal ? 'Add New Roadshow' : 'Edit Roadshow' }}</h2>
-          <button class="btn-close" @click="closeModals">×</button>
+      <div class="add-roadshow-modal" @click.stop>
+        <h2 class="modal-title">Add Roadshow</h2>
+        <div class="form-divider"></div>
+
+        <!-- Topic Field -->
+        <div class="form-group">
+          <label>Topic*</label>
+          <input 
+            type="text" 
+            v-model="formData.topic" 
+            placeholder="Enter topic"
+          />
         </div>
-        <div class="modal-body">
-          <form @submit.prevent="submitForm">
-            <div class="form-group">
-              <label>Roadshow Title</label>
-              <input 
-                type="text" 
-                v-model="formData.title" 
-                placeholder="Enter roadshow title"
-                required 
-              />
-            </div>
-            <div class="form-group">
-              <label>Description</label>
-              <textarea 
-                v-model="formData.description" 
-                rows="6"
-                placeholder="Enter roadshow description"
-                required
-              ></textarea>
-            </div>
-            <div class="form-group">
-              <label>Roadshow Image</label>
-              <input 
-                type="file" 
-                @change="handleImageUpload" 
-                accept="image/*"
-              />
-            </div>
-            <div class="form-actions">
-              <button type="button" class="btn-secondary" @click="closeModals">Cancel</button>
-              <button type="submit" class="btn-primary">
-                {{ showCreateModal ? 'Create' : 'Update' }} Roadshow
-              </button>
-            </div>
-          </form>
+
+        <!-- Details Field -->
+        <div class="form-group full-width">
+          <label>Details*</label>
+          <textarea 
+            class="textarea-lg"
+            v-model="formData.details" 
+            placeholder="Write details here..."
+            rows="6"
+          ></textarea>
+        </div>
+
+        <!-- Date Field -->
+        <div class="form-group">
+          <label>Date*</label>
+          <div class="date-input-wrapper">
+            <input 
+              type="date" 
+              v-model="formData.date"
+            />
+            <div class="calendar-icon"></div>
+          </div>
+        </div>
+
+        <!-- Add Picture Activity -->
+        <div class="upload-section">
+          <label>Add Picture Activity (Not required)</label>
+          <label class="upload-btn">
+            <div class="upload-icon"></div>
+            <span>Select Photo</span>
+            <input 
+              type="file" 
+              accept="image/*"
+              @change="(e) => formData.pictureFile = (e.target as HTMLInputElement).files?.[0] || null"
+              style="display: none"
+            />
+          </label>
+        </div>
+
+        <!-- Add Poster -->
+        <div class="upload-section">
+          <label>Add Poster</label>
+          <label class="upload-btn">
+            <div class="upload-icon"></div>
+            <span>Select Poster</span>
+            <input 
+              type="file" 
+              accept="image/*"
+              @change="(e) => formData.posterFile = (e.target as HTMLInputElement).files?.[0] || null"
+              style="display: none"
+            />
+          </label>
+        </div>
+
+        <!-- Public Toggle -->
+        <div class="public-toggle">
+          <label>Public</label>
+          <div class="toggle-switch" :class="{ active: formData.isPublic }" @click="formData.isPublic = !formData.isPublic">
+            <div class="toggle-slider"></div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="closeModals">Cancel</button>
+          <button class="btn-save" @click="submitForm">Save</button>
         </div>
       </div>
     </div>
@@ -110,7 +145,7 @@ const state = reactive({
   loading: false,
   error: null as string | null,
   currentPage: 1,
-  itemsPerPage: 3,
+  itemsPerPage: 2,
   autoRefreshInterval: null as number | null
 })
 
@@ -177,9 +212,12 @@ watch(showEditModal, (isOpen) => {
 
 // Form data
 const formData = reactive({
-  title: '',
-  description: '',
-  image: null as File | null
+  topic: '',
+  details: '',
+  date: '',
+  pictureFile: null as File | null,
+  posterFile: null as File | null,
+  isPublic: false
 })
 
 const handlePageChange = async (page: number) => {
@@ -232,16 +270,12 @@ const closeModals = () => {
 }
 
 const resetForm = () => {
-  formData.title = ''
-  formData.description = ''
-  formData.image = null
-}
-
-const handleImageUpload = (event: Event) => {
-  const target = event.target as HTMLInputElement
-  if (target.files && target.files[0]) {
-    formData.image = target.files[0]
-  }
+  formData.topic = ''
+  formData.details = ''
+  formData.date = ''
+  formData.pictureFile = null
+  formData.posterFile = null
+  formData.isPublic = false
 }
 
 const submitForm = () => {
@@ -251,8 +285,6 @@ const submitForm = () => {
   } else {
     // Handle update roadshow
     console.log('Updating roadshow:', formData)
-    currentRoadshow.value.title = formData.title
-    currentRoadshow.value.description = formData.description
   }
   closeModals()
 }
@@ -349,6 +381,9 @@ onBeforeUnmount(() => {
   width: 20px;
   height: 20px;
   position: relative;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
 }
 
 .plus-icon::before,
@@ -374,12 +409,19 @@ onBeforeUnmount(() => {
 }
 
 .button-text {
+  width: 99px;
+  height: 20px;
+  
   font-family: 'DM Sans', sans-serif;
   font-style: normal;
   font-weight: 500;
   font-size: 14px;
   line-height: 20px;
   color: #FFFFFF;
+  
+  flex: none;
+  order: 1;
+  flex-grow: 0;
 }
 
 /* Roadshow Cards Grid */
@@ -398,98 +440,291 @@ onBeforeUnmount(() => {
   width: 271px;
   height: 350px;
   background: #FFFFFF;
-  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: all 0.3s ease;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .roadshow-card:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .roadshow-image {
   width: 100%;
-  height: 200px;
+  height: 180px;
   overflow: hidden;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .roadshow-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
+.roadshow-card:hover .roadshow-image img {
+  transform: scale(1.05);
+}
+
+/* Main Roadshow Title */
 .roadshow-title {
   position: absolute;
-  left: 20px;
-  right: 20px;
-  top: 220px;
-  z-index: 2;
+  width: 188px;
+  height: 50px;
+  left: 251px;
+  top: 58px;
+  margin: 0;
   
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 600;
-  font-size: 16px;
-  line-height: 20px;
+  font-size: 40px;
+  line-height: 50px;
   color: #000000;
-  text-align: center;
-  max-width: 230px;
-  white-space: nowrap;
+}
+
+/* Add Roadshow Button */
+.btn-add-roadshow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6px 10px;
+  gap: 6px;
+  
+  position: absolute;
+  width: 145px;
+  height: 32px;
+  left: 1156px;
+  top: 66px;
+  
+  background: #C70000;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-add-roadshow:hover {
+  background: #A50000;
+}
+
+.plus-icon {
+  width: 20px;
+  height: 20px;
+  position: relative;
+  flex: none;
+  order: 0;
+  flex-grow: 0;
+}
+
+.plus-icon::before,
+.plus-icon::after {
+  content: '';
+  position: absolute;
+  background: #FFFFFF;
+  border-radius: 1px;
+}
+
+.plus-icon::before {
+  width: 12px;
+  height: 2px;
+  left: 4px;
+  top: 9px;
+}
+
+.plus-icon::after {
+  width: 2px;
+  height: 12px;
+  left: 9px;
+  top: 4px;
+}
+
+.button-text {
+  width: 99px;
+  height: 20px;
+  
+  font-family: 'DM Sans', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+  color: #FFFFFF;
+  
+  flex: none;
+  order: 1;
+  flex-grow: 0;
+}
+
+/* Roadshow Cards Container */
+.roadshow-cards-container {
+  position: absolute;
+  left: 273px;
+  top: 152px;
+  width: 1035px;
+}
+
+/* Large Roadshow Card */
+.roadshow-large-card {
+  position: relative;
+  width: 1035px;
+  height: 287px;
+  margin-bottom: 25px;
+  
+  background: #FFFFFF;
+  border: 1px solid #000000;
+  border-radius: 15px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  
+  display: flex;
   overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+/* Large Roadshow Image */
+.roadshow-image-large {
+  width: 270.72px;
+  height: 271.7px;
+  margin: 8px 0 0 37px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #f5f5f5;
+}
+
+.roadshow-image-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Roadshow Content */
+.roadshow-content {
+  flex: 1;
+  padding: 17px 20px 20px 40px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Large Roadshow Title */
+.roadshow-title-large {
+  margin: 0 0 15px 0;
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 40px;
+  color: #000000;
+}
+
+/* Roadshow Description */
+.roadshow-description {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 25px;
+  color: #000000;
+  flex: 1;
+}
+
+/* Large Edit Icon */
+.edit-icon-large {
+  position: absolute;
+  width: 29.17px;
+  height: 26.5px;
+  right: 20px;
+  top: 20px;
+  
+  background: #FFFFFF;
+  border: 1px solid #000000;
+  border-radius: 6px;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-icon-large:hover {
+  background: #f5f5f5;
+  transform: scale(1.05);
+}
+
+/* Large Pencil Icon */
+.pencil-icon-large {
+  width: 24.31px;
+  height: 22.08px;
+  background: #000;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") no-repeat;
+  mask-size: contain;
 }
 
 .roadshow-date {
-  position: absolute;
-  left: 20px;
-  right: 20px;
-  top: 250px;
-  z-index: 2;
-  
+  padding: 0px 20px 15px 20px;
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 400;
   font-size: 12px;
   line-height: 15px;
   color: #767676;
-  text-align: center;
+  text-align: left;
 }
 
 .edit-icon {
   position: absolute;
-  width: 21px;
-  height: 21px;
-  right: 15px;
-  top: 15px;
+  width: 32px;
+  height: 32px;
+  right: 12px;
+  top: 12px;
   z-index: 3;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.roadshow-card:hover .edit-icon {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .edit-icon:hover {
   background: rgba(255, 255, 255, 1);
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .pencil-icon {
-  width: 12px;
-  height: 12px;
+  width: 14px;
+  height: 14px;
   background: #666;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") no-repeat;
   mask-size: contain;
+  transition: background 0.2s ease;
+}
+
+.edit-icon:hover .pencil-icon {
+  background: #333;
 }
 
 /* Roadshow Pagination Container */
 .roadshow-pagination-container {
   position: absolute;
   left: 1090px;
-  top: 700px;
+  top: 780px;
   width: 218px;
   height: 28px;
 }
@@ -623,51 +858,207 @@ onBeforeUnmount(() => {
   z-index: 1000;
 }
 
-.modal {
+.add-roadshow-modal {
   background: #FFFFFF;
   border-radius: 12px;
-  width: 600px;
-  max-width: 90vw;
-  max-height: 90vh;
+  width: 850px;
+  height: 689px;
   overflow-y: auto;
+  padding: 40px;
+  box-sizing: border-box;
 }
 
-.modal-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #E5E5E5;
+.modal-title {
+  margin: 0;
+  font-family: 'Outfit', sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: #000000;
+  margin-bottom: 24px;
+}
+
+.form-divider {
+  height: 1px;
+  background-color: #767676;
+  margin-bottom: 24px;
+}
+
+.date-input-wrapper {
+  position: relative;
   display: flex;
-  justify-content: space-between;
   align-items: center;
 }
 
-.modal-header h2 {
-  margin: 0;
-  font-family: 'Outfit', sans-serif;
-  font-size: 24px;
-  font-weight: 600;
-  color: #000000;
+.date-input-wrapper input {
+  width: 100%;
+  padding: 10px 12px;
+  padding-right: 36px;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  box-sizing: border-box;
 }
 
-.btn-close {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
-  padding: 0;
-  width: 24px;
-  height: 24px;
+.calendar-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 18px;
+  color: #6B7280;
+}
+
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.upload-section label {
+  display: block;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  color: #6B7280;
+}
+
+.upload-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  background: #F3F4F6;
+  border: 2px dashed #D1D5DB;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #6B7280;
+  transition: all 0.3s ease;
 }
 
-.modal-body {
-  padding: 24px;
+.upload-btn:hover {
+  border-color: #AB1C03;
+  background: #FEF2F2;
+  color: #AB1C03;
+}
+
+.upload-icon {
+  font-size: 18px;
+}
+
+.upload-btn input[type="file"] {
+  display: none;
+}
+
+.public-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.public-toggle label {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #374151;
+}
+
+.toggle-switch {
+  width: 44px;
+  height: 24px;
+  background: #D1D5DB;
+  border-radius: 12px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.toggle-switch.active {
+  background: #AB1C03;
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: #FFFFFF;
+  border-radius: 50%;
+  top: 2px;
+  left: 2px;
+  transition: left 0.3s ease;
+}
+
+.toggle-switch.active::after {
+  left: 22px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.btn-cancel {
+  padding: 8px 20px;
+  background: #FFFFFF;
+  border: 1px solid #D1D5DB;
+  border-radius: 20px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  color: #374151;
+  cursor: pointer;
+  width: 77px;
+  height: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+  background: #F9FAFB;
+  border-color: #9CA3AF;
+}
+
+.btn-save {
+  padding: 8px 20px;
+  background: #AB1C03;
+  border: none;
+  border-radius: 20px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 13px;
+  color: #FFFFFF;
+  cursor: pointer;
+  width: 77px;
+  height: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.btn-save:hover {
+  background: #8B1600;
 }
 
 .form-group {
   margin-bottom: 20px;
+}
+
+.form-group.full-width {
+  width: 100%;
 }
 
 .form-group label {
@@ -693,46 +1084,13 @@ onBeforeUnmount(() => {
 .form-group input:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #C70000;
-  box-shadow: 0 0 0 3px rgba(199, 0, 0, 0.1);
+  border-color: #AB1C03;
+  box-shadow: 0 0 0 3px rgba(171, 28, 3, 0.1);
 }
 
-.form-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 24px;
+.textarea-lg {
+  min-height: 128px;
+  resize: vertical;
 }
 
-.btn-secondary {
-  padding: 10px 20px;
-  background: #FFFFFF;
-  border: 1px solid #D1D5DB;
-  border-radius: 6px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 14px;
-  color: #374151;
-  cursor: pointer;
-}
-
-.btn-primary {
-  padding: 10px 20px;
-  background: #C70000;
-  border: none;
-  border-radius: 6px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 14px;
-  color: #FFFFFF;
-  cursor: pointer;
-}
-
-.btn-secondary:hover {
-  background: #F9FAFB;
-}
-
-.btn-primary:hover {
-  background: #B91C1C;
-}
 </style>
