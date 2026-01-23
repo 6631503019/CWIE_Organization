@@ -230,13 +230,12 @@
             <div class="form-row">
               <div class="form-group full-width">
                 <label>Organization Type*</label>
-                <select v-model="formData.organizationType">
-                  <option value="">--Organization Type--</option>
-                  <option value="NGO">NGO</option>
-                  <option value="government">Government</option>
-                  <option value="individual">Individual</option>
-                  <option value="school">School</option>
-                </select>
+                <div class="org-type-row-box">
+                  <div class="org-type-col" v-for="type in orgTypeOptions" :key="type" @click="formData.organizationType = type" :class="{ active: formData.organizationType === type }">
+                    <div class="org-type-name">{{ type }}</div>
+                    <div class="org-type-count">{{ organizationTypeCounts[type] }}</div>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -485,7 +484,7 @@ const selectedFilters = reactive({
 })
 
 // Dropdown options
-const orgTypeOptions = ['All', 'Company', 'Government', 'School']
+const orgTypeOptions = ['private company', 'Government', 'Oversea', 'MFU']
 const industryCatOptions = [
   'All', 
   'School of Applied Digital Technology',
@@ -515,6 +514,24 @@ const provinceOptions = [
 
 // Organizations data from backend
 const allOrganizations = ref<any[]>([])
+
+// Compute organization type counts
+const organizationTypeCounts = computed(() => {
+  const counts: Record<string, number> = {
+    'private company': 0,
+    'Government': 0,
+    'Oversea': 0,
+    'MFU': 0
+  }
+  
+  allOrganizations.value.forEach(org => {
+    if (org.organization_type && counts.hasOwnProperty(org.organization_type)) {
+      counts[org.organization_type]++
+    }
+  })
+  
+  return counts
+})
 
 // Computed properties for reactive filtering
 const filteredOrganizations = computed(() => {
@@ -2171,7 +2188,7 @@ onBeforeUnmount(() => {
   width: 22px;
   height: 22px;
   background: #000;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.89 20.1,3 19,3Z'/%3E%3C/svg%3E") no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M19,19H5V8H19V19Z'/%3E%3C/svg%3E") no-repeat;
   mask-size: contain;
 }
 
@@ -2258,5 +2275,69 @@ onBeforeUnmount(() => {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 10px;
+}
+
+/* Organization Type Row Box Design */
+.org-type-row-box {
+  position: relative;
+  width: 100%;
+  max-width: 771px;
+  height: 54px;
+  margin: 0 auto 18px auto;
+  background: #fff;
+  border: 1px solid #B1B1B1;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  box-sizing: border-box;
+}
+
+.org-type-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0;
+  cursor: pointer;
+  height: 44px;
+  margin: 0 2px;
+  transition: background 0.2s, color 0.2s;
+  border-radius: 6px;
+}
+
+.org-type-col.active {
+  background: #AB1C03;
+  color: #fff;
+}
+
+.org-type-name {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 17px;
+  color: inherit;
+  margin-bottom: 2px;
+}
+
+.org-type-count {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 17px;
+  color: inherit;
+}
+
+.org-type-col:hover {
+  background: #F5F5F5;
+  color: #AB1C03;
+}
+
+.org-type-col.active .org-type-count {
+  color: #fff;
 }
 </style>
