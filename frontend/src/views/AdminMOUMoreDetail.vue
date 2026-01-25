@@ -102,6 +102,14 @@
         </div>
       </div>
     </div>
+    
+    <!-- Notification Modal -->
+    <NotificationModal 
+      :show="showNotificationModal"
+      :message="notificationMessage"
+      :type="notificationType"
+      @close="showNotificationModal = false"
+    />
   </div>
 </template>
 
@@ -109,6 +117,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
+import NotificationModal from '../components/NotificationModal.vue'
 import { organizationAPI, reviewAPI, mouAPI } from '../services/api'
 
 const route = useRoute()
@@ -118,6 +127,9 @@ const router = useRouter()
 const organization = ref<any>(null)
 const reviews = ref<any[]>([])
 const currentReviewIndex = ref(0)
+const showNotificationModal = ref(false)
+const notificationMessage = ref('')
+const notificationType = ref<'success' | 'error' | 'warning'>('warning')
 const mouDocumentUrl = ref<string | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
@@ -275,7 +287,9 @@ const openMOUDocument = () => {
   if (mouDocumentUrl.value) {
     window.open(mouDocumentUrl.value, '_blank')
   } else {
-    alert('No MOU document available for this organization')
+    notificationMessage.value = 'No MOU document available for this organization'
+    notificationType.value = 'warning'
+    showNotificationModal.value = true
   }
 }
 

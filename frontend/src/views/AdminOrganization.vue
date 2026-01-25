@@ -466,12 +466,21 @@
         </div>
       </div>
     </div>
+    
+    <!-- Notification Modal -->
+    <NotificationModal 
+      :show="showNotificationModal"
+      :message="notificationMessage"
+      :type="notificationType"
+      @close="showNotificationModal = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, reactive } from 'vue'
 import AdminNavbar from '../components/AdminNavbar.vue'
+import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
 import { organizationAPI, mouAPI } from '../services/api'
 
@@ -489,6 +498,9 @@ const state = reactive({
 // Search and filter data
 const searchText = ref('')
 const showDeleteModal = ref(false)
+const showNotificationModal = ref(false)
+const notificationMessage = ref('')
+const notificationType = ref<'success' | 'error' | 'warning'>('success')
 const selectedOrganization = ref<any>(null)
 const logoPreviewUrl = ref<string | null>(null)
 const mouPreviewUrl = ref<string | null>(null)
@@ -775,7 +787,9 @@ const saveOrganization = async () => {
   // Validate required fields
   if (!formData.organizationNameEN || !formData.organizationNameTH || !formData.email || !formData.organizationType) {
     state.error = 'Please fill in all required fields'
-    alert('Please fill in all required fields: Organization Name (EN/TH), Email, and Organization Type')
+    notificationMessage.value = 'Please fill in all required fields: Organization Name (EN/TH), Email, and Organization Type'
+    notificationType.value = 'warning'
+    showNotificationModal.value = true
     return
   }
 
@@ -828,15 +842,22 @@ const saveOrganization = async () => {
     
     state.error = null
     state.editingOrgId = null
-    closeModal()
-    alert('Organization saved successfully!')
+    notificationMessage.value = 'Organization saved successfully!'
+    notificationType.value = 'success'
+    showNotificationModal.value = true
+    
+    setTimeout(() => {
+      closeModal()
+    }, 1500)
   } catch (error: any) {
     const errorMessage = error.response?.data?.message || error.message || 'Failed to save organization'
     state.error = errorMessage
     console.error('Save error:', error)
     console.error('Error response data:', error.response?.data)
     console.error('Error details:', JSON.stringify(error.response?.data, null, 2))
-    alert(`Error: ${errorMessage}`)
+    notificationMessage.value = `Error: ${errorMessage}`
+    notificationType.value = 'error'
+    showNotificationModal.value = true
   } finally {
     state.loading = false
   }
@@ -912,19 +933,25 @@ const saveReview = () => {
 const saveMOU = async () => {
   // Validate required fields
   if (!mouData.mouFile || !mouData.startDate || !mouData.endDate) {
-    alert('Please upload MOU file and select start and end dates')
+    notificationMessage.value = 'Please upload MOU file and select start and end dates'
+    notificationType.value = 'warning'
+    showNotificationModal.value = true
     return
   }
   
   // Validate end date is after start date
   if (new Date(mouData.endDate) <= new Date(mouData.startDate)) {
-    alert('End date must be after start date')
+    notificationMessage.value = 'End date must be after start date'
+    notificationType.value = 'warning'
+    showNotificationModal.value = true
     return
   }
   
   // Check if we have organization ID to associate with
   if (!state.editingOrgId) {
-    alert('Please save organization first before adding MOU')
+    notificationMessage.value = 'Please save organization first before adding MOU'
+    notificationType.value = 'warning'
+    showNotificationModal.value = true
     return
   }
 
@@ -949,7 +976,9 @@ const saveMOU = async () => {
     const result = await mouAPI.create(formDataToSend)
     
     console.log('MOU saved successfully:', result.data)
-    alert('MOU saved successfully!')
+    notificationMessage.value = 'MOU saved successfully!'
+    notificationType.value = 'success'
+    showNotificationModal.value = true
     
     // Reset MOU form
     mouData.mouFile = null
@@ -967,7 +996,9 @@ const saveMOU = async () => {
     console.error('Error saving MOU:', error)
     console.error('Error response:', error.response?.data)
     const errorMsg = error.response?.data?.message || 'Failed to save MOU'
-    alert(`Error: ${errorMsg}`)
+    notificationMessage.value = `Error: ${errorMsg}`
+    notificationType.value = 'error'
+    showNotificationModal.value = true
   } finally {
     state.loading = false
   }
@@ -1046,11 +1077,15 @@ const confirmDelete = async () => {
         allOrganizations.value.splice(index, 1)
       }
       
-      alert('Organization deleted successfully!')
+      notificationMessage.value = 'Organization deleted successfully!'
+      notificationType.value = 'success'
+      showNotificationModal.value = true
     } catch (error: any) {
       console.error('Delete error:', error)
       const errorMsg = error.response?.data?.message || 'Failed to delete organization'
-      alert(`Error: ${errorMsg}`)
+      notificationMessage.value = `Error: ${errorMsg}`
+      notificationType.value = 'error'
+      showNotificationModal.value = true
       state.error = errorMsg
     } finally {
       state.loading = false

@@ -146,12 +146,47 @@
         </div>
       </div>
     </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteModal" class="modal-overlay" @click="closeModals">
+      <div class="delete-confirmation-modal" @click.stop>
+        <h2 class="modal-title">Confirm Delete</h2>
+        <div class="form-divider"></div>
+        <p class="delete-message">Are you sure you want to delete "{{ deletingRoadshow?.title }}"?</p>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="closeModals">Cancel</button>
+          <button class="btn-delete" @click="deleteRoadshow">Delete</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteModal" class="modal-overlay" @click="closeModals">
+      <div class="delete-confirmation-modal" @click.stop>
+        <h2 class="modal-title">Confirm Delete</h2>
+        <div class="form-divider"></div>
+        <p class="delete-message">Are you sure you want to delete "{{ deletingRoadshow?.title }}"?</p>
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="closeModals">Cancel</button>
+          <button class="btn-delete" @click="deleteRoadshow">Delete</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Notification Modal -->
+    <NotificationModal 
+      :show="showNotificationModal"
+      :message="notificationMessage"
+      :type="notificationType"
+      @close="showNotificationModal = false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import AdminNavbar from '../components/AdminNavbar.vue'
+import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
 
 // Reactive state management
@@ -166,6 +201,11 @@ const state = reactive({
 // Modal states
 const showCreateModal = ref(false)
 const showEditModal = ref(false)
+const showDeleteModal = ref(false)
+const showNotificationModal = ref(false)
+const notificationMessage = ref('')
+const notificationType = ref<'success' | 'error' | 'warning'>('success')
+const deletingRoadshow = ref<any>(null)
 const editingRoadshowId = ref<string | null>(null)
 
 // Roadshow data array - will be populated from backend
@@ -221,15 +261,18 @@ const editRoadshow = (roadshow: any) => {
 }
 
 const confirmDeleteRoadshow = (roadshow: any) => {
-  if (confirm(`Are you sure you want to delete "${roadshow.title}"?`)) {
-    deleteRoadshow(roadshow.id)
-  }
+  deletingRoadshow.value = roadshow
+  showDeleteModal.value = true
 }
 
-const deleteRoadshow = async (roadshowId: string) => {
+const deleteRoadshow = async () => {
+  if (!deletingRoadshow.value) return
+  
   state.loading = true
+  showDeleteModal.value = false
+  
   try {
-    const response = await fetch(`http://localhost:5000/api/roadshows/${roadshowId}`, {
+    const response = await fetch(`http://localhost:5000/api/roadshows/${deletingRoadshow.value.id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -239,13 +282,14 @@ const deleteRoadshow = async (roadshowId: string) => {
     if (!response.ok) throw new Error('Failed to delete roadshow')
     
     // Remove from local array
-    roadshows.value = roadshows.value.filter(r => r.id !== roadshowId)
+    roadshows.value = roadshows.value.filter(r => r.id !== deletingRoadshow.value.id)
     
     // Adjust current page if needed
     if (roadshows.value.length > 0 && state.currentPage > totalPages.value) {
       state.currentPage = totalPages.value
     }
     
+    deletingRoadshow.value = null
     state.error = null
   } catch (error) {
     state.error = error.message || 'Failed to delete roadshow'
@@ -258,7 +302,9 @@ const deleteRoadshow = async (roadshowId: string) => {
 const closeModals = () => {
   showCreateModal.value = false
   showEditModal.value = false
+  showDeleteModal.value = false
   editingRoadshowId.value = null
+  deletingRoadshow.value = null
   resetForm()
 }
 
@@ -1234,6 +1280,46 @@ onBeforeUnmount(() => {
 .textarea-lg {
   min-height: 128px;
   resize: vertical;
+}
+
+/* Delete Confirmation Modal */
+.delete-confirmation-modal {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 500px;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.delete-message {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  color: #374151;
+  margin: 20px 0;
+  line-height: 1.5;
+}
+
+.btn-delete {
+  padding: 8px 20px;
+  background: #DC2626;
+  border: none;
+  border-radius: 20px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  color: #FFFFFF;
+  cursor: pointer;
+  width: 77px;
+  height: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.btn-delete:hover {
+  background: #B91C1C;
 }
 
 </style>
