@@ -122,8 +122,8 @@
         
         <!-- Table rows -->
         <div v-for="org in paginatedOrganizations" :key="org.id" class="table-row">
-          <!-- Status indicator -->
-          <div class="status-indicator" :class="org.status"></div>
+          <!-- Status indicator - Always visible -->
+          <div class="status-indicator" :class="{ 'active': org.status === 'active', 'inactive': org.status === 'inactive' }"></div>
           
           <!-- Organization name -->
           <div class="org-name">{{ org.name }}</div>
@@ -197,6 +197,11 @@
             
             <!-- Logo Upload -->
             <div class="logo-upload-section">
+              <!-- Logo Preview -->
+              <div v-if="logoPreviewUrl" class="logo-preview">
+                <img :src="logoPreviewUrl" alt="Logo Preview" />
+              </div>
+              
               <div class="upload-area">
                 <div class="upload-icon"></div>
                 <input type="file" @change="handleLogoUpload" accept="image/*" class="file-input" />
@@ -386,24 +391,30 @@
                 <input
                   type="file"
                   class="file-input"
-                  accept=".pdf,.doc,.docx"
+                  accept=".pdf,.doc,.docx,image/*"
                   @change="handleMOUUpload"
                 />
               </label>
               <span class="mou-label">MOU</span>
             </div>
 
-            <div class="mou-period-row">
-              <div class="form-group period-group wide">
-                <select v-model="mouData.period">
-                  <option value="">--Period--</option>
-                  <option value="6months">6 Months</option>
-                  <option value="1year">1 Year</option>
-                  <option value="2years">2 Years</option>
-                  <option value="3years">3 Years</option>
-                  <option value="5years">5 Years</option>
-                </select>
-                <div class="calendar-icon"></div>
+            <!-- MOU Document Preview -->
+            <div v-if="mouPreviewUrl" class="mou-document-preview">
+              <img v-if="mouData.mouFile?.type?.startsWith('image/')" :src="mouPreviewUrl" alt="MOU Preview" />
+              <div v-else class="document-placeholder">
+                <div class="doc-icon"></div>
+                <span>{{ mouData.mouFile?.name }}</span>
+              </div>
+            </div>
+
+            <div class="mou-date-row">
+              <div class="form-group date-group">
+                <label>Start Date *</label>
+                <input type="date" v-model="mouData.startDate" class="date-input" />
+              </div>
+              <div class="form-group date-group">
+                <label>End Date *</label>
+                <input type="date" v-model="mouData.endDate" class="date-input" />
               </div>
             </div>
 
@@ -450,6 +461,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount, reactive } from 'vue'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import Pagination from '../components/Pagination.vue'
+import { organizationAPI, mouAPI } from '../services/api'
 
 // Reactive state management
 const state = reactive({
@@ -466,6 +478,8 @@ const state = reactive({
 const searchText = ref('')
 const showDeleteModal = ref(false)
 const selectedOrganization = ref<any>(null)
+const logoPreviewUrl = ref<string | null>(null)
+const mouPreviewUrl = ref<string | null>(null)
 const dropdowns = ref({
   orgType: false,
   industryCat: false,
@@ -689,7 +703,8 @@ const reviewData = reactive({
 // MOU form data
 const mouData = reactive({
   mouFile: null as File | null,
-  period: '',
+  startDate: '',
+  endDate: '',
   publishMOU: false
 })
 
@@ -697,6 +712,18 @@ const mouData = reactive({
 const closeModal = () => {
   state.showAddModal = false
   resetForm()
+  
+  // Clean up logo preview URL
+  if (logoPreviewUrl.value) {
+    URL.revokeObjectURL(logoPreviewUrl.value)
+    logoPreviewUrl.value = null
+  }
+  
+  // Clean up MOU preview URL
+  if (mouPreviewUrl.value && mouPreviewUrl.value !== 'document') {
+    URL.revokeObjectURL(mouPreviewUrl.value)
+  }
+  mouPreviewUrl.value = null
 }
 
 const resetForm = () => {
@@ -718,7 +745,8 @@ const resetForm = () => {
   
   // Reset MOU data
   mouData.mouFile = null
-  mouData.period = ''
+  mouData.startDate = ''
+  mouData.endDate = ''
   mouData.publishMOU = false
 }
 
@@ -730,6 +758,7 @@ const saveOrganization = async () => {
   // Validate required fields
   if (!formData.organizationNameEN || !formData.organizationNameTH || !formData.email || !formData.organizationType) {
     state.error = 'Please fill in all required fields'
+    alert('Please fill in all required fields: Organization Name (EN/TH), Email, and Organization Type')
     return
   }
 
@@ -759,68 +788,60 @@ const saveOrganization = async () => {
     formDataToSend.append('email', formData.email)
     formDataToSend.append('phone_number', formData.phoneNumber)
     formDataToSend.append('details', formData.details)
-    formDataToSend.append('is_public', formData.isPublic)
+    formDataToSend.append('is_public', String(formData.isPublic))
 
     if (formData.logo) {
       formDataToSend.append('logo', formData.logo)
     }
 
-    const response = await fetch(
-      state.editingOrgId 
-        ? `http://localhost:5000/api/organizations/${state.editingOrgId}`
-        : 'http://localhost:5000/api/organizations',
-      {
-        method: state.editingOrgId ? 'PUT' : 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formDataToSend
-      }
-    )
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Backend validation error:', errorData)
-      console.error('Error details:', JSON.stringify(errorData, null, 2))
-      throw new Error(errorData.message || 'Failed to save organization')
-    }
-
-    const result = await response.json()
-    
+    let result
     if (state.editingOrgId) {
       // Update existing organization
-      const index = allOrganizations.value.findIndex(o => o.id === state.editingOrgId)
-      if (index !== -1) {
-        allOrganizations.value[index] = {
-          id: result.data._id,
-          status: result.data.is_public ? 'active' : 'inactive',
-          name: result.data.name_en || result.data.name_th || 'Unknown',
-          category: result.data.organization_type || 'individual',
-          province: result.data.province || 'Bangkok',
-          createdDate: result.data.created_at ? new Date(result.data.created_at).toISOString().split('T')[0] : 'N/A',
-          editedDate: result.data.updated_at ? new Date(result.data.updated_at).toISOString().split('T')[0] : 'N/A'
-        }
-      }
+      result = await organizationAPI.update(state.editingOrgId, formDataToSend)
     } else {
-      // Add new organization to list
-      allOrganizations.value.unshift({
-        id: result.data._id,
-        status: result.data.is_public ? 'active' : 'inactive',
-        name: result.data.name_en || result.data.name_th || 'Unknown',
-        category: result.data.organization_type || 'individual',
-        province: result.data.province || 'Bangkok',
-        createdDate: result.data.created_at ? new Date(result.data.created_at).toISOString().split('T')[0] : 'N/A',
-        editedDate: result.data.updated_at ? new Date(result.data.updated_at).toISOString().split('T')[0] : 'N/A'
-      })
+      // Create new organization
+      result = await organizationAPI.create(formDataToSend)
     }
 
+    // Refresh the organizations list after save
+    await fetchOrganizations()
+    
     state.error = null
+    state.editingOrgId = null
     closeModal()
-  } catch (error) {
-    state.error = error.message || 'Failed to save organization'
+    alert('Organization saved successfully!')
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to save organization'
+    state.error = errorMessage
     console.error('Save error:', error)
+    alert(`Error: ${errorMessage}`)
   } finally {
     state.loading = false
+  }
+}
+
+// Fetch organizations from backend
+const fetchOrganizations = async () => {
+  try {
+    const response = await organizationAPI.getAll({ limit: 100, public: 'false' })
+    allOrganizations.value = response.data.data.map((item: any) => {
+      const org = {
+        id: item._id,
+        status: item.is_public ? 'active' : 'inactive',
+        name: item.name_en || item.name_th || 'Unknown',
+        category: item.organization_type || 'individual',
+        province: item.province_id || 'N/A',
+        createdDate: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : 'N/A',
+        editedDate: item.updatedAt ? new Date(item.updatedAt).toISOString().split('T')[0] : 'N/A',
+        rawData: item // Keep full data for reference
+      }
+      console.log(`Org ${org.name}: is_public=${item.is_public}, status=${org.status}`)
+      return org
+    })
+    console.log('Organizations loaded:', allOrganizations.value.length, 'items')
+  } catch (error: any) {
+    state.error = error.response?.data?.message || 'Failed to load organizations'
+    console.error('Loading error:', error)
   }
 }
 
@@ -828,6 +849,12 @@ const handleLogoUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
     formData.logo = target.files[0]
+    
+    // Create preview URL
+    if (logoPreviewUrl.value) {
+      URL.revokeObjectURL(logoPreviewUrl.value)
+    }
+    logoPreviewUrl.value = URL.createObjectURL(target.files[0])
   }
 }
 
@@ -835,6 +862,18 @@ const handleMOUUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
     mouData.mouFile = target.files[0]
+    
+    // Create preview URL for images
+    if (mouPreviewUrl.value) {
+      URL.revokeObjectURL(mouPreviewUrl.value)
+    }
+    
+    if (target.files[0].type.startsWith('image/')) {
+      mouPreviewUrl.value = URL.createObjectURL(target.files[0])
+    } else {
+      // For non-image files, just set a flag
+      mouPreviewUrl.value = 'document'
+    }
   }
 }
 
@@ -848,10 +887,68 @@ const saveReview = () => {
   closeModal()
 }
 
-const saveMOU = () => {
-  console.log('Saving MOU:', mouData)
-  // Add MOU save logic here
-  closeModal()
+const saveMOU = async () => {
+  // Validate required fields
+  if (!mouData.mouFile || !mouData.startDate || !mouData.endDate) {
+    alert('Please upload MOU file and select start and end dates')
+    return
+  }
+  
+  // Validate end date is after start date
+  if (new Date(mouData.endDate) <= new Date(mouData.startDate)) {
+    alert('End date must be after start date')
+    return
+  }
+  
+  // Check if we have organization ID to associate with
+  if (!state.editingOrgId) {
+    alert('Please save organization first before adding MOU')
+    return
+  }
+
+  state.loading = true
+  try {
+    const formDataToSend = new FormData()
+    
+    // Get organization details for MOU
+    const orgResponse = await organizationAPI.getById(state.editingOrgId)
+    const orgData = orgResponse.data.data
+    
+    formDataToSend.append('organization_name', orgData.name_en || orgData.name_th || 'Unknown')
+    formDataToSend.append('organization_id', state.editingOrgId)
+    formDataToSend.append('start_date', mouData.startDate)
+    formDataToSend.append('end_date', mouData.endDate)
+    formDataToSend.append('status', mouData.publishMOU ? 'active' : 'inactive')
+    
+    if (mouData.mouFile) {
+      formDataToSend.append('mou', mouData.mouFile)
+    }
+
+    const result = await mouAPI.create(formDataToSend)
+    
+    console.log('MOU saved successfully:', result.data)
+    alert('MOU saved successfully!')
+    
+    // Reset MOU form
+    mouData.mouFile = null
+    mouData.startDate = ''
+    mouData.endDate = ''
+    mouData.publishMOU = false
+    
+    // Clear preview
+    if (mouPreviewUrl.value) {
+      URL.revokeObjectURL(mouPreviewUrl.value)
+      mouPreviewUrl.value = null
+    }
+    
+  } catch (error: any) {
+    console.error('Error saving MOU:', error)
+    console.error('Error response:', error.response?.data)
+    const errorMsg = error.response?.data?.message || 'Failed to save MOU'
+    alert(`Error: ${errorMsg}`)
+  } finally {
+    state.loading = false
+  }
 }
 
 const addOrganization = async () => {
@@ -860,16 +957,43 @@ const addOrganization = async () => {
 }
 
 const editOrganization = async (id: string | number) => {
-  const org = allOrganizations.value.find(o => o.id === id)
-  if (org) {
+  state.loading = true
+  try {
+    // Fetch full organization data from backend
+    const response = await organizationAPI.getById(id as string)
+    const orgData = response.data.data
+    
     // Pre-fill form with organization data
-    formData.organizationNameEN = org.name
-    formData.organizationNameTH = org.name
-    formData.organizationType = org.category
-    formData.email = ''
+    formData.organizationNameEN = orgData.name_en || ''
+    formData.organizationNameTH = orgData.name_th || ''
+    formData.addressEN = orgData.address_en || ''
+    formData.addressTH = orgData.address_th || ''
+    formData.organizationType = orgData.organization_type || ''
+    formData.industryCategory = orgData.industry_category_id || ''
+    formData.country = orgData.country_id || ''
+    formData.geography = orgData.geography_id || ''
+    formData.province = orgData.province_id || ''
+    formData.email = orgData.email || ''
+    formData.phoneNumber = orgData.phone_number || ''
+    formData.details = orgData.details || ''
+    formData.isPublic = orgData.is_public || false
+    formData.logo = null // Reset logo
+    
+    // Load existing logo if available
+    if (orgData.logo_path) {
+      logoPreviewUrl.value = `http://localhost:5000${orgData.logo_path}`
+    } else {
+      logoPreviewUrl.value = null
+    }
+    
     state.editingOrgId = id as string
     state.showAddModal = true
     state.activeTab = 'organization'
+  } catch (error: any) {
+    console.error('Error loading organization:', error)
+    state.error = error.response?.data?.message || 'Failed to load organization data'
+  } finally {
+    state.loading = false
   }
 }
 
@@ -924,39 +1048,12 @@ onMounted(async () => {
   state.loading = true
   
   try {
-    // Fetch organizations from backend
-    const response = await fetch('http://localhost:5000/api/organizations?limit=100')
-    if (!response.ok) throw new Error('Failed to load organizations')
-    
-    const result = await response.json()
-    allOrganizations.value = result.data.map((item: any) => ({
-      id: item._id,
-      status: item.is_active ? 'active' : 'inactive',
-      name: item.name_en || item.name_th || item.name || 'Unknown',
-      category: item.type || 'individual',
-      province: item.province || 'Bangkok',
-      createdDate: item.created_at ? new Date(item.created_at).toISOString().split('T')[0] : 'N/A',
-      editedDate: item.updated_at ? new Date(item.updated_at).toISOString().split('T')[0] : 'N/A'
-    }))
-    
-    console.log('Data loaded:', allOrganizations.value.length, 'organizations')
+    await fetchOrganizations()
     
     // Setup auto-refresh
     intervalId = window.setInterval(async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/organizations?limit=100')
-        if (res.ok) {
-          const data = await res.json()
-          allOrganizations.value = data.data.map((item: any) => ({
-            id: item._id,
-            status: item.is_active ? 'active' : 'inactive',
-            name: item.name_en || item.name_th || item.name || 'Unknown',
-            category: item.type || 'individual',
-            province: item.province || 'Bangkok',
-            createdDate: item.created_at ? new Date(item.created_at).toISOString().split('T')[0] : 'N/A',
-            editedDate: item.updated_at ? new Date(item.updated_at).toISOString().split('T')[0] : 'N/A'
-          }))
-        }
+        await fetchOrganizations()
       } catch (err) {
         console.error('Auto-refresh error:', err)
       }
@@ -1935,6 +2032,24 @@ onBeforeUnmount(() => {
   margin-bottom: 30px;
 }
 
+.logo-preview {
+  width: 95px;
+  height: 95px;
+  border-radius: 47.5px;
+  overflow: hidden;
+  background: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.logo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .upload-area {
   width: 58px;
   height: 58px;
@@ -2198,6 +2313,86 @@ onBeforeUnmount(() => {
   font-size: 16px;
   line-height: 19px;
   color: #000000;
+}
+
+.mou-document-preview {
+  margin: 20px 0;
+  padding: 15px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mou-document-preview img {
+  max-width: 100%;
+  max-height: 400px;
+  border-radius: 8px;
+  object-fit: contain;
+}
+
+.document-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 30px;
+  color: #666;
+}
+
+.doc-icon {
+  width: 48px;
+  height: 48px;
+  background: #AB1C03;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M14,17H7V15H14M17,13H7V11H17M17,9H7V7H17M19,3H5C3.89,3 3,3.89 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M19,19H5V8H19V19Z'/%3E%3C/svg%3E") no-repeat;
+  mask-size: contain;
+}
+
+.document-placeholder span {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  word-break: break-word;
+  max-width: 300px;
+}
+
+.mou-date-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.date-group {
+  flex: 1;
+}
+
+.date-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 14px;
+  color: #333333;
+}
+
+.date-input {
+  width: 100%;
+  height: 40px;
+  padding: 8px 12px;
+  background: #FFFFFF;
+  border: 1px solid #D0D0D0;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #333333;
+  cursor: pointer;
+}
+
+.date-input:focus {
+  outline: none;
+  border-color: #AB1C03;
 }
 
 .mou-period-row {

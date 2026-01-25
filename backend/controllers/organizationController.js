@@ -170,7 +170,8 @@ const createOrganization = async (req, res, next) => {
                 );
             }
 
-            req.body.logo_path = req.file.path;
+            // Normalize path for serving static files
+            req.body.logo_path = '/' + req.file.path.replace(/\\/g, '/')
         }
 
         // Add admin ID from authenticated user
@@ -232,7 +233,8 @@ const updateOrganization = async (req, res, next) => {
         }
 
         if (req.file) {
-            req.body.logo_path = req.file.path;
+            // Normalize path for serving static files
+            req.body.logo_path = '/' + req.file.path.replace(/\\/g, '/')
         }
 
         const organization = await Organization.findByIdAndUpdate(

@@ -11,7 +11,14 @@ const getMOUs = async (req, res, next) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        const filter = req.query.published !== 'false' ? { is_published: true } : {};
+        // Build filter based on published parameter
+        let filter = {};
+        if (req.query.published === 'true') {
+            filter.is_published = true;
+        } else if (req.query.published === 'false') {
+            filter.is_published = false;
+        }
+        // If published not specified or 'all', show all MOUs
 
         const mous = await MOU.find(filter)
             .populate('organization_id', 'name_en name_th logo_path')
@@ -110,11 +117,23 @@ const createMOU = async (req, res, next) => {
         // Check if MOU already exists for this organization
         const existingMOU = await MOU.findOne({ organization_id });
         if (existingMOU) {
-            throw new CustomError(
-                ERROR_CODES.CONFLICT_MOU_ALREADY_SIGNED,
-                'MOU already exists for this organization',
-                { organizationId: organization_id }
+            // Update existing MOU instead of throwing error
+            console.log('MOU already exists, updating instead:', existingMOU._id);
+
+            req.body.mou_file_path = req.file.path;
+            req.body.admin_id = req.user._id;
+
+            const updatedMOU = await MOU.findByIdAndUpdate(
+                existingMOU._id,
+                req.body,
+                { new: true, runValidators: true }
             );
+
+            return res.status(200).json({
+                success: true,
+                message: 'MOU updated successfully',
+                data: updatedMOU
+            });
         }
 
         req.body.mou_file_path = req.file.path;

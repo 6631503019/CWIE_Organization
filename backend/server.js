@@ -29,7 +29,21 @@ const app = express();
 
 // Security middleware
 app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            "frame-ancestors": ["'self'", "http://localhost:5173"],
+        },
+    },
+}));
+
+// CORS configuration - must be before rate limiter
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Rate limiting
@@ -43,12 +57,6 @@ const limiter = rateLimit({
     }
 });
 app.use('/api/', limiter);
-
-// CORS configuration
-app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true
-}));
 
 // Body parser middleware
 app.use(express.json({ limit: '10mb' }));

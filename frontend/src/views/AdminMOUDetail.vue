@@ -52,7 +52,7 @@
             
             <!-- Organization Info -->
             <div class="org-name">{{ mou.name }}</div>
-            <div class="org-status">{{ mou.status }}</div>
+            <div class="org-status" :class="{ 'active': mou.status === 'Active', 'inactive': mou.status === 'Inactive' }">{{ mou.status }}</div>
             <div class="org-duration">{{ mou.duration }}</div>
             
             <!-- Details Button -->
@@ -62,7 +62,7 @@
             </div>
             
             <!-- Edit Icon -->
-            <div class="edit-icon">
+            <div class="edit-icon" @click.stop="editMOU(mou)">
               <div class="pencil-icon"></div>
             </div>
           </div>
@@ -86,7 +86,19 @@
           
           <!-- MOU Document -->
           <div class="mou-document">
-            <img :src="mouDocumentImage" alt="MOU Document" />
+            <!-- PDF Document -->
+            <object v-if="mouDocumentImage && isMOUDocumentPDF" :data="mouDocumentImage" type="application/pdf" class="mou-pdf-viewer">
+              <p>PDF cannot be displayed. <a :href="mouDocumentImage" target="_blank">Click here to view</a></p>
+            </object>
+            
+            <!-- Image Document -->
+            <img v-else-if="mouDocumentImage && !isMOUDocumentPDF" :src="mouDocumentImage" alt="MOU Document" />
+            
+            <!-- Placeholder -->
+            <div v-else class="mou-placeholder">
+              <div class="placeholder-icon"></div>
+              <span class="placeholder-text">No MOU Document</span>
+            </div>
           </div>
           
           <!-- More Details Link -->
@@ -94,6 +106,18 @@
             More details
           </div>
         </div>
+      </div>
+      
+      <!-- Pagination Component -->
+      <div class="mou-pagination-wrapper">
+        <Pagination 
+          :current-page="state.currentPage"
+          :total-pages="totalPages"
+          :total-items="filteredMous.length"
+          :loading="state.loading"
+          :show-info="false"
+          @page-change="handlePageChange"
+        />
       </div>
       
       <!-- Additional MOU Cards (Bottom) -->
@@ -106,7 +130,7 @@
           
           <!-- Organization Info -->
           <div class="org-name">{{ mou.name }}</div>
-          <div class="org-status">{{ mou.status }}</div>
+          <div class="org-status" :class="{ 'active': mou.status === 'Active', 'inactive': mou.status === 'Inactive' }">{{ mou.status }}</div>
           <div class="org-duration">{{ mou.duration }}</div>
           
           <!-- Details Button -->
@@ -116,28 +140,20 @@
           </div>
           
           <!-- Edit Icon -->
-          <div class="edit-icon">
+          <div class="edit-icon" @click.stop="editMOU(mou)">
             <div class="pencil-icon"></div>
           </div>
         </div>
       </div>
-      
-      <!-- Pagination Component -->
-      <Pagination 
-        :currentPage="state.currentPage"
-        :totalPages="totalPages"
-        :totalItems="totalItems"
-        :loading="state.loading"
-        @page-change="handlePageChange"
-      /> 
-        :current-page="state.currentPage"
-        :total-pages="totalPages"
-        :total-items="filteredMous.length"
-        :loading="state.loading"
-        :show-info="false"
-        @page-change="handlePageChange"
-      />
     </div>
+    
+    <!-- Edit Modal -->
+    <OrganizationEditModal 
+      v-model="showEditModal"
+      :organization-id="editingOrgId"
+      :initial-tab="editingTab"
+      @saved="handleModalSaved"
+    />
   </div>
 </template>
 
@@ -146,6 +162,8 @@ import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import Pagination from '../components/Pagination.vue'
+import OrganizationEditModal from '../components/OrganizationEditModal.vue'
+import { organizationAPI, mouAPI } from '../services/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -165,8 +183,32 @@ const selectedStatus = ref('')
 const showStatusDropdown = ref(false)
 const mouDocumentImage = ref('/api/placeholder/291/408')
 
+// Modal state
+const showEditModal = ref(false)
+const editingOrgId = ref<string | null>(null)
+const editingTab = ref<'organization' | 'review' | 'mou'>('organization')
+
 // MOU data from backend
 const allMous = ref<any[]>([])
+
+// Computed for filtered MOUs
+const filteredMous = computed(() => {
+  let filtered = allMous.value
+  
+  if (searchText.value.trim()) {
+    const search = searchText.value.toLowerCase()
+    filtered = filtered.filter(mou => 
+      mou.name.toLowerCase().includes(search) ||
+      (mou.status && mou.status.toLowerCase().includes(search))
+    )
+  }
+  
+  if (selectedStatus.value && selectedStatus.value !== 'All') {
+    filtered = filtered.filter(mou => mou.status === selectedStatus.value)
+  }
+  
+  return filtered
+})
 
 // Computed properties for layout
 const leftColumnMous = computed(() => {
@@ -185,6 +227,13 @@ const selectedMou = computed(() => {
 // Pagination computed properties
 const totalPages = computed(() => Math.ceil(allMous.value.length / state.itemsPerPage))
 const totalItems = computed(() => allMous.value.length)
+
+// Check if MOU document is PDF
+const isMOUDocumentPDF = computed(() => {
+  if (!mouDocumentImage.value) return false
+  const url = mouDocumentImage.value.toLowerCase()
+  return url.endsWith('.pdf') || url.includes('.pdf')
+})
 
 // Methods
 const handlePageChange = async (page: number) => {
@@ -213,43 +262,128 @@ const closeDetail = () => {
 }
 
 const viewFullDetails = () => {
-  // Handle more details action
-  console.log('View full details for:', selectedMou.value?.name)
+  if (selectedMou.value) {
+    router.push(`/admin/mou/${selectedMou.value.id}/more`)
+  }
+}
+
+const editMOU = (mou: any) => {
+  // Open edit modal with organization data
+  editingOrgId.value = mou.id
+  editingTab.value = 'organization'
+  showEditModal.value = true
+}
+
+const handleModalSaved = async () => {
+  // Refresh data after save
+  await fetchOrganizations()
+  if (route.params.id) {
+    await fetchMOUDocument(route.params.id as string)
+  }
+}
+
+// Fetch Organizations data (for displaying org cards with logos)
+const fetchOrganizations = async () => {
+  try {
+    const response = await organizationAPI.getAll({ limit: 100, public: 'false' })
+    
+    // Get all MOUs to match with organizations (both published and not published)
+    const mouResponse = await mouAPI.getAll({ limit: 100 })
+    const mouMap = new Map()
+    mouResponse.data.data.forEach((mou: any) => {
+      const orgId = mou.organization_id?._id || mou.organization_id
+      mouMap.set(String(orgId), mou)
+    })
+    
+    allMous.value = response.data.data
+      .filter((item: any) => {
+        // Only show organizations that have MOU
+        const mou = mouMap.get(item._id)
+        return mou !== undefined
+      })
+      .map((item: any) => {
+        const mou = mouMap.get(item._id)
+        let durationText = 'N/A'
+        let statusText = 'Inactive'
+        
+        if (mou) {
+          // Check if MOU is published (handle both boolean and string)
+          statusText = (mou.is_published === true || mou.is_published === 'true' || mou.is_published === 1) ? 'Active' : 'Inactive'
+          
+          // Format dates if available
+          if (mou.start_date && mou.end_date) {
+            const startDate = new Date(mou.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            const endDate = new Date(mou.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            durationText = `Start: ${startDate} End: ${endDate}`
+          }
+        }
+        
+        console.log(`MOU for ${item.name_en}: is_published=${mou?.is_published}, status=${statusText}`)
+        
+        return {
+          id: item._id,
+          name: item.name_en || item.name_th || 'No Name',
+          status: statusText,
+          duration: durationText,
+          logo: item.logo_path ? `http://localhost:5000${item.logo_path}` : '/api/placeholder/95/95'
+        }
+      })
+    
+    console.log('Organizations loaded for MOU detail:', allMous.value.length, 'items')
+  } catch (error: any) {
+    state.error = error.response?.data?.message || 'Failed to load organizations'
+    console.error('Loading error:', error)
+    throw error
+  }
+}
+
+// Fetch MOU document for selected organization
+const fetchMOUDocument = async (orgId: string) => {
+  try {
+    console.log('Fetching MOU for organization ID:', orgId)
+    const response = await mouAPI.getAll({ limit: 100 })
+    console.log('All MOUs from backend:', response.data.data)
+    
+    // Try multiple matching strategies
+    const mou = response.data.data.find((item: any) => {
+      const mouOrgId = item.organization_id?._id || item.organization_id
+      console.log(`Comparing MOU org ID: ${mouOrgId} with target: ${orgId}`)
+      return String(mouOrgId) === String(orgId)
+    })
+    
+    console.log('Found MOU:', mou)
+    
+    if (mou && mou.mou_path) {
+      mouDocumentImage.value = `http://localhost:5000${mou.mou_path}`
+      console.log('MOU document URL set to:', mouDocumentImage.value)
+    } else {
+      console.log('No MOU found for this organization')
+      mouDocumentImage.value = ''
+    }
+  } catch (error) {
+    console.error('Error loading MOU document:', error)
+    mouDocumentImage.value = ''
+  }
 }
 
 onMounted(async () => {
-  console.log('AdminMOUDetail mounted')
+  console.log('AdminMOUDetail mounted for ID:', route.params.id)
   state.loading = true
   
   try {
-    // Fetch MOUs from backend
-    const response = await fetch('http://localhost:5000/api/mou?limit=100')
-    if (!response.ok) throw new Error('Failed to load MOUs')
+    await fetchOrganizations()
     
-    const result = await response.json()
-    allMous.value = result.data.map((item: any) => ({
-      id: item._id,
-      name: item.organization_name || item.name,
-      status: item.status || 'Active',
-      duration: `Start ${new Date(item.start_date).toISOString().split('T')[0]}\nEnd ${new Date(item.end_date).toISOString().split('T')[0]}`,
-      logo: item.logo_path || '/api/placeholder/95/95'
-    }))
-    
-    console.log('MOU detail data loaded for ID:', route.params.id)
+    // Fetch MOU document if we have organization ID
+    if (route.params.id) {
+      await fetchMOUDocument(route.params.id as string)
+    }
     
     // Setup refresh interval
     state.refreshInterval = window.setInterval(async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/mou?limit=100')
-        if (res.ok) {
-          const data = await res.json()
-          allMous.value = data.data.map((item: any) => ({
-            id: item._id,
-            name: item.organization_name || item.name,
-            status: item.status || 'Active',
-            duration: `Start ${new Date(item.start_date).toISOString().split('T')[0]}\nEnd ${new Date(item.end_date).toISOString().split('T')[0]}`,
-            logo: item.logo_path || '/api/placeholder/95/95'
-          }))
+        await fetchOrganizations()
+        if (route.params.id) {
+          await fetchMOUDocument(route.params.id as string)
         }
       } catch (err) {
         console.error('Auto-refresh error:', err)
@@ -257,8 +391,7 @@ onMounted(async () => {
     }, 60000) // Every minute
     
   } catch (error) {
-    state.error = 'Failed to load MOU details'
-    console.error('Loading error:', error)
+    // Error already handled in fetchOrganizations
   } finally {
     state.loading = false
   }
@@ -574,7 +707,6 @@ onBeforeUnmount(() => {
   line-height: 15px;
   text-align: center;
   color: #000000;
-  white-space: pre-line;
 }
 
 .mou-document {
@@ -583,6 +715,9 @@ onBeforeUnmount(() => {
   height: 408.61px;
   left: 114px;
   top: 260px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f0f0f0;
 }
 
 .mou-document img {
@@ -591,6 +726,40 @@ onBeforeUnmount(() => {
   object-fit: cover;
   border-radius: 8px;
   background: #f0f0f0;
+}
+
+.mou-pdf-viewer {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 8px;
+}
+
+.mou-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.placeholder-icon {
+  width: 60px;
+  height: 60px;
+  background: #d0d0d0;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z'/%3E%3C/svg%3E") no-repeat center;
+  mask-size: contain;
+}
+
+.placeholder-text {
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  color: #999;
+  text-align: center;
 }
 
 .more-details {
@@ -690,7 +859,15 @@ onBeforeUnmount(() => {
   font-weight: 600;
   font-size: 14px;
   line-height: 18px;
+  color: #767676;
+}
+
+.org-status.active {
   color: #00FF5E;
+}
+
+.org-status.inactive {
+  color: #FF0000;
 }
 
 .org-duration {
@@ -707,7 +884,6 @@ onBeforeUnmount(() => {
   line-height: 15px;
   text-align: center;
   color: #767676;
-  white-space: pre-line;
 }
 
 .details-section {
@@ -762,6 +938,15 @@ onBeforeUnmount(() => {
   top: 1193px;
   display: flex;
   gap: 64px;
+}
+
+/* Pagination Wrapper */
+.mou-pagination-wrapper {
+  position: absolute;
+  left: 453px;
+  top: 1090px;
+  width: 218px;
+  height: 28px;
 }
 
 /* MOU Detail Pagination Container */

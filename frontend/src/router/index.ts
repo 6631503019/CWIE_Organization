@@ -37,6 +37,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Admin - MOU Detail', requiresAuth: true, requiresAdmin: true }
     },
     {
+        path: '/admin/mou/:id/more',
+        name: 'AdminMOUMoreDetail',
+        component: () => import('../views/AdminMOUMoreDetail.vue'),
+        meta: { title: 'Admin - MOU More Detail', requiresAuth: true, requiresAdmin: true }
+    },
+    {
         path: '/admin/roadshow',
         name: 'AdminRoadshow',
         component: () => import('../views/AdminRoadshow.vue'),

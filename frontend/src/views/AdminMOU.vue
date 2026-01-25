@@ -55,7 +55,7 @@
           
           <!-- Organization Info -->
           <div class="org-name">{{ mou.name }}</div>
-          <div class="org-status">{{ mou.status }}</div>
+          <div class="org-status" :class="{ 'active': mou.status === 'Active', 'inactive': mou.status === 'Inactive' }">{{ mou.status }}</div>
           <div class="org-duration">{{ mou.duration }}</div>
           
           <!-- Details Button -->
@@ -65,7 +65,7 @@
           </div>
           
           <!-- Edit Icon -->
-          <div class="edit-icon">
+          <div class="edit-icon" @click="editMOU($event, mou)">
             <div class="pencil-icon"></div>
           </div>
         </div>
@@ -83,6 +83,14 @@
         />
       </div>
     </div>
+    
+    <!-- Edit Modal -->
+    <OrganizationEditModal 
+      v-model="showEditModal"
+      :organization-id="editingOrgId"
+      :initial-tab="editingTab"
+      @saved="handleModalSaved"
+    />
   </div>
 </template>
 
@@ -91,6 +99,8 @@ import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import Pagination from '../components/Pagination.vue'
+import OrganizationEditModal from '../components/OrganizationEditModal.vue'
+import { organizationAPI, mouAPI } from '../services/api'
 
 const router = useRouter()
 
@@ -108,7 +118,12 @@ const searchText = ref('')
 const selectedStatus = ref('')
 const showStatusDropdown = ref(false)
 
-// MOU data from backend
+// Modal state
+const showEditModal = ref(false)
+const editingOrgId = ref<string | null>(null)
+const editingTab = ref<'organization' | 'review' | 'mou'>('organization')
+
+// Organization data from backend (แสดงเป็น MOU cards)
 const mous = ref<any[]>([])
 
 // Computed properties for reactive filtering
@@ -178,49 +193,99 @@ const viewMouDetails = (mou: any) => {
   router.push(`/admin/mou/${mou.id}`)
 }
 
+const editMOU = (event: Event, mou: any) => {
+  event.stopPropagation() // Prevent card click
+  editingOrgId.value = mou.id
+  editingTab.value = 'organization'
+  showEditModal.value = true
+}
+
+const handleModalSaved = async () => {
+  // Refresh data after save
+  await fetchOrganizations()
+}
+
+// Fetch organizations data
+const fetchOrganizations = async () => {
+  try {
+    const response = await organizationAPI.getAll({ limit: 100 })
+    
+    // Get all MOUs (both published and not published)
+    const mouResponse = await mouAPI.getAll({ limit: 100 })
+    console.log('All MOUs:', mouResponse.data.data)
+    
+    // Create map of MOUs by organization_id
+    const mouMap = new Map()
+    mouResponse.data.data.forEach((mou: any) => {
+      const orgId = mou.organization_id?._id || mou.organization_id
+      console.log(`MOU organization_id: ${orgId}, is_published: ${mou.is_published}`)
+      mouMap.set(String(orgId), mou)
+    })
+    
+    console.log('MOU Map keys:', Array.from(mouMap.keys()))
+    console.log('Organization IDs:', response.data.data.map((o: any) => o._id))
+    
+    // Filter and map organizations that have MOUs
+    mous.value = response.data.data
+      .filter((item: any) => {
+        const hasMOU = mouMap.has(String(item._id))
+        console.log(`Org ${item.name_en} (${item._id}): has MOU = ${hasMOU}`)
+        return hasMOU
+      })
+      .map((item: any) => {
+        const mou = mouMap.get(String(item._id))
+        let durationText = 'N/A'
+        let statusText = 'Inactive'
+        
+        if (mou) {
+          // Check if MOU is published (handle both boolean and string)
+          statusText = (mou.is_published === true || mou.is_published === 'true' || mou.is_published === 1) ? 'Active' : 'Inactive'
+          
+          // Format dates if available
+          if (mou.start_date && mou.end_date) {
+            const startDate = new Date(mou.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            const endDate = new Date(mou.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            durationText = `Start: ${startDate} End: ${endDate}`
+          }
+        }
+        
+        console.log(`Final MOU for ${item.name_en}: is_published=${mou?.is_published}, status=${statusText}`)
+        
+        return {
+          id: item._id,
+          name: item.name_en || item.name_th || 'No Name',
+          status: statusText,
+          duration: durationText,
+          logo: item.logo_path ? `http://localhost:5000${item.logo_path}` : '/api/placeholder/95/95'
+        }
+      })
+    console.log('Organizations loaded:', mous.value.length, 'items')
+  } catch (error: any) {
+    state.error = error.response?.data?.message || 'Failed to load organizations'
+    console.error('Loading error:', error)
+    throw error
+  }
+}
+
 // Lifecycle hooks
 onMounted(async () => {
   console.log('AdminMOU mounted')
   state.loading = true
   
   try {
-    // Fetch MOUs from backend
-    const response = await fetch('http://localhost:5000/api/mou?limit=100')
-    if (!response.ok) throw new Error('Failed to load MOUs')
-    
-    const result = await response.json()
-    mous.value = result.data.map((item: any) => ({
-      id: item._id,
-      name: item.organization_name || item.name,
-      status: item.status || 'Active',
-      duration: `Start ${new Date(item.start_date).toISOString().split('T')[0]}\nEnd ${new Date(item.end_date).toISOString().split('T')[0]}`,
-      logo: item.logo_path || '/api/placeholder/95/95'
-    }))
-    
-    console.log('MOU data loaded:', mous.value.length, 'items')
+    await fetchOrganizations()
     
     // Setup auto-refresh
     state.autoRefreshInterval = window.setInterval(async () => {
       try {
-        const res = await fetch('http://localhost:5000/api/mou?limit=100')
-        if (res.ok) {
-          const data = await res.json()
-          mous.value = data.data.map((item: any) => ({
-            id: item._id,
-            name: item.organization_name || item.name,
-            status: item.status || 'Active',
-            duration: `Start ${new Date(item.start_date).toISOString().split('T')[0]}\nEnd ${new Date(item.end_date).toISOString().split('T')[0]}`,
-            logo: item.logo_path || '/api/placeholder/95/95'
-          }))
-        }
+        await fetchOrganizations()
       } catch (err) {
         console.error('Auto-refresh error:', err)
       }
     }, 30000) // Every 30 seconds
     
   } catch (error) {
-    state.error = 'Failed to load MOU data'
-    console.error('Loading error:', error)
+    // Error already handled in fetchOrganizations
   } finally {
     state.loading = false
   }
@@ -513,7 +578,15 @@ onBeforeUnmount(() => {
   font-weight: 600;
   font-size: 14px;
   line-height: 18px;
+  color: #767676;
+}
+
+.org-status.active {
   color: #00FF5E;
+}
+
+.org-status.inactive {
+  color: #FF0000;
 }
 
 .org-duration {
@@ -530,7 +603,6 @@ onBeforeUnmount(() => {
   line-height: 15px;
   text-align: center;
   color: #767676;
-  white-space: pre-line;
 }
 
 .details-section {
