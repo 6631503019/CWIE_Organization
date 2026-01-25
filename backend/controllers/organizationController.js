@@ -1,4 +1,5 @@
 const Organization = require('../models/Organization');
+const Notification = require('../models/Notification');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 
 // @desc    Get all organizations
@@ -142,7 +143,7 @@ const createOrganization = async (req, res, next) => {
         }
 
         // Validate organization type
-        const validTypes = ['government', 'private', 'ngo', 'education', 'other'];
+        const validTypes = ['MFU', 'private company', 'Government', 'Oversea'];
         if (!validTypes.includes(req.body.organization_type)) {
             throw new CustomError(
                 ERROR_CODES.VALIDATION_INVALID_TYPE,
@@ -178,6 +179,15 @@ const createOrganization = async (req, res, next) => {
         req.body.admin_id = req.user._id;
 
         const organization = await Organization.create(req.body);
+
+        // Create notification
+        await Notification.create({
+            requested_by: req.user._id,
+            requested_by_name: req.user.name,
+            action: 'Add',
+            establishment_name: organization.name_en || organization.name_th,
+            establishment_id: organization._id
+        });
 
         res.status(201).json({
             success: true,
@@ -218,7 +228,7 @@ const updateOrganization = async (req, res, next) => {
 
         // Validate organization type if provided
         if (req.body.organization_type) {
-            const validTypes = ['government', 'private', 'ngo', 'education', 'other'];
+            const validTypes = ['MFU', 'private company', 'Government', 'Oversea'];
             if (!validTypes.includes(req.body.organization_type)) {
                 throw new CustomError(
                     ERROR_CODES.VALIDATION_INVALID_TYPE,
@@ -243,6 +253,15 @@ const updateOrganization = async (req, res, next) => {
             { new: true, runValidators: true }
         );
 
+        // Create notification
+        await Notification.create({
+            requested_by: req.user._id,
+            requested_by_name: req.user.name,
+            action: 'Edit',
+            establishment_name: organization.name_en || organization.name_th,
+            establishment_id: organization._id
+        });
+
         res.status(200).json({
             success: true,
             message: 'Organization updated successfully',
@@ -263,6 +282,15 @@ const deleteOrganization = async (req, res, next) => {
         if (!organization) {
             throw createNotFoundError('organization', req.params.id);
         }
+
+        // Create notification before deleting
+        await Notification.create({
+            requested_by: req.user._id,
+            requested_by_name: req.user.name,
+            action: 'Delete',
+            establishment_name: organization.name_en || organization.name_th,
+            establishment_id: organization._id
+        });
 
         await Organization.findByIdAndDelete(req.params.id);
 

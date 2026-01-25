@@ -22,7 +22,7 @@ router.route('/')
     );
 
 router.route('/:id')
-    .get(getRoadshow)
+    .get(protect, getRoadshow)
     .put(protect, authorize('admin'),
         upload.fields([
             { name: 'poster', maxCount: 1 },

@@ -36,20 +36,20 @@
         <!-- Dropdowns grid -->
         <div class="dropdowns-grid">
           <!-- Organization Type dropdown -->
-          <div class="dropdown-container org-type">
+          <div class="dropdown-container org-type" :class="{ active: dropdowns.orgType }">
             <div class="dropdown-header" @click="toggleDropdown('orgType')">
               <span class="dropdown-text">--Organization Type--</span>
               <div class="dropdown-arrow"></div>
             </div>
             <div v-if="dropdowns.orgType" class="dropdown-options">
-              <div class="dropdown-option" v-for="option in orgTypeOptions" :key="option" @click="selectOption('orgType', option)">
-                {{ option }}
+              <div class="dropdown-option" v-for="option in orgTypeOptions" :key="option.value" @click="selectOption('orgType', option.value)">
+                {{ option.label }}
               </div>
             </div>
           </div>
           
           <!-- Industry Category dropdown -->
-          <div class="dropdown-container industry-cat">
+          <div class="dropdown-container industry-cat" :class="{ active: dropdowns.industryCat }">
             <div class="dropdown-header" @click="toggleDropdown('industryCat')">
               <span class="dropdown-text">--Industry Category--</span>
               <div class="dropdown-arrow"></div>
@@ -62,7 +62,7 @@
           </div>
           
           <!-- Country dropdown -->
-          <div class="dropdown-container country">
+          <div class="dropdown-container country" :class="{ active: dropdowns.country }">
             <div class="dropdown-header" @click="toggleDropdown('country')">
               <span class="dropdown-text">---Country---</span>
               <div class="dropdown-arrow"></div>
@@ -75,7 +75,7 @@
           </div>
           
           <!-- Geography dropdown -->
-          <div class="dropdown-container geography">
+          <div class="dropdown-container geography" :class="{ active: dropdowns.geography }">
             <div class="dropdown-header" @click="toggleDropdown('geography')">
               <span class="dropdown-text">--Geography--</span>
               <div class="dropdown-arrow"></div>
@@ -88,7 +88,7 @@
           </div>
           
           <!-- Province dropdown -->
-          <div class="dropdown-container province">
+          <div class="dropdown-container province" :class="{ active: dropdowns.province }">
             <div class="dropdown-header" @click="toggleDropdown('province')">
               <span class="dropdown-text">--Province--</span>
               <div class="dropdown-arrow"></div>
@@ -236,9 +236,8 @@
               <div class="form-group full-width">
                 <label>Organization Type*</label>
                 <div class="org-type-row-box">
-                  <div class="org-type-col" v-for="type in orgTypeOptions" :key="type" @click="formData.organizationType = type" :class="{ active: formData.organizationType === type }">
-                    <div class="org-type-name">{{ type }}</div>
-                    <div class="org-type-count">{{ organizationTypeCounts[type] }}</div>
+                  <div class="org-type-col" v-for="type in orgTypeOptions" :key="type.value" @click="formData.organizationType = type.value" :class="{ active: formData.organizationType === type.value }">
+                    <div class="org-type-name">{{ type.label }}</div>
                   </div>
                 </div>
               </div>
@@ -248,10 +247,23 @@
               <div class="form-group full-width">
                 <label>Industry Category*</label>
                 <select v-model="formData.industryCategory">
-                  <option value="">--Industry Category--</option>
-                  <option value="technology">Technology</option>
-                  <option value="education">Education</option>
-                  <option value="healthcare">Healthcare</option>
+                  <option value="">--Select Category--</option>
+                  <option value="School of Applied Digital Technology">School of Applied Digital Technology</option>
+                  <option value="Agriculture and Food Products">Agriculture and Food Products</option>
+                  <option value="Automotive and Transportation Equipment">Automotive and Transportation Equipment</option>
+                  <option value="Banking, Finance and Insurance">Banking, Finance and Insurance</option>
+                  <option value="Business Services">Business Services</option>
+                  <option value="Energy">Energy</option>
+                  <option value="Healthcare">Healthcare</option>
+                  <option value="Information and Communication Technology">Information and Communication Technology</option>
+                  <option value="Manufacturing and Industrial Products">Manufacturing and Industrial Products</option>
+                  <option value="Mining and Metal Products">Mining and Metal Products</option>
+                  <option value="Petrochemicals and Chemicals">Petrochemicals and Chemicals</option>
+                  <option value="Textile and Garments">Textile and Garments</option>
+                  <option value="Tourism and Hospitality">Tourism and Hospitality</option>
+                  <option value="Trading and Distribution">Trading and Distribution</option>
+                  <option value="Transportation and Logistics">Transportation and Logistics</option>
+                  <option value="Utilities">Utilities</option>
                 </select>
               </div>
             </div>
@@ -497,8 +509,13 @@ const selectedFilters = reactive({
   province: 'All'
 })
 
-// Dropdown options
-const orgTypeOptions = ['private company', 'Government', 'Oversea', 'MFU']
+// Dropdown options - match backend values
+const orgTypeOptions = [
+  { value: 'private company', label: 'Private Company' },
+  { value: 'Government', label: 'Government' },
+  { value: 'Oversea', label: 'Oversea' },
+  { value: 'MFU', label: 'MFU' }
+]
 const industryCatOptions = [
   'All', 
   'School of Applied Digital Technology',
@@ -771,6 +788,9 @@ const saveOrganization = async () => {
     formDataToSend.append('address_th', formData.addressTH)
     formDataToSend.append('organization_type', formData.organizationType)
     
+    // Debug log
+    console.log('Saving organization with type:', formData.organizationType)
+    
     // Only append optional IDs if they have values
     if (formData.industryCategory) {
       formDataToSend.append('industry_category_id', formData.industryCategory)
@@ -814,6 +834,8 @@ const saveOrganization = async () => {
     const errorMessage = error.response?.data?.message || error.message || 'Failed to save organization'
     state.error = errorMessage
     console.error('Save error:', error)
+    console.error('Error response data:', error.response?.data)
+    console.error('Error details:', JSON.stringify(error.response?.data, null, 2))
     alert(`Error: ${errorMessage}`)
   } finally {
     state.loading = false
@@ -1014,16 +1036,22 @@ const confirmDelete = async () => {
   if (selectedOrganization.value) {
     state.loading = true
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Call API to delete organization using rawData._id
+      const orgId = selectedOrganization.value.rawData?._id || selectedOrganization.value.id
+      await organizationAPI.delete(orgId)
       
-      // Remove from array
+      // Remove from local array after successful deletion
       const index = allOrganizations.value.findIndex(org => org.id === selectedOrganization.value.id)
       if (index > -1) {
         allOrganizations.value.splice(index, 1)
       }
-    } catch (error) {
-      state.error = 'Failed to delete organization'
+      
+      alert('Organization deleted successfully!')
+    } catch (error: any) {
+      console.error('Delete error:', error)
+      const errorMsg = error.response?.data?.message || 'Failed to delete organization'
+      alert(`Error: ${errorMsg}`)
+      state.error = errorMsg
     } finally {
       state.loading = false
       showDeleteModal.value = false
@@ -1189,8 +1217,12 @@ onBeforeUnmount(() => {
 /* Dropdown containers */
 .dropdown-container {
   position: relative;
-  z-index: 10;
+  z-index: 1;
   margin-bottom: 15px;
+}
+
+.dropdown-container.active {
+  z-index: 9999;
 }
 
 .dropdowns-grid {
@@ -1253,30 +1285,34 @@ onBeforeUnmount(() => {
   border-radius: 0 0 8px 8px;
   max-height: 200px;
   overflow-y: auto;
-  z-index: 20;
+  z-index: 9999;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .dropdown-option {
   display: flex;
   align-items: center;
-  padding: 10px;
-  height: 30px;
-  font-family: 'Inter';
+  padding: 8px 12px;
+  min-height: 32px;
+  font-family: 'Inter', sans-serif;
   font-style: normal;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 14px;
-  line-height: 17px;
+  line-height: 20px;
   color: #000000;
   cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.15s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dropdown-option:hover {
-  background: #f8f8f8;
+  background: #F3F4F6;
 }
 
 .dropdown-option:last-child {
-  border-bottom: none;
+  border-radius: 0 0 8px 8px;
 }
 
 /* Filter buttons */

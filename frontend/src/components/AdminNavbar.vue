@@ -49,12 +49,20 @@
     <div class="profile-separator"></div>
 
     <!-- Profile Avatar -->
-    <div class="profile-avatar">
+    <div class="profile-avatar" @click="toggleProfileMenu">
       <i class="pi pi-user"></i>
     </div>
 
     <!-- Profile Name -->
-    <span class="profile-name">{{ authStore.user?.name || 'Thiwakorn Boayair...' }}</span>
+    <span class="profile-name" @click="toggleProfileMenu">{{ authStore.user?.name || 'Thiwakorn Boayair...' }}</span>
+    
+    <!-- Logout Popup -->
+    <div v-if="showProfileMenu" class="logout-popup">
+      <div class="logout-option" @click="handleLogout">
+        <i class="pi pi-sign-out"></i>
+        <span>Logout</span>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -69,6 +77,9 @@ const route = useRoute()
 
 // Force reactivity with ref
 const forceUpdate = ref(0)
+
+// Profile menu state
+const showProfileMenu = ref(false)
 
 // Current route detection using Vue Router
 const currentRoute = computed(() => {
@@ -112,6 +123,19 @@ const navigateTo = (path: string) => {
   console.log('Navigating to:', path)
   // Use Vue Router for navigation
   router.push(path)
+}
+
+const toggleProfileMenu = () => {
+  showProfileMenu.value = !showProfileMenu.value
+}
+
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+    router.push('/login')
+  } catch (error) {
+    console.error('Logout error:', error)
+  }
 }
 </script>
 
@@ -257,6 +281,7 @@ const navigateTo = (path: string) => {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 .profile-avatar .pi {
@@ -275,6 +300,45 @@ const navigateTo = (path: string) => {
   font-weight: 600;
   font-size: 14px;
   line-height: 18px;
+  color: #000000;
+  cursor: pointer;
+}
+
+/* Logout Popup */
+.logout-popup {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 60px;
+  background: #FFFFFF;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+}
+
+.logout-option {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.logout-option:hover {
+  background: #F6F7F8;
+}
+
+.logout-option i {
+  font-size: 16px;
+  color: #C70000;
+}
+
+.logout-option span {
+  font-family: 'Outfit';
+  font-size: 14px;
+  font-weight: 600;
   color: #000000;
 }
 

@@ -80,8 +80,8 @@ export const useAuthStore = defineStore('auth', {
                 const data = await response.json()
 
                 if (data.success) {
-                    this.user = data.data.user
-                    this.token = data.data.token
+                    this.user = data.data
+                    this.token = data.token
 
                     // Store in localStorage for persistence
                     localStorage.setItem('auth_token', this.token!)
@@ -167,13 +167,18 @@ export const useAuthStore = defineStore('auth', {
             const token = localStorage.getItem('auth_token')
             const userStr = localStorage.getItem('auth_user')
 
-            if (token && userStr) {
+            if (token && userStr && userStr !== 'undefined') {
                 try {
                     this.token = token
                     this.user = JSON.parse(userStr)
                 } catch (error) {
                     console.error('Failed to parse stored user data:', error)
-                    this.logout()
+                    // Clear invalid data
+                    localStorage.removeItem('auth_token')
+                    localStorage.removeItem('auth_user')
+                    localStorage.removeItem('token')
+                    this.user = null
+                    this.token = null
                 }
             }
         }

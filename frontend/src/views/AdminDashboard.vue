@@ -86,76 +86,35 @@
         
         <!-- Requested By Column -->
         <div class="requested-by-column">
-          <div class="requested-by-item">Tew Hon...</div>
-          <div class="requested-by-item">Tew Hon...</div>
-          <div class="requested-by-item grayed">Nacha C...</div>
-          <div class="requested-by-item grayed">Vittaya...</div>
-          <div class="requested-by-item">Nacha Ch...</div>
-          <div class="requested-by-item">Tew Hon...</div>
-          <div class="requested-by-item">Vittaya...</div>
-          <div class="requested-by-item grayed">Tew Hon...</div>
-          <div class="requested-by-item grayed">Nacha C...</div>
-          <div class="requested-by-item">Nacha C...</div>
-          <div class="requested-by-item grayed">Nacha Ch...</div>
+          <div v-for="(notif, index) in notifications" :key="notif._id" class="requested-by-item" :class="{ grayed: notif.is_read }">
+            {{ notif.requested_by_name?.substring(0, 10) || 'Unknown' }}{{ notif.requested_by_name?.length > 10 ? '...' : '' }}
+          </div>
         </div>
         
         <!-- Annotation Column -->
         <div class="annotation-column">
-          <div class="annotation-item">Add</div>
-          <div class="annotation-item">Add</div>
-          <div class="annotation-item grayed">Add</div>
-          <div class="annotation-item grayed">Blacklist</div>
-          <div class="annotation-item">Add</div>
-          <div class="annotation-item">Add</div>
-          <div class="annotation-item">Add</div>
-          <div class="annotation-item grayed">Add</div>
-          <div class="annotation-item grayed">Blacklist</div>
-          <div class="annotation-item">Add</div>
-          <div class="annotation-item grayed">Add</div>
+          <div v-for="(notif, index) in notifications" :key="notif._id" class="annotation-item" :class="{ grayed: notif.is_read }">
+            {{ notif.action }}
+          </div>
         </div>
         
         <!-- Establishment Column -->
         <div class="establishment-column">
-          <div class="establishment-item">Prezon technology company limited</div>
-          <div class="establishment-item">MFU</div>
-          <div class="establishment-item grayed">Back End Developer (Node.js + Express)</div>
-          <div class="establishment-item grayed">บริษัท ทีวีดี โฮลดิ้งส์ จำกัด(มหาชน)</div>
-          <div class="establishment-item">Prezon technology company limited</div>
-          <div class="establishment-item">SUNSU</div>
-          <div class="establishment-item">MFU</div>
-          <div class="establishment-item grayed">Back End Developer (Node.js + Express)</div>
-          <div class="establishment-item">TVD Holdings Public Company</div>
-          <div class="establishment-item">Prezon technology company limited</div>
-          <div class="establishment-item grayed">SUNSU</div>
+          <div v-for="(notif, index) in notifications" :key="notif._id" class="establishment-item" :class="{ grayed: notif.is_read }">
+            {{ notif.establishment_name }}
+          </div>
         </div>
         
         <!-- Date Column -->
         <div class="date-column">
-          <div class="date-item">2025-10-23</div>
-          <div class="date-item">2025-10-23</div>
-          <div class="date-item grayed">2025-10-23</div>
-          <div class="date-item grayed">2025-10-23</div>
-          <div class="date-item">2025-10-23</div>
-          <div class="date-item">2025-10-23</div>
-          <div class="date-item">2025-10-23</div>
-          <div class="date-item grayed">2025-10-23</div>
-          <div class="date-item grayed">2025-10-23</div>
-          <div class="date-item">2025-10-23</div>
-          <div class="date-item grayed">2025-10-23</div>
+          <div v-for="(notif, index) in notifications" :key="notif._id" class="date-item" :class="{ grayed: notif.is_read }" :style="{ top: (index * 45.83) + 'px' }">
+            {{ new Date(notif.date).toISOString().split('T')[0] }}
+          </div>
         </div>
         
         <!-- Delete Icons -->
         <div class="delete-icons">
-          <i class="pi pi-trash delete-icon" style="top: 62.33px;"></i>
-          <i class="pi pi-trash delete-icon" style="top: 106.33px;"></i>
-          <i class="pi pi-trash delete-icon" style="top: 149.42px;"></i>
-          <i class="pi pi-trash delete-icon" style="top: 196.17px;"></i>
-          <i class="pi pi-trash delete-icon" style="top: 245.67px;"></i>
-          <i class="pi pi-trash delete-icon" style="top: 290.58px;"></i>
-          <i class="pi pi-trash delete-icon" style="top: 334.58px;"></i>
-          <i class="pi pi-trash delete-icon" style="top: 379.5px;"></i>
-          <i class="pi pi-trash delete-icon" style="top: 429px;"></i>
-          <i class="pi pi-trash delete-icon" style="top: 472.08px;"></i>
+          <i v-for="(notif, index) in notifications" :key="notif._id" class="pi pi-trash delete-icon" :style="{ top: (62.33 + index * 44) + 'px' }" @click="deleteNotification(notif._id)"></i>
         </div>
       </div>
     </div>
@@ -163,9 +122,9 @@
     <!-- Pagination Component -->
     <div class="dashboard-pagination-container">
       <Pagination 
-        :currentPage="1"
-        :totalPages="2"
-        :totalItems="11"
+        :currentPage="notificationPage"
+        :totalPages="Math.ceil(notificationTotal / 11)"
+        :totalItems="notificationTotal"
         :showInfo="false"
         @page-change="goToPage"
       />
@@ -214,8 +173,8 @@ watch(() => authStore.isAdmin, (isAdmin) => {
 const refreshStats = async () => {
   state.loading = true
   try {
-    // Fetch organization statistics
-    const orgResponse = await fetch('http://localhost:5000/api/organizations?limit=1000')
+    // Fetch organization statistics - include both public and private
+    const orgResponse = await fetch('http://localhost:5000/api/organizations?limit=1000&public=false')
     if (!orgResponse.ok) throw new Error('Failed to load organizations')
     
     const orgData = await orgResponse.json()
@@ -230,11 +189,11 @@ const refreshStats = async () => {
     }
     
     orgs.forEach((org: any) => {
-      const type = org.type?.toLowerCase() || 'private'
-      if (type === 'government') counts.government++
-      else if (type === 'overseas') counts.overseas++
-      else if (type === 'mfu') counts.mfu++
-      else counts.private++
+      const type = org.organization_type || 'private company'
+      if (type === 'Government') counts.government++
+      else if (type === 'Oversea') counts.overseas++
+      else if (type === 'MFU') counts.mfu++
+      else if (type === 'private company') counts.private++
     })
     
     // Fetch roadshow count
@@ -272,9 +231,13 @@ onMounted(async () => {
   
   // Initial data load
   await refreshStats()
+  await fetchNotifications()
   
   // Setup auto-refresh every 5 minutes
-  state.refreshInterval = window.setInterval(refreshStats, 5 * 60 * 1000)
+  state.refreshInterval = window.setInterval(() => {
+    refreshStats()
+    fetchNotifications()
+  }, 5 * 60 * 1000)
 })
 
 onBeforeUnmount(() => {
@@ -285,86 +248,56 @@ onBeforeUnmount(() => {
 })
 
 // Sample notification data
-const notifications = ref([
-  {
-    requestedBy: "Tew Hon...",
-    annotation: "Add",
-    establishment: "Prezon technology company limited",
-    date: "2025-10-23",
-    highlighted: false
-  },
-  {
-    requestedBy: "Tew Hon...",
-    annotation: "Add",
-    establishment: "MFU",
-    date: "2025-10-23",
-    highlighted: false
-  },
-  {
-    requestedBy: "Nacha C...",
-    annotation: "Add",
-    establishment: "Back End Developer (Node.js + Express)",
-    date: "2025-10-23",
-    highlighted: true
-  },
-  {
-    requestedBy: "Vittaya...",
-    annotation: "Blacklist",
-    establishment: "บริษัท ทีวีดี โฮลดิ้งส์ จำกัด(มหาชน)",
-    date: "2025-10-23",
-    highlighted: true
-  },
-  {
-    requestedBy: "Nacha Ch...",
-    annotation: "Add",
-    establishment: "Prezon technology company limited",
-    date: "2025-10-23",
-    highlighted: false
-  },
-  {
-    requestedBy: "Tew Hon...",
-    annotation: "Add",
-    establishment: "SUNSU",
-    date: "2025-10-23",
-    highlighted: false
-  },
-  {
-    requestedBy: "Vittaya...",
-    annotation: "Add",
-    establishment: "MFU",
-    date: "2025-10-23",
-    highlighted: false
-  },
-  {
-    requestedBy: "Tew Hon...",
-    annotation: "Add",
-    establishment: "Back End Developer (Node.js + Express)",
-    date: "2025-10-23",
-    highlighted: true
-  },
-  {
-    requestedBy: "Nacha C...",
-    annotation: "Blacklist",
-    establishment: "TVD Holdings Public Company",
-    date: "2025-10-23",
-    highlighted: true
-  },
-  {
-    requestedBy: "Nacha C...",
-    annotation: "Add",
-    establishment: "Prezon technology company limited",
-    date: "2025-10-23",
-    highlighted: false
-  }
-])
+const notifications = ref<any[]>([])
+const notificationPage = ref(1)
+const notificationTotal = ref(0)
 
-const deleteNotification = (index: number) => {
-  notifications.value.splice(index, 1)
+// Fetch notifications from backend
+const fetchNotifications = async () => {
+  try {
+    const token = localStorage.getItem('auth_token')
+    if (!token) return
+    
+    const response = await fetch('http://localhost:5000/api/notifications?limit=11&page=' + notificationPage.value, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (!response.ok) throw new Error('Failed to load notifications')
+    
+    const data = await response.json()
+    notifications.value = data.data || []
+    notificationTotal.value = data.pagination?.total || 0
+  } catch (error) {
+    console.error('Failed to load notifications:', error)
+  }
+}
+
+const deleteNotification = async (id: string) => {
+  try {
+    const token = localStorage.getItem('auth_token')
+    if (!token) return
+    
+    const response = await fetch(`http://localhost:5000/api/notifications/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (!response.ok) throw new Error('Failed to delete notification')
+    
+    // Refresh notifications after delete
+    await fetchNotifications()
+  } catch (error) {
+    console.error('Delete notification error:', error)
+  }
 }
 
 const goToPage = (page: number) => {
-  // Implement pagination logic
-  console.log('Navigate to page:', page)
+  notificationPage.value = page
+  fetchNotifications()
 }
 </script>
 

@@ -22,7 +22,7 @@ const organizationSchema = new mongoose.Schema({
     organization_type: {
         type: String,
         required: [true, 'Organization type is required'],
-        enum: ['government', 'private', 'ngo', 'education', 'other']
+        enum: ['MFU', 'private company', 'Government', 'Oversea']
     },
     industry_category_id: {
         type: String

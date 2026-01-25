@@ -14,6 +14,7 @@ require('./models/Roadshow');
 require('./models/MOU');
 require('./models/Country');
 require('./models/IndustryCategory');
+require('./models/Notification');
 
 // Import routes
 const organizationRoutes = require('./routes/organizationRoutes');
@@ -21,6 +22,7 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const mouRoutes = require('./routes/mouRoutes');
 const roadshowRoutes = require('./routes/roadshowRoutes');
 const authRoutes = require('./routes/authRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Import middleware
 const { errorHandler, notFound } = require('./middleware/errorHandler');
@@ -49,7 +51,7 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: 1000, // limit each IP to 1000 requests per windowMs (increased for development)
     message: {
         success: false,
         message: 'Too many requests from this IP, please try again later',
@@ -109,6 +111,7 @@ app.use('/api/organizations', organizationRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/mou', mouRoutes);
 app.use('/api/roadshows', roadshowRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

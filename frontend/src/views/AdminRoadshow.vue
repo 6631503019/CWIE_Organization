@@ -23,10 +23,15 @@
         v-for="roadshow in paginatedRoadshows" 
         :key="roadshow.id" 
         class="roadshow-large-card"
+        @click="$router.push(`/admin/roadshow/${roadshow.id}`)"
       >
         <!-- Roadshow Image -->
         <div class="roadshow-image-large">
-          <img :src="roadshow.image" :alt="roadshow.title" />
+          <img 
+            :src="roadshow.image" 
+            :alt="roadshow.title"
+            @error="(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/271x272?text=No+Image'"
+          />
         </div>
         
         <!-- Roadshow Content -->
@@ -36,7 +41,7 @@
         </div>
         
         <!-- Edit Icon -->
-        <div class="edit-icon-large" @click="editRoadshow(roadshow)">
+        <div class="edit-icon-large" @click.stop="editRoadshow(roadshow)">
           <div class="pencil-icon-large"></div>
         </div>
       </div>
@@ -238,7 +243,7 @@ const submitForm = async () => {
     formDataToSend.append('topic', formData.topic)
     formDataToSend.append('details', formData.details)
     formDataToSend.append('event_date', formData.date)
-    formDataToSend.append('is_public', formData.isPublic)
+    formDataToSend.append('is_public', String(formData.isPublic))
 
     if (formData.pictureFile) {
       formDataToSend.append('activity_image', formData.pictureFile)
@@ -252,7 +257,7 @@ const submitForm = async () => {
       const response = await fetch('http://localhost:5000/api/roadshows', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         },
         body: formDataToSend
       })
@@ -264,7 +269,7 @@ const submitForm = async () => {
         id: result.data._id,
         title: result.data.topic,
         description: result.data.details,
-        image: result.data.activity_image_path || '/api/placeholder/271/272',
+        image: result.data.poster_path ? `http://localhost:5000/${result.data.poster_path.replace(/\\/g, '/')}` : 'https://via.placeholder.com/271x272?text=No+Image',
         createdDate: new Date(result.data.event_date).toISOString().split('T')[0]
       })
     } else if (showEditModal.value && editingRoadshowId.value) {
@@ -272,7 +277,7 @@ const submitForm = async () => {
       const response = await fetch(`http://localhost:5000/api/roadshows/${editingRoadshowId.value}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         },
         body: formDataToSend
       })
@@ -286,7 +291,7 @@ const submitForm = async () => {
           id: result.data._id,
           title: result.data.topic,
           description: result.data.details,
-          image: result.data.activity_image_path || '/api/placeholder/271/272',
+          image: result.data.poster_path ? `http://localhost:5000/${result.data.poster_path.replace(/\\/g, '/')}` : 'https://via.placeholder.com/271x272?text=No+Image',
           createdDate: new Date(result.data.event_date).toISOString().split('T')[0]
         }
       }
@@ -308,7 +313,7 @@ onMounted(async () => {
   
   try {
     // Fetch roadshows from backend
-    const response = await fetch('http://localhost:5000/api/roadshows?limit=100')
+    const response = await fetch('http://localhost:5000/api/roadshows?limit=100&public=false')
     if (!response.ok) throw new Error('Failed to load roadshows')
     
     const result = await response.json()
@@ -316,7 +321,7 @@ onMounted(async () => {
       id: item._id,
       title: item.topic,
       description: item.details,
-      image: item.activity_image_path || '/api/placeholder/271/272',
+      image: item.poster_path ? `http://localhost:5000/${item.poster_path.replace(/\\/g, '/')}` : 'https://via.placeholder.com/271x272?text=No+Image',
       createdDate: new Date(item.event_date).toISOString().split('T')[0]
     }))
     
@@ -326,14 +331,14 @@ onMounted(async () => {
     state.autoRefreshInterval = window.setInterval(async () => {
       console.log('Auto-refresh roadshows...')
       try {
-        const res = await fetch('http://localhost:5000/api/roadshows?limit=100')
+        const res = await fetch('http://localhost:5000/api/roadshows?limit=100&public=false')
         if (res.ok) {
           const data = await res.json()
           roadshows.value = data.data.map((item: any) => ({
             id: item._id,
             title: item.topic,
             description: item.details,
-            image: item.activity_image_path || '/api/placeholder/271/272',
+            image: item.poster_path ? `http://localhost:5000/${item.poster_path.replace(/\\/g, '/')}` : 'https://via.placeholder.com/271x272?text=No+Image',
             createdDate: new Date(item.event_date).toISOString().split('T')[0]
           }))
         }
@@ -644,6 +649,13 @@ onBeforeUnmount(() => {
   
   display: flex;
   overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.roadshow-large-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.15);
 }
 
 /* Large Roadshow Image */

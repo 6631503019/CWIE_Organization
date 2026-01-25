@@ -100,9 +100,11 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 
-// Router
+// Router and auth store
 const router = useRouter()
+const authStore = useAuthStore()
 
 // Form state
 const email = ref('')
@@ -129,45 +131,29 @@ const handleLogin = async () => {
   try {
     isLoading.value = true
     
-    // Call backend login API
-    const response = await fetch('http://localhost:5000/api/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        email: email.value,
-        password: password.value
-      })
+    // Use auth store to handle login
+    const loginResult = await authStore.login({
+      email: email.value,
+      password: password.value
     })
 
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Login failed')
-    }
-
-    if (data.success && data.token) {
-      // Store token and user info
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('auth_user', JSON.stringify(data.data))
-
+    if (loginResult.success) {
       // Clear form
       email.value = ''
       password.value = ''
 
       // Redirect based on user role
-      if (data.data.role === 'admin') {
+      if (authStore.isAdmin) {
         await router.push('/admin/dashboard')
       } else {
         error.value = 'Access restricted to admin users only'
       }
     } else {
-      error.value = data.message || 'Login failed'
+      error.value = loginResult.message || 'Login failed'
     }
   } catch (err) {
     console.error('Login error:', err)
-    error.value = err.message || 'Login failed. Please try again.'
+    error.value = err instanceof Error ? err.message : 'Login failed. Please try again.'
   } finally {
     isLoading.value = false
   }

@@ -49,6 +49,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Admin - Roadshow Management', requiresAuth: true, requiresAdmin: true }
     },
     {
+        path: '/admin/roadshow/:id',
+        name: 'AdminRoadshowDetail',
+        component: () => import('../views/AdminRoadshowDetail.vue'),
+        meta: { title: 'Admin - Roadshow Detail', requiresAuth: true, requiresAdmin: true }
+    },
+    {
         path: '/:pathMatch(.*)*',
         name: 'NotFound',
         component: () => import('../views/NotFound.vue'),

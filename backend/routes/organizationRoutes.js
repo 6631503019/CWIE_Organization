@@ -16,7 +16,7 @@ router.route('/')
     .post(protect, authorize('admin'), upload.single('logo'), createOrganization);
 
 router.route('/:id')
-    .get(getOrganization)
+    .get(protect, getOrganization)
     .put(protect, authorize('admin'), upload.single('logo'), updateOrganization)
     .delete(protect, authorize('admin'), deleteOrganization);
 
