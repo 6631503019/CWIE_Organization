@@ -1,4 +1,5 @@
 const Roadshow = require('../models/Roadshow');
+const Notification = require('../models/Notification');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 
 // @desc    Get all roadshows
@@ -119,6 +120,16 @@ const createRoadshow = async (req, res, next) => {
 
         const roadshow = await Roadshow.create(req.body);
 
+        // Create notification
+        await Notification.create({
+            requested_by: req.user._id,
+            requested_by_name: req.user.name,
+            action: 'Add',
+            establishment_name: roadshow.topic,
+            establishment_id: roadshow._id,
+            establishment_type: 'Roadshow'
+        });
+
         res.status(201).json({
             success: true,
             message: 'Roadshow created successfully',
@@ -167,6 +178,16 @@ const updateRoadshow = async (req, res, next) => {
             { new: true, runValidators: true }
         );
 
+        // Create notification
+        await Notification.create({
+            requested_by: req.user._id,
+            requested_by_name: req.user.name,
+            action: 'Edit',
+            establishment_name: updatedRoadshow.topic,
+            establishment_id: updatedRoadshow._id,
+            establishment_type: 'Roadshow'
+        });
+
         res.status(200).json({
             success: true,
             message: 'Roadshow updated successfully',
@@ -187,6 +208,16 @@ const deleteRoadshow = async (req, res, next) => {
         if (!roadshow) {
             throw createNotFoundError('roadshow', req.params.id);
         }
+
+        // Create notification before deletion
+        await Notification.create({
+            requested_by: req.user._id,
+            requested_by_name: req.user.name,
+            action: 'Delete',
+            establishment_name: roadshow.topic,
+            establishment_id: roadshow._id,
+            establishment_type: 'Roadshow'
+        });
 
         await Roadshow.findByIdAndDelete(req.params.id);
 

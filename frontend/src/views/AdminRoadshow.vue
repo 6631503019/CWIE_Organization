@@ -44,6 +44,11 @@
         <div class="edit-icon-large" @click.stop="editRoadshow(roadshow)">
           <div class="pencil-icon-large"></div>
         </div>
+        
+        <!-- Delete Icon -->
+        <div class="delete-icon-large" @click.stop="confirmDeleteRoadshow(roadshow)">
+          <div class="trash-icon-large"></div>
+        </div>
       </div>
     </div>
 
@@ -213,6 +218,41 @@ const editRoadshow = (roadshow: any) => {
   formData.details = roadshow.description
   formData.date = roadshow.createdDate
   showEditModal.value = true
+}
+
+const confirmDeleteRoadshow = (roadshow: any) => {
+  if (confirm(`Are you sure you want to delete "${roadshow.title}"?`)) {
+    deleteRoadshow(roadshow.id)
+  }
+}
+
+const deleteRoadshow = async (roadshowId: string) => {
+  state.loading = true
+  try {
+    const response = await fetch(`http://localhost:5000/api/roadshows/${roadshowId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+      }
+    })
+
+    if (!response.ok) throw new Error('Failed to delete roadshow')
+    
+    // Remove from local array
+    roadshows.value = roadshows.value.filter(r => r.id !== roadshowId)
+    
+    // Adjust current page if needed
+    if (roadshows.value.length > 0 && state.currentPage > totalPages.value) {
+      state.currentPage = totalPages.value
+    }
+    
+    state.error = null
+  } catch (error) {
+    state.error = error.message || 'Failed to delete roadshow'
+    console.error('Error:', error)
+  } finally {
+    state.loading = false
+  }
 }
 
 const closeModals = () => {
@@ -729,12 +769,45 @@ onBeforeUnmount(() => {
   transform: scale(1.05);
 }
 
+/* Large Delete Icon */
+.delete-icon-large {
+  position: absolute;
+  width: 29.17px;
+  height: 26.5px;
+  right: 20px;
+  top: 56px;
+  
+  background: #FFFFFF;
+  border: 1px solid #DC2626;
+  border-radius: 6px;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-icon-large:hover {
+  background: #FEE2E2;
+  transform: scale(1.05);
+}
+
 /* Large Pencil Icon */
 .pencil-icon-large {
   width: 24.31px;
   height: 22.08px;
   background: #000;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") no-repeat;
+  mask-size: contain;
+}
+
+/* Large Trash Icon */
+.trash-icon-large {
+  width: 20px;
+  height: 20px;
+  background: #DC2626;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'/%3E%3C/svg%3E") no-repeat;
   mask-size: contain;
 }
 

@@ -21,7 +21,12 @@ const notificationSchema = new mongoose.Schema({
     },
     establishment_id: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Organization'
+        refPath: 'establishment_type'
+    },
+    establishment_type: {
+        type: String,
+        enum: ['Organization', 'Roadshow'],
+        default: 'Organization'
     },
     date: {
         type: Date,

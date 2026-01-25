@@ -197,7 +197,11 @@ const refreshStats = async () => {
     })
     
     // Fetch roadshow count
-    const roadshowResponse = await fetch('http://localhost:5000/api/roadshows?limit=1')
+    const roadshowResponse = await fetch('http://localhost:5000/api/roadshows?limit=1&public=false', {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+      }
+    })
     let roadshowCount = 0
     if (roadshowResponse.ok) {
       const roadshowData = await roadshowResponse.json()
