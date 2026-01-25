@@ -14,11 +14,6 @@
         MOU
       </div>
       
-      <!-- MOU Date Range -->
-      <div class="mou-date-range" v-if="mouStartDate && mouEndDate">
-        Start: {{ mouStartDate }}<br>End: {{ mouEndDate }}
-      </div>
-      
       <!-- Organization Name -->
       <h1 class="org-title">{{ organization?.name_en || organization?.name_th || 'Organization Name' }}</h1>
       
@@ -66,13 +61,40 @@
       <div class="reviews-section">
         <h2 class="section-title">Reviews</h2>
         
-        <!-- Review Card -->
-        <div class="review-card" v-if="reviews.length > 0">
-          <div class="review-header">
-            <span class="job-position-label">Job position : </span>
-            <span class="job-position-value">{{ reviews[0].job_position || 'N/A' }}</span>
+        <!-- Review Navigation -->
+        <div class="review-carousel" v-if="reviews.length > 0">
+          <!-- Previous Button -->
+          <button 
+            class="review-nav-btn prev" 
+            @click="prevReview" 
+            :disabled="currentReviewIndex === 0"
+          >
+            <div class="nav-arrow left"></div>
+          </button>
+          
+          <!-- Current Review Card -->
+          <div class="review-card" v-if="currentReview">
+            <div class="review-header">
+              <span class="job-position-label">Job position : </span>
+              <span class="job-position-value">{{ currentReview.job_position || 'N/A' }}</span>
+            </div>
+            <p class="review-text">{{ currentReview.review_text || 'No review available.' }}</p>
+            <div class="review-rating">
+              <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= (currentReview.rating || 0) }">
+                ★
+              </span>
+            </div>
+            <div class="review-counter">{{ currentReviewIndex + 1 }} / {{ reviews.length }}</div>
           </div>
-          <p class="review-text">{{ reviews[0].review_text || 'No review available.' }}</p>
+          
+          <!-- Next Button -->
+          <button 
+            class="review-nav-btn next" 
+            @click="nextReview" 
+            :disabled="currentReviewIndex === reviews.length - 1"
+          >
+            <div class="nav-arrow right"></div>
+          </button>
         </div>
         
         <div class="no-reviews" v-else>
@@ -95,9 +117,8 @@ const router = useRouter()
 // Reactive data
 const organization = ref<any>(null)
 const reviews = ref<any[]>([])
+const currentReviewIndex = ref(0)
 const mouDocumentUrl = ref<string | null>(null)
-const mouStartDate = ref<string | null>(null)
-const mouEndDate = ref<string | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
@@ -146,6 +167,24 @@ const businessTypes = computed(() => {
   
   return ['Individual']
 })
+
+const currentReview = computed(() => {
+  if (reviews.value.length === 0) return null
+  return reviews.value[currentReviewIndex.value]
+})
+
+// Review navigation
+const nextReview = () => {
+  if (currentReviewIndex.value < reviews.value.length - 1) {
+    currentReviewIndex.value++
+  }
+}
+
+const prevReview = () => {
+  if (currentReviewIndex.value > 0) {
+    currentReviewIndex.value--
+  }
+}
 
 // Fetch organization data
 const fetchOrganization = async () => {
@@ -198,50 +237,30 @@ const fetchMOUDocument = async () => {
     }
     
     console.log('Fetching MOU for organization ID:', orgId)
-    const response = await mouAPI.getAll({ limit: 100, published: 'false' })
+    const response = await mouAPI.getAll({ limit: 100 })
     console.log('All MOUs from backend:', response.data.data)
     
-    // Find MOU for this organization - try multiple matching methods
+    // Find MOU for this organization
     const mou = response.data.data.find((item: any) => {
-      console.log('Checking MOU:', item)
-      console.log('  - item.organization_id:', item.organization_id)
-      console.log('  - item.organization_name:', item.organization_name)
-      console.log('  - Comparing with orgId:', orgId)
-      console.log('  - Comparing with org name:', organization.value?.name_en, organization.value?.name_th)
+      // organization_id can be either a string or an object with _id
+      const mouOrgId = typeof item.organization_id === 'object' 
+        ? item.organization_id?._id 
+        : item.organization_id
       
-      // Try matching by ID (both as string and direct comparison)
-      const idMatch = item.organization_id === orgId || 
-                     String(item.organization_id) === String(orgId) ||
-                     item.organization_id?._id === orgId
+      const idMatch = String(mouOrgId) === String(orgId)
       
-      // Try matching by name
-      const nameMatch = item.organization_name === organization.value?.name_en ||
-                       item.organization_name === organization.value?.name_th
+      console.log('Comparing MOU org ID:', mouOrgId, 'with target:', orgId, '- Match:', idMatch)
       
-      console.log('  - ID Match:', idMatch, ', Name Match:', nameMatch)
-      
-      return idMatch || nameMatch
+      return idMatch
     })
     
     console.log('Found MOU:', mou)
     
     if (mou && mou.mou_path) {
       mouDocumentUrl.value = `http://localhost:5000${mou.mou_path}`
-      
-      // Extract and format dates
-      if (mou.start_date) {
-        mouStartDate.value = new Date(mou.start_date).toLocaleDateString('en-GB')
-      }
-      if (mou.end_date) {
-        mouEndDate.value = new Date(mou.end_date).toLocaleDateString('en-GB')
-      }
-      
       console.log('✅ MOU document found:', mouDocumentUrl.value)
-      console.log('✅ MOU dates:', mouStartDate.value, '-', mouEndDate.value)
     } else {
       mouDocumentUrl.value = null
-      mouStartDate.value = null
-      mouEndDate.value = null
       console.log('❌ No MOU document found for this organization')
       console.log('Available MOUs:', response.data.data.length)
     }
@@ -365,22 +384,6 @@ onMounted(async () => {
 .mou-badge:not(.has-mou) {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.mou-date-range {
-  position: absolute;
-  width: 150px;
-  height: auto;
-  left: 938px;
-  top: 22px;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 12px;
-  line-height: 15px;
-  text-align: right;
-  color: #000000;
 }
 
 .org-title {
@@ -567,18 +570,76 @@ onMounted(async () => {
   position: absolute;
   left: 83px;
   top: 950px;
-  width: 700px;
+  width: 900px;
+}
+
+.review-carousel {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 33px;
+}
+
+.review-nav-btn {
+  width: 40px;
+  height: 40px;
+  background: #FFFFFF;
+  border: 1px solid #D0D0D0;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.review-nav-btn:hover:not(:disabled) {
+  background: #F5F5F5;
+  border-color: #AB1C03;
+}
+
+.review-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.nav-arrow {
+  width: 20px;
+  height: 20px;
+  background: #000000;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+}
+
+.nav-arrow.left {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z'/%3E%3C/svg%3E");
+}
+
+.nav-arrow.right {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z'/%3E%3C/svg%3E");
 }
 
 .review-card {
-  width: 700px;
+  flex: 1;
   height: auto;
   min-height: 70px;
   padding: 10px;
-  margin-top: 33px;
+  position: relative;
   
   background: rgba(230, 229, 229, 0.5);
   border-radius: 5px;
+}
+
+.review-counter {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #767676;
 }
 
 .review-header {
@@ -604,13 +665,28 @@ onMounted(async () => {
 }
 
 .review-text {
-  margin: 0;
+  margin: 0 0 10px 0;
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 600;
   font-size: 16px;
   line-height: 19px;
   color: #000000;
+}
+
+.review-rating {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.review-rating .star {
+  font-size: 20px;
+  color: #D0D0D0;
+}
+
+.review-rating .star.filled {
+  color: #FFD700;
 }
 
 .no-reviews {

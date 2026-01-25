@@ -298,7 +298,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch } from 'vue'
-import { organizationAPI, mouAPI } from '../services/api'
+import { organizationAPI, mouAPI, reviewAPI } from '../services/api'
 
 // Props
 const props = defineProps<{
@@ -429,9 +429,37 @@ const handleSaveOrganization = async () => {
   }
 }
 
-const handleSaveReview = () => {
-  console.log('Saving review:', reviewData)
-  alert('Review functionality coming soon!')
+const handleSaveReview = async () => {
+  if (!reviewData.jobPosition || !reviewData.review || reviewData.rating === 0) {
+    alert('Please fill in all fields and provide a rating')
+    return
+  }
+  
+  if (!props.organizationId) {
+    alert('Please save organization first before adding review')
+    return
+  }
+
+  loading.value = true
+  try {
+    const reviewPayload = {
+      organization_id: props.organizationId,
+      job_position: reviewData.jobPosition,
+      review_text: reviewData.review,
+      rating: reviewData.rating
+    }
+    
+    await reviewAPI.create(reviewPayload)
+    alert('Review created successfully!')
+    emit('saved')
+    emit('update:modelValue', false)
+  } catch (error: any) {
+    console.error('Error saving review:', error)
+    const errorMsg = error.response?.data?.message || 'Failed to save review'
+    alert(`Error: ${errorMsg}`)
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleSaveMOU = async () => {
