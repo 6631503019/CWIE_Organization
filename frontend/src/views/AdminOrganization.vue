@@ -144,7 +144,7 @@
           <div class="action-buttons">
             <div class="edit-btn" @click="editOrganization(org.id)" :disabled="state.loading"></div>
             <div class="delete-btn" @click="deleteOrganization(org.id)" :disabled="state.loading"></div>
-            <div class="document-btn" @click="viewDocument(org.id)"></div>
+            <div v-if="org.hasMOU" class="document-btn" @click="viewDocument(org.id)"></div>
           </div>
         </div>
       </div>
@@ -557,6 +557,7 @@ const provinceOptions = [
 
 // Organizations data from backend
 const allOrganizations = ref<any[]>([])
+const mouDataMap = ref<Record<string, any>>({})
 
 // Compute organization type counts
 const organizationTypeCounts = computed(() => {
@@ -864,10 +865,28 @@ const saveOrganization = async () => {
 }
 
 // Fetch organizations from backend
-const fetchOrganizations = async () => {
+const fetchOrganizations = async () => {  
   try {
     const response = await organizationAPI.getAll({ limit: 100, public: 'false' })
+    
+    // Fetch all MOUs
+    const mouResponse = await mouAPI.getAll({ limit: 100 })
+    const allMOUs = mouResponse.data.data || []
+    
+    // Create MOU map for quick lookup
+    const mouMap: Record<string, any> = {}
+    allMOUs.forEach((mou: any) => {
+      const orgId = typeof mou.organization_id === 'object' 
+        ? mou.organization_id?._id 
+        : mou.organization_id
+      if (orgId) {
+        mouMap[String(orgId)] = mou
+      }
+    })
+    mouDataMap.value = mouMap
+    
     allOrganizations.value = response.data.data.map((item: any) => {
+      const hasMOU = !!mouMap[item._id]
       const org = {
         id: item._id,
         status: item.is_public ? 'active' : 'inactive',
@@ -876,9 +895,10 @@ const fetchOrganizations = async () => {
         province: item.province_id || 'N/A',
         createdDate: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : 'N/A',
         editedDate: item.updatedAt ? new Date(item.updatedAt).toISOString().split('T')[0] : 'N/A',
+        hasMOU: hasMOU,
         rawData: item // Keep full data for reference
       }
-      console.log(`Org ${org.name}: is_public=${item.is_public}, status=${org.status}`)
+      console.log(`Org ${org.name}: is_public=${item.is_public}, status=${org.status}, hasMOU=${hasMOU}`)
       return org
     })
     console.log('Organizations loaded:', allOrganizations.value.length, 'items')
@@ -1095,11 +1115,20 @@ const confirmDelete = async () => {
   }
 }
 
-const viewDocument = (id: number) => {
+const viewDocument = async (id: number) => {
   const org = allOrganizations.value.find(o => o.id === id)
-  if (org) {
-    console.log('View document for organization:', org)
-    // Navigate to document or open modal
+  if (!org) return
+  
+  const orgId = String(org.rawData?._id || org.id)
+  const mou = mouDataMap.value[orgId]
+  
+  if (mou && mou.mou_path) {
+    const mouUrl = `http://localhost:5000${mou.mou_path}`
+    window.open(mouUrl, '_blank')
+  } else {
+    notificationMessage.value = 'No MOU document available for this organization'
+    notificationType.value = 'warning'
+    showNotificationModal.value = true
   }
 }
 
