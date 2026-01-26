@@ -10,10 +10,19 @@
         <!-- Organization Title -->
         <div class="organization-title">Organization</div>
         
-        <!-- Add Organization Button -->
-        <div class="add-org-btn" @click="addOrganization">
-          <div class="plus-icon"></div>
-          <span class="button-text">Add Organization</span>
+        <!-- Buttons Group -->
+        <div class="buttons-group">
+          <!-- Import Button -->
+          <div class="import-btn" @click="showImportModal = true">
+            <div class="upload-icon"></div>
+            <span class="button-text">Import CSV/Excel</span>
+          </div>
+          
+          <!-- Add Organization Button -->
+          <div class="add-org-btn" @click="addOrganization">
+            <div class="plus-icon"></div>
+            <span class="button-text">Add Organization</span>
+          </div>
         </div>
       </div>
       
@@ -467,6 +476,65 @@
       </div>
     </div>
     
+    <!-- Import CSV/Excel Modal -->
+    <div v-if="showImportModal" class="modal-overlay" @click="showImportModal = false">
+      <div class="import-modal" @click.stop>
+        <h2 class="modal-title">Import Organizations</h2>
+        <div class="form-divider"></div>
+        
+        <div class="import-instructions">
+          <p>Upload a CSV or Excel file with the following columns:</p>
+          <ul>
+            <li><strong>Name (TH)</strong> - Thai organization name (required)</li>
+            <li><strong>Name (EN)</strong> - English organization name (required)</li>
+            <li><strong>Address (TH)</strong> - Thai address (required)</li>
+            <li><strong>Address (EN)</strong> - English address (required)</li>
+            <li><strong>Organization Type</strong> - MFU, private company, Government, or Oversea (required)</li>
+            <li><strong>Email</strong> - Contact email (required)</li>
+            <li><strong>Phone</strong> - Phone number (optional)</li>
+            <li><strong>Details</strong> - Organization details (optional)</li>
+            <li><strong>Public</strong> - true or false (optional, default: false)</li>
+          </ul>
+        </div>
+        
+        <div class="file-upload-section">
+          <input 
+            type="file" 
+            accept=".csv,.xlsx,.xls" 
+            @change="handleImportFile"
+            ref="importFileInput"
+            style="display: none;"
+          />
+          <button class="btn-choose-file" @click="($refs.importFileInput as HTMLInputElement).click()">
+            Choose File
+          </button>
+          <span class="file-name" v-if="importFile">{{ importFile.name }}</span>
+          <span class="file-name" v-else>No file selected</span>
+        </div>
+        
+        <div v-if="importResults" class="import-results">
+          <p class="results-summary">
+            <strong>Import Results:</strong> 
+            {{ importResults.success.length }} succeeded, 
+            {{ importResults.failed.length }} failed
+          </p>
+          <div v-if="importResults.failed.length > 0" class="failed-items">
+            <p><strong>Failed rows:</strong></p>
+            <ul>
+              <li v-for="fail in importResults.failed.slice(0, 5)" :key="fail.row">
+                Row {{ fail.row }}: {{ fail.error }}
+              </li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="modal-actions">
+          <button class="btn-cancel" @click="showImportModal = false; importFile = null; importResults = null">Cancel</button>
+          <button class="btn-save" @click="submitImport" :disabled="!importFile">Import</button>
+        </div>
+      </div>
+    </div>
+    
     <!-- Notification Modal -->
     <NotificationModal 
       :show="showNotificationModal"
@@ -499,6 +567,9 @@ const state = reactive({
 const searchText = ref('')
 const showDeleteModal = ref(false)
 const showNotificationModal = ref(false)
+const showImportModal = ref(false)
+const importFile = ref<File | null>(null)
+const importResults = ref<any>(null)
 const notificationMessage = ref('')
 const notificationType = ref<'success' | 'error' | 'warning'>('success')
 const selectedOrganization = ref<any>(null)
@@ -1132,6 +1203,61 @@ const viewDocument = async (id: number) => {
   }
 }
 
+const handleImportFile = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    importFile.value = target.files[0]
+  }
+}
+
+const submitImport = async () => {
+  if (!importFile.value) {
+    notificationMessage.value = 'Please select a file to import'
+    notificationType.value = 'warning'
+    showNotificationModal.value = true
+    return
+  }
+
+  state.loading = true
+  try {
+    const formData = new FormData()
+    formData.append('file', importFile.value)
+
+    const response = await fetch('http://localhost:5000/api/import/organizations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+      },
+      body: formData
+    })
+
+    if (!response.ok) throw new Error('Import failed')
+    
+    const result = await response.json()
+    importResults.value = result.data
+    
+    // Refresh organizations list
+    await fetchOrganizations()
+    
+    notificationMessage.value = result.message
+    notificationType.value = 'success'
+    showNotificationModal.value = true
+    
+    setTimeout(() => {
+      showImportModal.value = false
+      importFile.value = null
+      importResults.value = null
+    }, 2000)
+    
+  } catch (error: any) {
+    notificationMessage.value = error.message || 'Failed to import file'
+    notificationType.value = 'error'
+    showNotificationModal.value = true
+  } finally {
+    state.loading = false
+  }
+}
+
 // Lifecycle hooks
 let intervalId: number | null = null
 
@@ -1208,6 +1334,7 @@ onBeforeUnmount(() => {
   max-width: 1113px;
   margin-bottom: 30px;
   position: relative;
+  gap: 8px;
 }
 
 /* Organization title */
@@ -1219,6 +1346,13 @@ onBeforeUnmount(() => {
   line-height: 50px;
   color: #000000;
   margin: 0;
+}
+
+/* Buttons Group */
+.buttons-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 /* Line separator */
@@ -1430,14 +1564,40 @@ onBeforeUnmount(() => {
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  padding: 6px 10px;
+  padding: 6px 12px;
   gap: 6px;
-  width: 166px;
   height: 32px;
   background: #C70000;
   border-radius: 6px;
   cursor: pointer;
   flex-shrink: 0;
+}
+
+/* Import Button */
+.import-btn {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 6px 12px;
+  gap: 6px;
+  height: 32px;
+  background: #16A34A;
+  border-radius: 6px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.import-btn:hover {
+  background: #15803D;
+}
+
+.upload-icon {
+  width: 20px;
+  height: 20px;
+  background: #FFFFFF;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z'/%3E%3C/svg%3E") no-repeat center;
+  mask-size: contain;
 }
 
 .plus-icon {
@@ -1469,7 +1629,6 @@ onBeforeUnmount(() => {
 }
 
 .button-text {
-  width: 115px;
   height: 20px;
   font-family: 'DM Sans';
   font-style: normal;
@@ -1477,6 +1636,7 @@ onBeforeUnmount(() => {
   font-size: 14px;
   line-height: 20px;
   color: #FFFFFF;
+  white-space: nowrap;
 }
 
 /* Table container */
@@ -2634,5 +2794,122 @@ onBeforeUnmount(() => {
 
 .org-type-col.active .org-type-count {
   color: #fff;
+}
+
+/* Import Modal */
+.import-modal {
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 24px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.import-instructions {
+  margin: 20px 0;
+  padding: 16px;
+  background: #F9FAFB;
+  border-radius: 8px;
+}
+
+.import-instructions p {
+  margin: 0 0 12px 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #374151;
+  font-weight: 600;
+}
+
+.import-instructions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.import-instructions li {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: #6B7280;
+  margin: 6px 0;
+  line-height: 1.5;
+}
+
+.import-instructions strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+.file-upload-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.btn-choose-file {
+  padding: 8px 16px;
+  background: #3B82F6;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  color: #FFFFFF;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-choose-file:hover {
+  background: #2563EB;
+}
+
+.file-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #6B7280;
+  font-style: italic;
+}
+
+.import-results {
+  margin: 16px 0;
+  padding: 16px;
+  background: #F0FDF4;
+  border: 1px solid #86EFAC;
+  border-radius: 8px;
+}
+
+.results-summary {
+  margin: 0 0 12px 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #166534;
+}
+
+.failed-items {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #86EFAC;
+}
+
+.failed-items p {
+  margin: 0 0 8px 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: #DC2626;
+  font-weight: 600;
+}
+
+.failed-items ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.failed-items li {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  color: #991B1B;
+  margin: 4px 0;
 }
 </style>

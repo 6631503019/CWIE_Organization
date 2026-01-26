@@ -23,6 +23,7 @@ const mouRoutes = require('./routes/mouRoutes');
 const roadshowRoutes = require('./routes/roadshowRoutes');
 const authRoutes = require('./routes/authRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const importRoutes = require('./routes/importRoutes');
 
 // Import middleware
 const { errorHandler, notFound } = require('./middleware/errorHandler');
@@ -112,6 +113,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/mou', mouRoutes);
 app.use('/api/roadshows', roadshowRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/import', importRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
