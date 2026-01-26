@@ -320,12 +320,22 @@ const fetchOrganizations = async () => {
         
         console.log(`MOU for ${item.name_en}: is_published=${mou?.is_published}, status=${statusText}`)
         
+        // Normalize logo path: replace backslashes with forward slashes and ensure leading slash
+        let logoPath = item.logo_path
+        if (logoPath) {
+          logoPath = logoPath.replace(/\\/g, '/')
+          if (!logoPath.startsWith('/')) {
+            logoPath = '/' + logoPath
+          }
+        }
+        const logoUrl = logoPath ? `http://localhost:5000${logoPath}` : '/api/placeholder/95/95'
+        
         return {
           id: item._id,
           name: item.name_en || item.name_th || 'No Name',
           status: statusText,
           duration: durationText,
-          logo: item.logo_path ? `http://localhost:5000${item.logo_path}` : '/api/placeholder/95/95'
+          logo: logoUrl
         }
       })
     

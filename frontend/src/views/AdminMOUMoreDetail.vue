@@ -137,7 +137,12 @@ const error = ref<string | null>(null)
 // Computed properties
 const logoUrl = computed(() => {
   if (organization.value?.logo_path) {
-    return `http://localhost:5000${organization.value.logo_path}`
+    // Normalize logo path: replace backslashes with forward slashes and ensure leading slash
+    let logoPath = organization.value.logo_path.replace(/\\/g, '/')
+    if (!logoPath.startsWith('/')) {
+      logoPath = '/' + logoPath
+    }
+    return `http://localhost:5000${logoPath}`
   }
   return '/api/placeholder/435/435'
 })
