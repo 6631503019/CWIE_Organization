@@ -325,8 +325,7 @@ const handlePageChange = (page: number) => {
 }
 
 const viewOrgDetails = (org: any) => {
-  // Navigate to organization detail page (to be implemented)
-  console.log('View organization:', org)
+  router.push(`/user/organization/${org._id}`)
 }
 
 // Helper methods
