@@ -1,6 +1,7 @@
 <template>
   <div class="pagination-wrapper">
     <div class="pagination">
+      <!-- Double Left -->
       <button 
         class="page-btn first-btn" 
         @click="changePage(1)" 
@@ -8,9 +9,10 @@
         :class="{ disabled: currentPage <= 1 }"
         title="First Page"
       >
-        &lt;&lt;
+        <i class="pi pi-angle-double-left"></i>
       </button>
       
+      <!-- Back -->
       <button 
         class="page-btn prev-btn" 
         @click="changePage(currentPage - 1)" 
@@ -18,9 +20,10 @@
         :class="{ disabled: currentPage <= 1 }"
         title="Previous Page"
       >
-        &lt;
+        <i class="pi pi-angle-left"></i>
       </button>
       
+      <!-- Page Numbers -->
       <template v-for="page in visiblePages" :key="page">
         <button 
           v-if="page !== '...'"
@@ -31,9 +34,12 @@
         >
           {{ page }}
         </button>
-        <span v-else class="page-dots">...</span>
+        <button v-else class="page-btn ellipsis-btn" disabled>
+          <i class="pi pi-ellipsis-h"></i>
+        </button>
       </template>
       
+      <!-- Forward -->
       <button 
         class="page-btn next-btn" 
         @click="changePage(currentPage + 1)" 
@@ -41,9 +47,10 @@
         :class="{ disabled: currentPage >= totalPages }"
         title="Next Page"
       >
-        &gt;
+        <i class="pi pi-angle-right"></i>
       </button>
       
+      <!-- Double Right -->
       <button 
         class="page-btn last-btn" 
         @click="changePage(totalPages)" 
@@ -51,7 +58,7 @@
         :class="{ disabled: currentPage >= totalPages }"
         title="Last Page"
       >
-        &gt;&gt;
+        <i class="pi pi-angle-double-right"></i>
       </button>
     </div>
     
@@ -116,6 +123,8 @@ const changePage = (page: number) => {
 </script>
 
 <style scoped>
+@import url('https://cdn.jsdelivr.net/npm/primeicons@6.0.1/primeicons.css');
+
 .pagination-wrapper {
   display: flex;
   justify-content: flex-end;
@@ -127,16 +136,16 @@ const changePage = (page: number) => {
 .pagination {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .page-btn {
   box-sizing: border-box;
-  width: 28px;
-  height: 28px;
+  width: 21px;
+  height: 21px;
   background: #FFFFFF;
   border: 1px solid #A1A1A1;
-  border-radius: 6px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -144,8 +153,8 @@ const changePage = (page: number) => {
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 500;
-  font-size: 14px;
-  line-height: 17px;
+  font-size: 10px;
+  line-height: 13px;
   color: #000000;
   transition: all 0.2s ease;
 }
@@ -169,6 +178,12 @@ const changePage = (page: number) => {
   background: #F9F9F9;
 }
 
+.ellipsis-btn {
+  cursor: default !important;
+  opacity: 1 !important;
+  background: #FFFFFF !important;
+}
+
 .page-dots {
   color: #666666;
   font-size: 14px;
@@ -177,12 +192,16 @@ const changePage = (page: number) => {
 
 .prev-btn, .next-btn {
   font-weight: 600;
-  font-size: 16px;
+  font-size: 12px;
+}
+
+.page-btn i {
+  font-size: 10px;
 }
 
 .pagination-info {
   font-family: 'Inter', sans-serif;
-  font-size: 12px;
+  font-size: 9px;
   color: #666666;
   white-space: nowrap;
 }

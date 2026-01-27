@@ -178,7 +178,18 @@ const createOrganization = async (req, res, next) => {
         // Add admin ID from authenticated user
         req.body.admin_id = req.user._id;
 
+        console.log('🟢 CREATE - Before conversion - is_public:', req.body.is_public, 'Type:', typeof req.body.is_public);
+
+        // Handle FormData boolean conversion for is_public
+        if (typeof req.body.is_public === 'string') {
+            req.body.is_public = req.body.is_public === 'true' || req.body.is_public === '1';
+        }
+
+        console.log('🟢 CREATE - After conversion - is_public:', req.body.is_public, 'Type:', typeof req.body.is_public);
+
         const organization = await Organization.create(req.body);
+
+        console.log('🟢 CREATE - Saved to DB - is_public:', organization.is_public, 'Type:', typeof organization.is_public);
 
         // Create notification
         await Notification.create({
@@ -247,11 +258,22 @@ const updateOrganization = async (req, res, next) => {
             req.body.logo_path = '/' + req.file.path.replace(/\\/g, '/').replace(/^\/+/, '')
         }
 
+        console.log('🟡 UPDATE - Before conversion - is_public:', req.body.is_public, 'Type:', typeof req.body.is_public);
+
+        // Handle FormData boolean conversion for is_public
+        if (typeof req.body.is_public === 'string') {
+            req.body.is_public = req.body.is_public === 'true' || req.body.is_public === '1';
+        }
+
+        console.log('🟡 UPDATE - After conversion - is_public:', req.body.is_public, 'Type:', typeof req.body.is_public);
+
         const organization = await Organization.findByIdAndUpdate(
             req.params.id,
             req.body,
             { new: true, runValidators: true }
         );
+
+        console.log('🟡 UPDATE - Saved to DB - is_public:', organization.is_public, 'Type:', typeof organization.is_public);
 
         // Create notification
         await Notification.create({

@@ -306,10 +306,15 @@ const fetchOrganizations = async () => {
         let durationText = 'N/A'
         let statusText = 'Inactive'
         
+        // Use Organization.is_public for status instead of MOU.is_published
+        const isPublic = item.is_public
+        if (isPublic === true || isPublic === 'true' || isPublic === 1 || isPublic === '1') {
+          statusText = 'Active'
+        } else {
+          statusText = 'Inactive'
+        }
+        
         if (mou) {
-          // Check if MOU is published (handle both boolean and string)
-          statusText = (mou.is_published === true || mou.is_published === 'true' || mou.is_published === 1) ? 'Active' : 'Inactive'
-          
           // Format dates if available
           if (mou.start_date && mou.end_date) {
             const startDate = new Date(mou.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -317,8 +322,6 @@ const fetchOrganizations = async () => {
             durationText = `Start: ${startDate} End: ${endDate}`
           }
         }
-        
-        console.log(`MOU for ${item.name_en}: is_published=${mou?.is_published}, status=${statusText}`)
         
         // Normalize logo path: replace backslashes with forward slashes and ensure leading slash
         let logoPath = item.logo_path

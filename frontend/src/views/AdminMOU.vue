@@ -202,25 +202,52 @@ const editMOU = (event: Event, mou: any) => {
 
 const handleModalSaved = async () => {
   // Refresh data after save
-  await fetchOrganizations()
+  console.log('Modal saved - refreshing data...')
+  state.loading = true
+  
+  // Small delay to ensure backend has processed the update
+  await new Promise(resolve => setTimeout(resolve, 300))
+  
+  try {
+    await fetchOrganizations()
+    console.log('Data refreshed successfully')
+  } catch (error) {
+    console.error('Error refreshing data:', error)
+  } finally {
+    state.loading = false
+  }
 }
 
 // Fetch organizations data
 const fetchOrganizations = async () => {
   try {
-    const response = await organizationAPI.getAll({ limit: 100 })
+    // Get all organizations including non-public ones (for admin)
+    const response = await organizationAPI.getAll({ limit: 100, public: 'false' })
+    console.log('🔍 Organization API response:', response.data)
+    console.log('🔍 Organizations array:', response.data.data)
+    console.log('🔍 Organizations count:', response.data.data?.length)
     
     // Get all MOUs (both published and not published)
     const mouResponse = await mouAPI.getAll({ limit: 100 })
     console.log('All MOUs:', mouResponse.data.data)
     
-    // Create map of MOUs by organization_id
+    // Create map of MOUs by organization_id (filter out null organization_id)
     const mouMap = new Map()
-    mouResponse.data.data.forEach((mou: any) => {
-      const orgId = mou.organization_id?._id || mou.organization_id
-      console.log(`MOU organization_id: ${orgId}, is_published: ${mou.is_published}`)
-      mouMap.set(String(orgId), mou)
-    })
+    mouResponse.data.data
+      .filter((mou: any) => {
+        // Filter out MOUs with null or undefined organization_id
+        const orgId = mou.organization_id?._id || mou.organization_id
+        if (!orgId || orgId === null || orgId === undefined) {
+          console.log('⚠️ Skipping MOU with null organization_id:', mou._id)
+          return false
+        }
+        return true
+      })
+      .forEach((mou: any) => {
+        const orgId = mou.organization_id?._id || mou.organization_id
+        console.log(`MOU organization_id: ${orgId}, is_published: ${mou.is_published}`)
+        mouMap.set(String(orgId), mou)
+      })
     
     console.log('MOU Map keys:', Array.from(mouMap.keys()))
     console.log('Organization IDs:', response.data.data.map((o: any) => o._id))
@@ -237,9 +264,21 @@ const fetchOrganizations = async () => {
         let durationText = 'N/A'
         let statusText = 'Inactive'
         
+        // Use Organization.is_public for status instead of MOU.is_published
+        const isPublic = item.is_public
+        console.log(`Organization ${item.name_en}: is_public value =`, isPublic, `(type: ${typeof isPublic})`)
+        
+        // Check organization public status
+        if (isPublic === true || isPublic === 'true' || isPublic === 1 || isPublic === '1') {
+          statusText = 'Active'
+        } else {
+          statusText = 'Inactive'
+        }
+        
+        console.log(`Final status for ${item.name_en}: ${statusText}`)
+        
         if (mou) {
-          // Check if MOU is published (handle both boolean and string)
-          statusText = (mou.is_published === true || mou.is_published === 'true' || mou.is_published === 1) ? 'Active' : 'Inactive'
+          console.log(`MOU for ${item.name_en}: is_published =`, mou.is_published)
           
           // Format dates if available
           if (mou.start_date && mou.end_date) {

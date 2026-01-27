@@ -180,7 +180,7 @@
           <!-- Public Toggle -->
           <div class="public-toggle">
             <label>Make Organization Public</label>
-            <div class="toggle-switch" @click="formData.isPublic = !formData.isPublic">
+            <div class="toggle-switch" :class="{ active: formData.isPublic }" @click.stop="formData.isPublic = !formData.isPublic">
               <div class="toggle-slider" :class="{ active: formData.isPublic }"></div>
             </div>
           </div>
@@ -277,13 +277,6 @@
             </div>
           </div>
 
-          <div class="publish-toggle mou-publish">
-            <label>Publish MOU</label>
-            <div class="toggle-switch" @click="mouData.publishMOU = !mouData.publishMOU">
-              <div class="toggle-slider" :class="{ active: mouData.publishMOU }"></div>
-            </div>
-          </div>
-
           <div class="modal-actions mou-actions">
             <button class="btn-cancel" @click="$emit('update:modelValue', false)">Cancel</button>
             <button class="btn-save" @click="handleSaveMOU" :disabled="loading">
@@ -348,8 +341,7 @@ const reviewData = reactive({
 const mouData = reactive({
   mouFile: null as File | null,
   startDate: '',
-  endDate: '',
-  publishMOU: false
+  endDate: ''
 })
 
 // Methods
@@ -388,6 +380,8 @@ const handleSaveOrganization = async () => {
     return
   }
 
+  console.log('🔵 Before Save - isPublic:', formData.isPublic, typeof formData.isPublic)
+
   loading.value = true
   try {
     const formDataToSend = new FormData()
@@ -406,16 +400,21 @@ const handleSaveOrganization = async () => {
     formDataToSend.append('phone_number', formData.phoneNumber)
     formDataToSend.append('details', formData.details)
     formDataToSend.append('is_public', String(formData.isPublic))
+    
+    console.log('🔵 FormData is_public sent:', String(formData.isPublic))
 
     if (formData.logo) {
       formDataToSend.append('logo', formData.logo)
     }
 
+    let response
     if (props.organizationId) {
-      await organizationAPI.update(props.organizationId, formDataToSend)
+      response = await organizationAPI.update(props.organizationId, formDataToSend)
     } else {
-      await organizationAPI.create(formDataToSend)
+      response = await organizationAPI.create(formDataToSend)
     }
+    
+    console.log('🔵 Backend response:', response.data)
 
     alert('Organization saved successfully!')
     emit('saved')
@@ -489,18 +488,15 @@ const handleSaveMOU = async () => {
     formDataToSend.append('organization_id', props.organizationId)
     formDataToSend.append('start_date', mouData.startDate)
     formDataToSend.append('end_date', mouData.endDate)
-    formDataToSend.append('is_published', String(mouData.publishMOU))
     
     if (mouData.mouFile) {
       formDataToSend.append('mou', mouData.mouFile)
     }
 
     if (existingMouId.value) {
-      // Update existing MOU
       await mouAPI.update(existingMouId.value, formDataToSend)
       alert('MOU updated successfully!')
     } else {
-      // Create new MOU
       await mouAPI.create(formDataToSend)
       alert('MOU created successfully!')
     }
@@ -568,15 +564,10 @@ const loadMOUData = async () => {
       existingMouId.value = mou._id
       mouData.startDate = mou.start_date ? new Date(mou.start_date).toISOString().split('T')[0] : ''
       mouData.endDate = mou.end_date ? new Date(mou.end_date).toISOString().split('T')[0] : ''
-      mouData.publishMOU = mou.is_published || false
       
       if (mou.mou_path) {
         mouPreview.value = `http://localhost:5000${mou.mou_path}`
       }
-      
-      console.log('Loaded existing MOU:', mou)
-    } else {
-      console.log('No existing MOU found for organization')
     }
   } catch (error: any) {
     console.error('Error loading MOU:', error)
@@ -839,6 +830,10 @@ watch(() => props.modelValue, (newValue) => {
   transition: background 0.3s;
 }
 
+.toggle-switch.active {
+  background: #AB1C03;
+}
+
 .toggle-slider {
   width: 22px;
   height: 22px;
@@ -847,12 +842,12 @@ watch(() => props.modelValue, (newValue) => {
   position: absolute;
   top: 2px;
   left: 2px;
-  transition: transform 0.3s;
+  transition: transform 0.3s, background 0.3s;
 }
 
 .toggle-slider.active {
   transform: translateX(24px);
-  background: #00FF5E;
+  background: #FFFFFF;
 }
 
 /* MOU Tab Styles */

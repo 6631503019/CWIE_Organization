@@ -20,7 +20,7 @@ const mouSchema = new mongoose.Schema({
     },
     is_published: {
         type: Boolean,
-        default: false
+        default: true  // Default to published for new MOUs
     },
     admin_id: {
         type: mongoose.Schema.Types.ObjectId,

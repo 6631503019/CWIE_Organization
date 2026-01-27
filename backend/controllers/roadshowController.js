@@ -115,6 +115,11 @@ const createRoadshow = async (req, res, next) => {
             }
         }
 
+        // Convert is_public from string to boolean (FormData always sends strings)
+        if (typeof req.body.is_public === 'string') {
+            req.body.is_public = req.body.is_public === 'true' || req.body.is_public === '1';
+        }
+
         // Add admin ID from authenticated user
         req.body.admin_id = req.user._id;
 
@@ -170,6 +175,11 @@ const updateRoadshow = async (req, res, next) => {
             if (req.files.activity_image) {
                 req.body.activity_image_path = req.files.activity_image[0].path;
             }
+        }
+
+        // Convert is_public from string to boolean (FormData always sends strings)
+        if (typeof req.body.is_public === 'string') {
+            req.body.is_public = req.body.is_public === 'true' || req.body.is_public === '1';
         }
 
         const updatedRoadshow = await Roadshow.findByIdAndUpdate(

@@ -55,6 +55,42 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Admin - Roadshow Detail', requiresAuth: true, requiresAdmin: true }
     },
     {
+        path: '/user/organization',
+        name: 'UserOrganization',
+        component: () => import('../views/UserOrganization.vue'),
+        meta: { title: 'Organization', requiresAuth: true, requiresUser: true }
+    },
+    {
+        path: '/user/mou',
+        name: 'UserMOU',
+        component: () => import('../views/UserMOU.vue'),
+        meta: { title: 'MOU', requiresAuth: true, requiresUser: true }
+    },
+    {
+        path: '/user/mou/:id',
+        name: 'UserMOUDetail',
+        component: () => import('../views/UserMOUDetail.vue'),
+        meta: { title: 'MOU Detail', requiresAuth: true, requiresUser: true }
+    },
+    {
+        path: '/user/mou/:id/more',
+        name: 'UserMOUMoreDetail',
+        component: () => import('../views/UserMOUMoreDetail.vue'),
+        meta: { title: 'MOU More Detail', requiresAuth: true, requiresUser: true }
+    },
+    {
+        path: '/user/roadshow',
+        name: 'UserRoadshow',
+        component: () => import('../views/UserRoadshow.vue'),
+        meta: { title: 'Roadshow', requiresAuth: true, requiresUser: true }
+    },
+    {
+        path: '/user/roadshow/:id',
+        name: 'UserRoadshowDetail',
+        component: () => import('../views/UserRoadshowDetail.vue'),
+        meta: { title: 'Roadshow Detail', requiresAuth: true, requiresUser: true }
+    },
+    {
         path: '/:pathMatch(.*)*',
         name: 'NotFound',
         component: () => import('../views/NotFound.vue'),
@@ -94,7 +130,14 @@ router.beforeEach(async (to, from, next) => {
 
             // Check if route requires admin role
             if (to.meta.requiresAdmin && !authStore.isAdmin) {
+                alert('Access restricted to admin users only')
                 next('/')
+                return
+            }
+
+            // Check if route requires user role (non-admin)
+            if (to.meta.requiresUser && authStore.isAdmin) {
+                next('/admin/dashboard')
                 return
             }
         } catch (error) {
@@ -110,8 +153,12 @@ router.beforeEach(async (to, from, next) => {
             const { useAuthStore } = await import('../stores/auth')
             const authStore = useAuthStore()
 
-            if (authStore.isLoggedIn && authStore.isAdmin) {
-                next('/admin/dashboard')
+            if (authStore.isLoggedIn) {
+                if (authStore.isAdmin) {
+                    next('/admin/dashboard')
+                } else {
+                    next('/user/organization')
+                }
                 return
             }
         } catch (error) {

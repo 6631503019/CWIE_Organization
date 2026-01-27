@@ -81,6 +81,11 @@ const getMOU = async (req, res, next) => {
 // @access  Private (Admin)
 const createMOU = async (req, res, next) => {
     try {
+        console.log('========== CREATE MOU REQUEST ==========');
+        console.log('req.body:', req.body);
+        console.log('req.file:', req.file ? req.file.filename : 'No file');
+        console.log('=====================================');
+
         const { organization_id } = req.body;
 
         // Check required fields
@@ -123,11 +128,24 @@ const createMOU = async (req, res, next) => {
             req.body.mou_file_path = req.file.path;
             req.body.admin_id = req.user._id;
 
+            // Convert is_published from string to boolean if needed
+            if (req.body.is_published !== undefined) {
+                console.log('CREATE - Received is_published:', req.body.is_published, 'Type:', typeof req.body.is_published);
+
+                if (typeof req.body.is_published === 'string') {
+                    req.body.is_published = req.body.is_published === 'true' || req.body.is_published === '1';
+                }
+
+                console.log('CREATE - Converted is_published to:', req.body.is_published, 'Type:', typeof req.body.is_published);
+            }
+
             const updatedMOU = await MOU.findByIdAndUpdate(
                 existingMOU._id,
                 req.body,
                 { new: true, runValidators: true }
             );
+
+            console.log('CREATE - Updated MOU:', updatedMOU._id, 'is_published:', updatedMOU.is_published);
 
             return res.status(200).json({
                 success: true,
@@ -141,7 +159,20 @@ const createMOU = async (req, res, next) => {
         // Add admin ID from authenticated user
         req.body.admin_id = req.user._id;
 
+        // Convert is_published from string to boolean if needed
+        if (req.body.is_published !== undefined) {
+            console.log('CREATE NEW - Received is_published:', req.body.is_published, 'Type:', typeof req.body.is_published);
+
+            if (typeof req.body.is_published === 'string') {
+                req.body.is_published = req.body.is_published === 'true' || req.body.is_published === '1';
+            }
+
+            console.log('CREATE NEW - Converted is_published to:', req.body.is_published, 'Type:', typeof req.body.is_published);
+        }
+
         const mou = await MOU.create(req.body);
+
+        console.log('CREATE NEW - Created MOU:', mou._id, 'is_published:', mou.is_published);
 
         res.status(201).json({
             success: true,
@@ -158,10 +189,27 @@ const createMOU = async (req, res, next) => {
 // @access  Private (Admin)
 const updateMOU = async (req, res, next) => {
     try {
+        console.log('========== UPDATE MOU REQUEST ==========');
+        console.log('req.params.id:', req.params.id);
+        console.log('req.body:', req.body);
+        console.log('req.file:', req.file ? req.file.filename : 'No file');
+        console.log('=====================================');
+
         const mou = await MOU.findById(req.params.id);
 
         if (!mou) {
             throw createNotFoundError('mou', req.params.id);
+        }
+
+        // Convert is_published from string to boolean if needed
+        if (req.body.is_published !== undefined) {
+            console.log('Received is_published:', req.body.is_published, 'Type:', typeof req.body.is_published);
+
+            if (typeof req.body.is_published === 'string') {
+                req.body.is_published = req.body.is_published === 'true' || req.body.is_published === '1';
+            }
+
+            console.log('Converted is_published to:', req.body.is_published, 'Type:', typeof req.body.is_published);
         }
 
         if (req.file) {
@@ -181,6 +229,8 @@ const updateMOU = async (req, res, next) => {
             req.body,
             { new: true, runValidators: true }
         );
+
+        console.log('Updated MOU:', updatedMOU._id, 'is_published:', updatedMOU.is_published);
 
         res.status(200).json({
             success: true,
