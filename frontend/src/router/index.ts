@@ -95,12 +95,6 @@ const routes: RouteRecordRaw[] = [
         name: 'UserRoadshowDetail',
         component: () => import('../views/UserRoadshowDetail.vue'),
         meta: { title: 'Roadshow Detail', requiresAuth: true, requiresUser: true }
-    },
-    {
-        path: '/:pathMatch(.*)*',
-        name: 'NotFound',
-        component: () => import('../views/NotFound.vue'),
-        meta: { title: 'Page Not Found' }
     }
 ]
 
