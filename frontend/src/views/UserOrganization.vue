@@ -605,7 +605,7 @@ onMounted(async () => {
 .org-cards-grid {
   display: grid;
   grid-template-columns: repeat(2, 575px);
-  gap: 30px 261px;
+  gap: 30px 60px;
   margin-bottom: 50px;
 }
 
