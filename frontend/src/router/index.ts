@@ -128,6 +128,9 @@ router.beforeEach(async (to, from, next) => {
             const { useAuthStore } = await import('../stores/auth')
             const authStore = useAuthStore()
 
+            // CRITICAL: Initialize auth from localStorage before checking
+            authStore.initAuth()
+
             // Check if user is logged in
             if (!authStore.isLoggedIn) {
                 next('/')
@@ -136,14 +139,13 @@ router.beforeEach(async (to, from, next) => {
 
             // Check if route requires admin role
             if (to.meta.requiresAdmin && !authStore.isAdmin) {
-                alert('Access restricted to admin users only')
                 next('/')
                 return
             }
 
             // Check if route requires user role (non-admin)
-            if (to.meta.requiresUser && authStore.isAdmin) {
-                next('/admin/dashboard')
+            if (to.meta.requiresUser && !authStore.isUser) {
+                next('/')
                 return
             }
         } catch (error) {
@@ -151,6 +153,9 @@ router.beforeEach(async (to, from, next) => {
             next('/')
             return
         }
+        // Don't proceed to login redirect check if auth was required
+        next()
+        return
     }
 
     // If user is logged in and trying to access login page, redirect to appropriate dashboard
@@ -158,6 +163,9 @@ router.beforeEach(async (to, from, next) => {
         try {
             const { useAuthStore } = await import('../stores/auth')
             const authStore = useAuthStore()
+
+            // CRITICAL: Initialize auth from localStorage before checking
+            authStore.initAuth()
 
             if (authStore.isLoggedIn) {
                 if (authStore.isAdmin) {

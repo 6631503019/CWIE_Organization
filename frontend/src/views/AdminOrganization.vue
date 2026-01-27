@@ -907,18 +907,32 @@ const saveOrganization = async () => {
     } else {
       // Create new organization
       result = await organizationAPI.create(formDataToSend)
+      // Set editing ID for MOU save if needed
+      state.editingOrgId = result.data.data._id
+    }
+
+    // Check if MOU data exists and save it
+    if (mouData.mouFile && mouData.startDate && mouData.endDate) {
+      try {
+        await saveMOUData(state.editingOrgId || result.data.data._id)
+        notificationMessage.value = 'Organization and MOU saved successfully!'
+      } catch (mouError: any) {
+        console.error('MOU save failed:', mouError)
+        notificationMessage.value = 'Organization saved, but MOU failed. Please add MOU manually.'
+      }
+    } else {
+      notificationMessage.value = 'Organization saved successfully!'
     }
 
     // Refresh the organizations list after save
     await fetchOrganizations()
     
     state.error = null
-    state.editingOrgId = null
-    notificationMessage.value = 'Organization saved successfully!'
     notificationType.value = 'success'
     showNotificationModal.value = true
     
     setTimeout(() => {
+      state.editingOrgId = null
       closeModal()
     }, 1500)
   } catch (error: any) {
@@ -1021,6 +1035,39 @@ const saveReview = () => {
   closeModal()
 }
 
+// Helper function to save MOU data
+const saveMOUData = async (orgId: string) => {
+  const formDataToSend = new FormData()
+  
+  // Get organization details for MOU
+  const orgResponse = await organizationAPI.getById(orgId)
+  const orgData = orgResponse.data.data
+  
+  formDataToSend.append('organization_name', orgData.name_en || orgData.name_th || 'Unknown')
+  formDataToSend.append('organization_id', orgId)
+  formDataToSend.append('start_date', mouData.startDate)
+  formDataToSend.append('end_date', mouData.endDate)
+  formDataToSend.append('status', mouData.publishMOU ? 'active' : 'inactive')
+  
+  if (mouData.mouFile) {
+    formDataToSend.append('mou', mouData.mouFile)
+  }
+
+  await mouAPI.create(formDataToSend)
+  
+  // Reset MOU form
+  mouData.mouFile = null
+  mouData.startDate = ''
+  mouData.endDate = ''
+  mouData.publishMOU = false
+  
+  // Clear preview
+  if (mouPreviewUrl.value) {
+    URL.revokeObjectURL(mouPreviewUrl.value)
+    mouPreviewUrl.value = null
+  }
+}
+
 const saveMOU = async () => {
   // Validate required fields
   if (!mouData.mouFile || !mouData.startDate || !mouData.endDate) {
@@ -1048,40 +1095,15 @@ const saveMOU = async () => {
 
   state.loading = true
   try {
-    const formDataToSend = new FormData()
+    await saveMOUData(state.editingOrgId)
     
-    // Get organization details for MOU
-    const orgResponse = await organizationAPI.getById(state.editingOrgId)
-    const orgData = orgResponse.data.data
-    
-    formDataToSend.append('organization_name', orgData.name_en || orgData.name_th || 'Unknown')
-    formDataToSend.append('organization_id', state.editingOrgId)
-    formDataToSend.append('start_date', mouData.startDate)
-    formDataToSend.append('end_date', mouData.endDate)
-    formDataToSend.append('status', mouData.publishMOU ? 'active' : 'inactive')
-    
-    if (mouData.mouFile) {
-      formDataToSend.append('mou', mouData.mouFile)
-    }
-
-    const result = await mouAPI.create(formDataToSend)
-    
-    console.log('MOU saved successfully:', result.data)
+    console.log('MOU saved successfully')
     notificationMessage.value = 'MOU saved successfully!'
     notificationType.value = 'success'
     showNotificationModal.value = true
     
-    // Reset MOU form
-    mouData.mouFile = null
-    mouData.startDate = ''
-    mouData.endDate = ''
-    mouData.publishMOU = false
-    
-    // Clear preview
-    if (mouPreviewUrl.value) {
-      URL.revokeObjectURL(mouPreviewUrl.value)
-      mouPreviewUrl.value = null
-    }
+    // Refresh organizations list to update MOU status
+    await fetchOrganizations()
     
   } catch (error: any) {
     console.error('Error saving MOU:', error)

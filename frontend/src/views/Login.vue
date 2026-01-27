@@ -146,7 +146,7 @@ const handleLogin = async () => {
       if (authStore.isAdmin) {
         await router.push('/admin/dashboard')
       } else {
-        error.value = 'Access restricted to admin users only'
+        await router.push('/user/organization')
       }
     } else {
       error.value = loginResult.message || 'Login failed'

@@ -24,7 +24,7 @@
           <img 
             :src="roadshow.image" 
             :alt="roadshow.title"
-            @error="(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/271x272?text=No+Image'"
+            @error="(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27271%27 height=%27272%27%3E%3Crect fill=%27%23ddd%27 width=%27271%27 height=%27272%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'"
           />
         </div>
         
@@ -115,7 +115,7 @@ const fetchPublicRoadshows = async () => {
             posterPath = '/' + posterPath
           }
         }
-        const imageUrl = posterPath ? `http://localhost:5000${posterPath}` : 'https://via.placeholder.com/271x272?text=No+Image'
+        const imageUrl = posterPath ? `http://localhost:5000${posterPath}` : 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27271%27 height=%27272%27%3E%3Crect fill=%27%23ddd%27 width=%27271%27 height=%27272%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'
         
         return {
           id: item._id,

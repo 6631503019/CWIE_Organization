@@ -26,7 +26,8 @@ export const useAuthStore = defineStore('auth', {
 
     getters: {
         isLoggedIn: (state) => !!state.user && !!state.token,
-        isAdmin: (state) => state.user?.role === 'admin'
+        isAdmin: (state) => state.user?.role === 'admin',
+        isUser: (state) => state.user?.role === 'user'
     },
 
     actions: {
@@ -111,7 +112,7 @@ export const useAuthStore = defineStore('auth', {
                 'user': {
                     id: '2',
                     name: 'Regular User',
-                    email: 'user',
+                    email: 'user@mfu.ac.th',
                     password: 'user123',
                     role: 'user' as const
                 },
