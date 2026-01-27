@@ -1,5 +1,6 @@
 const express = require('express');
 const {
+    getAllReviews,
     getReviews,
     createReview,
     updateReview,
@@ -10,6 +11,7 @@ const { protect, authorize } = require('../middleware/auth');
 const router = express.Router();
 
 router.route('/')
+    .get(getAllReviews)
     .post(createReview);
 
 router.route('/organization/:organizationId')

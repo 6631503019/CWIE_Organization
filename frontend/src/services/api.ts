@@ -72,6 +72,8 @@ export const organizationAPI = {
 }
 
 export const reviewAPI = {
+    getAll: (params?: any) =>
+        api.get('/reviews', { params }),
     getByOrganization: (orgId: string) =>
         api.get(`/reviews/organization/${orgId}`),
     create: (data: any) =>

@@ -2,8 +2,42 @@ const Review = require('../models/Review');
 const Organization = require('../models/Organization');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 
+// @desc    Get all reviews
+// @route   GET /api/reviews
+// @access  Public
+const getAllReviews = async (req, res, next) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 1000;
+        const skip = (page - 1) * limit;
+
+        const reviews = await Review.find()
+            .populate('organization_id', 'name_en name_th')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Review.countDocuments();
+
+        res.status(200).json({
+            success: true,
+            message: 'All reviews retrieved successfully',
+            data: reviews,
+            pagination: {
+                page,
+                pages: Math.ceil(total / limit),
+                total,
+                hasNext: page < Math.ceil(total / limit),
+                hasPrev: page > 1
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Get reviews for an organization
-// @route   GET /api/reviews/:organizationId
+// @route   GET /api/reviews/organization/:organizationId
 // @access  Public
 const getReviews = async (req, res, next) => {
     try {
@@ -149,6 +183,7 @@ const deleteReview = async (req, res, next) => {
 };
 
 module.exports = {
+    getAllReviews,
     getReviews,
     createReview,
     updateReview,
