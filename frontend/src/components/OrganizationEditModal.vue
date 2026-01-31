@@ -1,6 +1,6 @@
 <template>
-  <div v-if="modelValue" class="modal-overlay" @click="$emit('update:modelValue', false)">
-    <div class="add-org-modal" :class="`${activeTab}-active`" @click.stop>
+  <div v-if="modelValue" class="modal-overlay" @mousedown.self="handleOverlayMouseDown" @mouseup.self="handleOverlayMouseUp">
+    <div class="add-org-modal" :class="`${activeTab}-active`">
       <!-- Right side tabs -->
       <div class="modal-tabs">
         <div 
@@ -305,6 +305,24 @@ const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   'saved': []
 }>()
+
+// Track mouse down position for modal overlay
+let mouseDownTarget: EventTarget | null = null
+
+const handleOverlayMouseDown = (event: MouseEvent) => {
+  if (event.target === event.currentTarget) {
+    mouseDownTarget = event.target
+  } else {
+    mouseDownTarget = null
+  }
+}
+
+const handleOverlayMouseUp = (event: MouseEvent) => {
+  if (event.target === event.currentTarget && mouseDownTarget === event.target) {
+    emit('update:modelValue', false)
+  }
+  mouseDownTarget = null
+}
 
 // State
 const activeTab = ref<'organization' | 'review' | 'mou'>(props.initialTab || 'organization')

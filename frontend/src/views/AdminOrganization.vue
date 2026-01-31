@@ -170,8 +170,8 @@
     </div>
 
     <!-- Add Organization Modal -->
-    <div v-if="state.showAddModal" class="modal-overlay" @click="closeModal">
-      <div class="add-org-modal" :class="`${state.activeTab}-active`" @click.stop>
+    <div v-if="state.showAddModal" class="modal-overlay" @mousedown.self="handleOverlayMouseDown" @mouseup.self="handleOverlayMouseUp">
+      <div class="add-org-modal" :class="`${state.activeTab}-active`">
         <!-- Right side tabs -->
         <div class="modal-tabs">
           <div 
@@ -456,7 +456,7 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteModal" class="delete-modal-overlay">
+    <div v-if="showDeleteModal" class="delete-modal-overlay" @mousedown.self="handleDeleteOverlayMouseDown" @mouseup.self="handleDeleteOverlayMouseUp">
       <div class="delete-modal-container">
         <div class="modal-header">
           <h3>Confirm Delete</h3>
@@ -477,8 +477,8 @@
     </div>
     
     <!-- Import CSV/Excel Modal -->
-    <div v-if="showImportModal" class="modal-overlay" @click="showImportModal = false">
-      <div class="import-modal" @click.stop>
+    <div v-if="showImportModal" class="modal-overlay" @mousedown.self="handleImportOverlayMouseDown" @mouseup.self="handleImportOverlayMouseUp">
+      <div class="import-modal">
         <h2 class="modal-title">Import Organizations</h2>
         <div class="form-divider"></div>
         
@@ -808,6 +808,28 @@ const mouData = reactive({
   endDate: '',
   publishMOU: false
 })
+
+// Track mouse down position for modal overlay
+let mouseDownTarget: EventTarget | null = null
+
+// Handle overlay mousedown
+const handleOverlayMouseDown = (event: MouseEvent) => {
+  // Only track if clicking on the overlay itself (not modal content)
+  if (event.target === event.currentTarget) {
+    mouseDownTarget = event.target
+  } else {
+    mouseDownTarget = null
+  }
+}
+
+// Handle overlay mouseup
+const handleOverlayMouseUp = (event: MouseEvent) => {
+  // Only close if both mousedown and mouseup happened on the overlay
+  if (event.target === event.currentTarget && mouseDownTarget === event.target) {
+    closeModal()
+  }
+  mouseDownTarget = null
+}
 
 // Modal methods
 const closeModal = () => {
@@ -1171,6 +1193,24 @@ const deleteOrganization = (id: number) => {
   }
 }
 
+// Track mouse down for delete modal
+let deleteMouseDownTarget: EventTarget | null = null
+
+const handleDeleteOverlayMouseDown = (event: MouseEvent) => {
+  if (event.target === event.currentTarget) {
+    deleteMouseDownTarget = event.target
+  } else {
+    deleteMouseDownTarget = null
+  }
+}
+
+const handleDeleteOverlayMouseUp = (event: MouseEvent) => {
+  if (event.target === event.currentTarget && deleteMouseDownTarget === event.target) {
+    cancelDelete()
+  }
+  deleteMouseDownTarget = null
+}
+
 const cancelDelete = () => {
   showDeleteModal.value = false
   selectedOrganization.value = null
@@ -1223,6 +1263,24 @@ const viewDocument = async (id: number) => {
     notificationType.value = 'warning'
     showNotificationModal.value = true
   }
+}
+
+// Track mouse down for import modal
+let importMouseDownTarget: EventTarget | null = null
+
+const handleImportOverlayMouseDown = (event: MouseEvent) => {
+  if (event.target === event.currentTarget) {
+    importMouseDownTarget = event.target
+  } else {
+    importMouseDownTarget = null
+  }
+}
+
+const handleImportOverlayMouseUp = (event: MouseEvent) => {
+  if (event.target === event.currentTarget && importMouseDownTarget === event.target) {
+    showImportModal.value = false
+  }
+  importMouseDownTarget = null
 }
 
 const handleImportFile = (event: Event) => {

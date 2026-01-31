@@ -65,8 +65,8 @@
     </div>
     
     <!-- Create/Edit Modal -->
-    <div v-if="showCreateModal || showEditModal" class="modal-overlay" @click="closeModals">
-      <div class="add-roadshow-modal" @click.stop>
+    <div v-if="showCreateModal || showEditModal" class="modal-overlay" @mousedown.self="handleOverlayMouseDown" @mouseup.self="handleOverlayMouseUp">
+      <div class="add-roadshow-modal">
         <h2 class="modal-title">{{ showCreateModal ? 'Add Roadshow' : 'Edit Roadshow' }}</h2>
         <div class="form-divider"></div>
 
@@ -148,21 +148,8 @@
     </div>
     
     <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteModal" class="modal-overlay" @click="closeModals">
-      <div class="delete-confirmation-modal" @click.stop>
-        <h2 class="modal-title">Confirm Delete</h2>
-        <div class="form-divider"></div>
-        <p class="delete-message">Are you sure you want to delete "{{ deletingRoadshow?.title }}"?</p>
-        <div class="modal-actions">
-          <button class="btn-cancel" @click="closeModals">Cancel</button>
-          <button class="btn-delete" @click="deleteRoadshow">Delete</button>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteModal" class="modal-overlay" @click="closeModals">
-      <div class="delete-confirmation-modal" @click.stop>
+    <div v-if="showDeleteModal" class="modal-overlay" @mousedown.self="handleDeleteOverlayMouseDown" @mouseup.self="handleDeleteOverlayMouseUp">
+      <div class="delete-confirmation-modal">
         <h2 class="modal-title">Confirm Delete</h2>
         <div class="form-divider"></div>
         <p class="delete-message">Are you sure you want to delete "{{ deletingRoadshow?.title }}"?</p>
@@ -297,6 +284,40 @@ const deleteRoadshow = async () => {
   } finally {
     state.loading = false
   }
+}
+
+// Track mouse down position for modal overlays
+let mouseDownTarget: EventTarget | null = null
+let deleteMouseDownTarget: EventTarget | null = null
+
+const handleOverlayMouseDown = (event: MouseEvent) => {
+  if (event.target === event.currentTarget) {
+    mouseDownTarget = event.target
+  } else {
+    mouseDownTarget = null
+  }
+}
+
+const handleOverlayMouseUp = (event: MouseEvent) => {
+  if (event.target === event.currentTarget && mouseDownTarget === event.target) {
+    closeModals()
+  }
+  mouseDownTarget = null
+}
+
+const handleDeleteOverlayMouseDown = (event: MouseEvent) => {
+  if (event.target === event.currentTarget) {
+    deleteMouseDownTarget = event.target
+  } else {
+    deleteMouseDownTarget = null
+  }
+}
+
+const handleDeleteOverlayMouseUp = (event: MouseEvent) => {
+  if (event.target === event.currentTarget && deleteMouseDownTarget === event.target) {
+    closeModals()
+  }
+  deleteMouseDownTarget = null
 }
 
 const closeModals = () => {
