@@ -216,6 +216,13 @@ const isMOUDocumentPDF = computed(() => {
   return url.endsWith('.pdf') || url.includes('.pdf')
 })
 
+// Watchers
+watch(() => route.params.id, async (newId) => {
+  if (newId) {
+    await fetchMOUDocument(newId as string)
+  }
+})
+
 // Methods
 const handlePageChange = async (page: number) => {
   if (page >= 1 && page <= totalPages.value && !state.loading) {

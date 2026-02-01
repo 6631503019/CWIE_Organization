@@ -32,7 +32,7 @@
       <div class="mou-grid-container">
         <!-- Left Column MOUs -->
         <div class="mou-left-column">
-          <div class="mou-card" v-for="(mou, index) in leftColumnMous" :key="mou.id">
+          <div class="mou-card" v-for="mou in paginatedMous" :key="mou.id" @click="selectMou(mou)">
             <!-- Organization Logo -->
             <div class="org-logo">
               <img :src="mou.logo" :alt="mou.name" />
@@ -44,7 +44,7 @@
             <div class="org-duration">{{ mou.duration }}</div>
             
             <!-- Details Button -->
-            <div class="details-section" @click="viewDetails(mou)">
+            <div class="details-section">
               <span class="details-text">Details</span>
               <div class="details-arrow"></div>
             </div>
@@ -102,27 +102,6 @@
           @page-change="handlePageChange"
         />
       </div>
-      
-      <!-- Additional MOU Cards (Bottom) -->
-      <div class="bottom-mou-cards">
-        <div class="mou-card" v-for="mou in bottomMous" :key="mou.id">
-          <!-- Organization Logo -->
-          <div class="org-logo">
-            <img :src="mou.logo" :alt="mou.name" />
-          </div>
-          
-          <!-- Organization Info -->
-          <div class="org-name">{{ mou.name }}</div>
-          <div class="org-status active">Active</div>
-          <div class="org-duration">{{ mou.duration }}</div>
-          
-          <!-- Details Button -->
-          <div class="details-section" @click="viewDetails(mou)">
-            <span class="details-text">Details</span>
-            <div class="details-arrow"></div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
@@ -142,7 +121,7 @@ const state = reactive({
   loading: false,
   error: null as string | null,
   currentPage: 1,
-  itemsPerPage: 5
+  itemsPerPage: 6
 })
 
 // Reactive filter data
@@ -150,7 +129,6 @@ const searchText = ref('')
 
 // MOU data
 const mous = ref<any[]>([])
-const selectedMou = ref<any>(null)
 const mouDocumentImage = ref<string | null>(null)
 const isMOUDocumentPDF = ref(false)
 
@@ -168,21 +146,24 @@ const filteredMous = computed(() => {
   return filtered
 })
 
-// Paginated MOUs - split into columns
+// Paginated MOUs
 const paginatedMous = computed(() => {
   const start = (state.currentPage - 1) * state.itemsPerPage
   const end = start + state.itemsPerPage
   return filteredMous.value.slice(start, end)
 })
 
-// Left column (first 2 MOUs)
-const leftColumnMous = computed(() => {
-  return paginatedMous.value.slice(0, 2)
-})
-
-// Bottom MOUs (remaining 3)
-const bottomMous = computed(() => {
-  return paginatedMous.value.slice(2, 5)
+const selectedMou = computed(() => {
+  const mouId = route.params.id as string
+  const found = mous.value.find(m => {
+    return String(m.id) === String(mouId) || m.id === mouId || m.id === parseInt(mouId)
+  })
+  
+  if (!found) {
+    console.warn(`MOU with ID ${mouId} not found, falling back to first MOU`)
+  }
+  
+  return found || mous.value[0]
 })
 
 // Pagination info
@@ -193,6 +174,12 @@ const totalPages = computed(() =>
 // Watchers
 watch(searchText, () => {
   state.currentPage = 1
+})
+
+watch(() => route.params.id, async (newId) => {
+  if (newId) {
+    await fetchMOUDocument(newId as string)
+  }
 })
 
 // Methods
@@ -216,36 +203,8 @@ const applySearch = () => {
   state.currentPage = 1
 }
 
-const viewDetails = async (mou: any) => {
-  selectedMou.value = mou
-  
-  // Fetch MOU document
-  try {
-    const mouResponse = await mouAPI.getAll({ limit: 100 })
-    const mouData = mouResponse.data.data.find((m: any) => {
-      const orgId = m.organization_id?._id || m.organization_id
-      return String(orgId) === String(mou.id)
-    })
-    
-    if (mouData && mouData.document_image_path) {
-      let docPath = mouData.document_image_path
-      docPath = docPath.replace(/\\/g, '/')
-      if (!docPath.startsWith('/')) {
-        docPath = '/' + docPath
-      }
-      mouDocumentImage.value = `http://localhost:5000${docPath}`
-      
-      // Check if it's a PDF
-      isMOUDocumentPDF.value = docPath.toLowerCase().endsWith('.pdf')
-    } else {
-      mouDocumentImage.value = null
-      isMOUDocumentPDF.value = false
-    }
-  } catch (error) {
-    console.error('Error loading MOU document:', error)
-    mouDocumentImage.value = null
-    isMOUDocumentPDF.value = false
-  }
+const selectMou = (mou: any) => {
+  router.push(`/user/mou/${mou.id}`)
 }
 
 const closeDetail = () => {
@@ -255,6 +214,38 @@ const closeDetail = () => {
 const viewFullDetails = () => {
   if (selectedMou.value) {
     router.push(`/user/mou/${selectedMou.value.id}/more`)
+  }
+}
+
+// Fetch MOU document for selected organization
+const fetchMOUDocument = async (orgId: string) => {
+  try {
+    console.log('Fetching MOU for organization ID:', orgId)
+    const response = await mouAPI.getAll({ limit: 100 })
+    console.log('All MOUs from backend:', response.data.data)
+    
+    // Try multiple matching strategies
+    const mou = response.data.data.find((item: any) => {
+      const mouOrgId = item.organization_id?._id || item.organization_id
+      console.log(`Comparing MOU org ID: ${mouOrgId} with target: ${orgId}`)
+      return String(mouOrgId) === String(orgId)
+    })
+    
+    console.log('Found MOU:', mou)
+    
+    if (mou && mou.mou_path) {
+      mouDocumentImage.value = `http://localhost:5000${mou.mou_path}`
+      isMOUDocumentPDF.value = mou.mou_path.toLowerCase().endsWith('.pdf')
+      console.log('MOU document URL set to:', mouDocumentImage.value)
+    } else {
+      console.log('No MOU found for this organization')
+      mouDocumentImage.value = null
+      isMOUDocumentPDF.value = false
+    }
+  } catch (error) {
+    console.error('Error loading MOU document:', error)
+    mouDocumentImage.value = null
+    isMOUDocumentPDF.value = false
   }
 }
 
@@ -306,14 +297,6 @@ const fetchPublishedMOUs = async () => {
         }
       })
     
-    // Auto-select first MOU from route param
-    const mouId = route.params.id
-    if (mouId) {
-      const foundMou = mous.value.find(m => m.id === mouId)
-      if (foundMou) {
-        await viewDetails(foundMou)
-      }
-    }
   } catch (error: any) {
     state.error = error.response?.data?.message || 'Failed to load MOUs'
     console.error('Loading error:', error)
@@ -322,9 +305,16 @@ const fetchPublishedMOUs = async () => {
 
 // Lifecycle
 onMounted(async () => {
+  console.log('UserMOUDetail mounted for ID:', route.params.id)
   state.loading = true
+  
   try {
     await fetchPublishedMOUs()
+    
+    // Fetch MOU document if we have organization ID
+    if (route.params.id) {
+      await fetchMOUDocument(route.params.id as string)
+    }
   } finally {
     state.loading = false
   }
@@ -421,216 +411,263 @@ onMounted(async () => {
 
 /* MOU Grid Layout */
 .mou-grid-container {
-  display: grid;
-  grid-template-columns: 380px 1fr;
-  gap: 30px;
-  margin-bottom: 30px;
+  position: absolute;
+  width: 600px;
+  left: 270px;
+  top: 250px;
+  display: flex;
+  gap: 50px;
 }
 
 .mou-left-column {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
+  width: 550px;
+  display: grid;
+  grid-template-columns: repeat(2, 250px);
+  gap: 23px 50px;
 }
 
 .mou-card {
   position: relative;
-  background: #FFFFFF;
-  border: 1px solid #E0E0E0;
-  border-radius: 12px;
-  padding: 24px;
+  width: 250px;
+  height: 248px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  min-height: 280px;
+  transition: transform 0.2s ease;
 }
 
 .mou-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.mou-card::before {
+  content: '';
+  position: absolute;
+  width: 250px;
+  height: 200px;
+  left: 0px;
+  top: 48px;
+  
+  background: #FFFFFF;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
+  z-index: 1;
 }
 
 .org-logo {
+  position: absolute;
   width: 95px;
   height: 95px;
-  margin: 0 auto 20px;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #F5F5F5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  left: 77px;
+  top: 0px;
+  z-index: 2;
 }
 
 .org-logo img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  border-radius: 47.5px;
+  object-fit: cover;
+  background: #e0e0e0;
 }
 
 .org-name {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 107px;
+  z-index: 2;
+  
   font-family: 'Outfit', sans-serif;
+  font-style: normal;
   font-weight: 600;
-  font-size: 20px;
-  line-height: 26px;
+  font-size: 18px;
+  line-height: 23px;
+  letter-spacing: 0.12em;
   color: #000000;
   text-align: center;
-  margin-bottom: 12px;
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .org-status {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 12px;
-  text-align: center;
-  margin: 0 auto 12px;
-  display: block;
-  width: fit-content;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 132px;
+  z-index: 2;
+  
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 18px;
+  color: #767676;
 }
 
 .org-status.active {
-  background: #E8F5E9;
-  color: #2E7D32;
+  color: #00FF5E;
+}
+
+.org-status.inactive {
+  color: #FF0000;
 }
 
 .org-duration {
-  font-family: 'Inter', sans-serif;
+  position: absolute;
+  width: 100px;
+  left: 75px;
+  top: 156px;
+  z-index: 2;
+  
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
   font-weight: 400;
-  font-size: 13px;
-  line-height: 18px;
-  color: #666666;
+  font-size: 11px;
+  line-height: 15px;
   text-align: center;
-  margin-bottom: 20px;
+  color: #767676;
 }
 
 .details-section {
   position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 94px;
+  top: 200px;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 8px;
-  cursor: pointer;
 }
 
 .details-text {
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: 600;
   font-size: 14px;
-  color: #C70000;
+  line-height: 18px;
+  color: #000000;
 }
 
 .details-arrow {
-  width: 0;
-  height: 0;
-  border-left: 5px solid transparent;
-  border-right: 5px solid transparent;
-  border-top: 6px solid #C70000;
-  transform: rotate(-90deg);
+  width: 10px;
+  height: 4.84px;
+  border: 1px solid #000000;
+  transform: rotate(90deg);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 
 /* Detail Panel */
 .detail-panel {
-  position: relative;
+  position: absolute;
+  width: 518px;
+  height: 781.16px;
+  left: 617px;
+  top: 0px;
+  
   background: #FFFFFF;
-  border: 1px solid #E0E0E0;
+  box-shadow: 0px 4px 20px 1px rgba(0, 0, 0, 0.25);
   border-radius: 12px;
-  padding: 40px 30px;
 }
 
 .close-button {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  width: 30px;
-  height: 30px;
+  width: 18px;
+  height: 16.21px;
+  right: 33px;
+  top: 32px;
   cursor: pointer;
 }
 
-.close-line-1,
-.close-line-2 {
+.close-line-1, .close-line-2 {
   position: absolute;
-  width: 20px;
+  width: 23px;
   height: 2px;
   background: #000000;
-  top: 14px;
-  left: 5px;
 }
 
 .close-line-1 {
   transform: rotate(45deg);
+  top: 7px;
 }
 
 .close-line-2 {
   transform: rotate(-45deg);
+  top: 7px;
 }
 
 .org-detail-logo {
-  width: 120px;
-  height: 120px;
-  margin: 0 auto 20px;
-  border-radius: 8px;
-  overflow: hidden;
-  background: #F5F5F5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: absolute;
+  width: 89.43px;
+  height: 89.43px;
+  left: 214px;
+  top: 47px;
 }
 
 .org-detail-logo img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #e0e0e0;
 }
 
 .org-detail-name {
+  position: absolute;
+  width: 91px;
+  height: 38.08px;
+  left: 213px;
+  top: 146px;
+  
   font-family: 'Outfit', sans-serif;
+  font-style: normal;
   font-weight: 600;
-  font-size: 24px;
-  line-height: 32px;
+  font-size: 29px;
+  line-height: 37px;
+  letter-spacing: 0.12em;
   color: #000000;
   text-align: center;
-  margin-bottom: 12px;
 }
 
 .org-detail-duration {
-  font-family: 'Inter', sans-serif;
-  font-weight: 400;
-  font-size: 14px;
-  color: #666666;
+  position: absolute;
+  width: 110px;
+  height: 36.13px;
+  left: 204px;
+  top: 190px;
+  
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 15px;
   text-align: center;
-  margin-bottom: 30px;
+  color: #000000;
 }
 
 .mou-document {
-  width: 100%;
-  min-height: 400px;
-  background: #F9F9F9;
-  border: 1px solid #E0E0E0;
+  position: absolute;
+  width: 291.15px;
+  height: 408.61px;
+  left: 114px;
+  top: 260px;
   border-radius: 8px;
-  margin-bottom: 20px;
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: #f0f0f0;
 }
 
 .mou-document img {
   width: 100%;
-  height: auto;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #f0f0f0;
 }
 
 .mou-pdf-viewer {
   width: 100%;
-  min-height: 400px;
+  height: 100%;
+  border: none;
+  border-radius: 8px;
 }
 
 .mou-placeholder {
@@ -650,32 +687,39 @@ onMounted(async () => {
 }
 
 .placeholder-text {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Outfit', sans-serif;
   font-size: 14px;
+  color: #999;
+  text-align: center;
 }
 
 .more-details {
-  text-align: center;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 14px;
-  color: #C70000;
+  position: absolute;
+  width: 131px;
+  height: 18px;
+  left: 194px;
+  top: 732px;
+  
+  font-family: 'Outfit', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 19px;
+  color: #000000;
   cursor: pointer;
-  text-decoration: underline;
+  text-align: center;
 }
 
-/* Bottom MOU Cards */
-.bottom-mou-cards {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 30px;
-  margin-bottom: 40px;
+.more-details:hover {
+  text-decoration: underline;
 }
 
 /* Pagination */
 .mou-pagination-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 30px;
+  position: absolute;
+  left: 453px;
+  top: 1090px;
+  width: 218px;
+  height: 28px;
 }
 </style>
