@@ -44,7 +44,7 @@
       <div class="mou-grid-container">
         <!-- Left Column MOUs -->
         <div class="mou-left-column">
-          <div class="mou-card" v-for="(mou, index) in leftColumnMous" :key="mou.id">
+          <div class="mou-card" v-for="mou in paginatedMous" :key="mou.id" @click="selectMou(mou)">
             <!-- Organization Logo -->
             <div class="org-logo">
               <img :src="mou.logo" :alt="mou.name" />
@@ -119,32 +119,6 @@
           @page-change="handlePageChange"
         />
       </div>
-      
-      <!-- Additional MOU Cards (Bottom) -->
-      <div class="bottom-mou-cards">
-        <div class="mou-card" v-for="mou in bottomMous" :key="mou.id">
-          <!-- Organization Logo -->
-          <div class="org-logo">
-            <img :src="mou.logo" :alt="mou.name" />
-          </div>
-          
-          <!-- Organization Info -->
-          <div class="org-name">{{ mou.name }}</div>
-          <div class="org-status" :class="{ 'active': mou.status === 'Active', 'inactive': mou.status === 'Inactive' }">{{ mou.status }}</div>
-          <div class="org-duration">{{ mou.duration }}</div>
-          
-          <!-- Details Button -->
-          <div class="details-section">
-            <span class="details-text">Details</span>
-            <div class="details-arrow"></div>
-          </div>
-          
-          <!-- Edit Icon -->
-          <div class="edit-icon" @click.stop="editMOU(mou)">
-            <div class="pencil-icon"></div>
-          </div>
-        </div>
-      </div>
     </div>
     
     <!-- Edit Modal -->
@@ -211,22 +185,29 @@ const filteredMous = computed(() => {
 })
 
 // Computed properties for layout
-const leftColumnMous = computed(() => {
-  return allMous.value.slice(0, 2) // First 2 MOUs for left column
-})
-
-const bottomMous = computed(() => {
-  return allMous.value.slice(2, 4) // Next 2 MOUs for bottom
+const paginatedMous = computed(() => {
+  const start = (state.currentPage - 1) * state.itemsPerPage
+  const end = start + state.itemsPerPage
+  return filteredMous.value.slice(start, end)
 })
 
 const selectedMou = computed(() => {
-  const mouId = parseInt(route.params.id as string)
-  return allMous.value.find(m => m.id === mouId) || allMous.value[0]
+  const mouId = route.params.id as string
+  // Try to find by matching both string and number IDs
+  const found = allMous.value.find(m => {
+    return String(m.id) === String(mouId) || m.id === mouId || m.id === parseInt(mouId)
+  })
+  
+  if (!found) {
+    console.warn(`MOU with ID ${mouId} not found, falling back to first MOU`)
+  }
+  
+  return found || allMous.value[0]
 })
 
 // Pagination computed properties
-const totalPages = computed(() => Math.ceil(allMous.value.length / state.itemsPerPage))
-const totalItems = computed(() => allMous.value.length)
+const totalPages = computed(() => Math.ceil(filteredMous.value.length / state.itemsPerPage))
+const totalItems = computed(() => filteredMous.value.length)
 
 // Check if MOU document is PDF
 const isMOUDocumentPDF = computed(() => {
@@ -255,6 +236,10 @@ const toggleStatusDropdown = () => {
 const selectStatus = (status: string) => {
   selectedStatus.value = status
   showStatusDropdown.value = false
+}
+
+const selectMou = (mou: any) => {
+  router.push(`/admin/mou/${mou.id}`)
 }
 
 const closeDetail = () => {
@@ -621,7 +606,6 @@ onBeforeUnmount(() => {
 .mou-grid-container {
   position: absolute;
   width: 600px;
-  height: 791px;
   left: 270px;
   top: 250px;
   display: flex;
@@ -629,10 +613,10 @@ onBeforeUnmount(() => {
 }
 
 .mou-left-column {
-  width: 250px;
-  display: flex;
-  flex-direction: column;
-  gap: 23px;
+  width: 550px;
+  display: grid;
+  grid-template-columns: repeat(2, 250px);
+  gap: 23px 50px;
 }
 
 .detail-panel {
@@ -944,13 +928,10 @@ onBeforeUnmount(() => {
 }
 
 .bottom-mou-cards {
-  position: absolute;
-  width: 564px;
-  height: 200px;
-  left: 270px;
-  top: 1193px;
   display: flex;
-  gap: 64px;
+  gap: 42px;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
 }
 
 /* Pagination Wrapper */

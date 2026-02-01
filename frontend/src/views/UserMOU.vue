@@ -83,7 +83,7 @@ const state = reactive({
   loading: false,
   error: null as string | null,
   currentPage: 1,
-  itemsPerPage: 6
+  itemsPerPage: 8
 })
 
 // Reactive filter data
@@ -479,6 +479,7 @@ onMounted(async () => {
 .mou-pagination-container {
   display: flex;
   justify-content: center;
+  margin-top: 40px;
   margin-bottom: 50px;
 }
 </style>

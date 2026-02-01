@@ -259,10 +259,11 @@
 
           <!-- MOU Document Preview -->
           <div v-if="mouPreview" class="mou-document-preview">
-            <img v-if="mouData.mouFile?.type?.startsWith('image/')" :src="mouPreview" alt="MOU Preview" />
+            <img v-if="mouData.mouFile?.type?.startsWith('image/') || (existingMouId && mouPreview.match(/\.(jpg|jpeg|png|gif)$/i))" :src="mouPreview" alt="MOU Preview" />
+            <embed v-else-if="mouPreview.endsWith('.pdf')" :src="mouPreview" type="application/pdf" class="pdf-preview" />
             <div v-else class="document-placeholder">
               <div class="doc-icon"></div>
-              <span>{{ mouData.mouFile?.name }}</span>
+              <span>{{ mouData.mouFile?.name || 'MOU Document' }}</span>
             </div>
           </div>
 

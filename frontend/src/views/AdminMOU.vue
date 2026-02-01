@@ -43,7 +43,7 @@
       <!-- MOU Cards Grid -->
       <div class="mou-cards-grid">
         <div 
-          v-for="mou in filteredMous" 
+          v-for="mou in paginatedMous" 
           :key="mou.id" 
           class="mou-card"
           @click="viewMouDetails(mou)"
@@ -109,7 +109,7 @@ const state = reactive({
   loading: false,
   error: null as string | null,
   currentPage: 1,
-  itemsPerPage: 6,
+  itemsPerPage: 8,
   autoRefreshInterval: null as number | null
 })
 
@@ -701,10 +701,9 @@ onBeforeUnmount(() => {
 
 /* MOU Pagination Container */
 .mou-pagination-container {
-  position: absolute;
-  left: 1090px;
-  top: 560px;
-  width: 218px;
-  height: 28px;
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+  margin-bottom: 50px;
 }
 </style>
