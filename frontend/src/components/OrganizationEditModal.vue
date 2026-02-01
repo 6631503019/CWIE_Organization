@@ -392,16 +392,21 @@ const handleMOUUpload = (event: Event) => {
   }
 }
 
-const handleSaveOrganization = async () => {
+// Main function to save all data from all tabs
+const saveAllData = async () => {
+  // Validate required organization fields
   if (!formData.organizationNameEN || !formData.organizationNameTH || !formData.email || !formData.organizationType) {
     alert('Please fill in all required fields: Organization Name (EN/TH), Email, and Organization Type')
     return
   }
 
-  console.log('🔵 Before Save - isPublic:', formData.isPublic, typeof formData.isPublic)
-
   loading.value = true
+  const savedItems: string[] = []
+  const errors: string[] = []
+  let savedOrgId = props.organizationId
+
   try {
+    // Step 1: Save Organization Data
     const formDataToSend = new FormData()
     formDataToSend.append('name_en', formData.organizationNameEN)
     formDataToSend.append('name_th', formData.organizationNameTH)
@@ -418,8 +423,6 @@ const handleSaveOrganization = async () => {
     formDataToSend.append('phone_number', formData.phoneNumber)
     formDataToSend.append('details', formData.details)
     formDataToSend.append('is_public', String(formData.isPublic))
-    
-    console.log('🔵 FormData is_public sent:', String(formData.isPublic))
 
     if (formData.logo) {
       formDataToSend.append('logo', formData.logo)
@@ -428,17 +431,84 @@ const handleSaveOrganization = async () => {
     let response
     if (props.organizationId) {
       response = await organizationAPI.update(props.organizationId, formDataToSend)
+      savedOrgId = props.organizationId
     } else {
       response = await organizationAPI.create(formDataToSend)
+      savedOrgId = response.data.data._id
+    }
+    savedItems.push('Organization')
+    console.log('Organization saved successfully')
+
+    // Step 2: Save Review Data (if provided)
+    if (reviewData.jobPosition && reviewData.review && reviewData.rating > 0) {
+      if (!savedOrgId) {
+        errors.push('Review (No organization ID)')
+      } else {
+        try {
+          const reviewPayload = {
+            organization_id: savedOrgId,
+            job_position: reviewData.jobPosition,
+            review_text: reviewData.review,
+            rating: reviewData.rating
+          }
+          
+          await reviewAPI.create(reviewPayload)
+          savedItems.push('Review')
+          console.log('Review saved successfully')
+        } catch (reviewError: any) {
+          console.error('Review save failed:', reviewError)
+          errors.push('Review')
+        }
+      }
+    }
+
+    // Step 3: Save MOU Data (if provided)
+    if (mouData.startDate && mouData.endDate) {
+      if (new Date(mouData.endDate) <= new Date(mouData.startDate)) {
+        errors.push('MOU (End date must be after start date)')
+      } else if (!savedOrgId) {
+        errors.push('MOU (No organization ID)')
+      } else {
+        try {
+          const mouFormData = new FormData()
+          
+          const orgResponse = await organizationAPI.getById(savedOrgId)
+          const orgData = orgResponse.data.data
+          
+          mouFormData.append('organization_name', orgData.name_en || orgData.name_th || 'Unknown')
+          mouFormData.append('organization_id', savedOrgId)
+          mouFormData.append('start_date', mouData.startDate)
+          mouFormData.append('end_date', mouData.endDate)
+          
+          if (mouData.mouFile) {
+            mouFormData.append('mou', mouData.mouFile)
+          }
+
+          if (existingMouId.value) {
+            await mouAPI.update(existingMouId.value, mouFormData)
+          } else {
+            await mouAPI.create(mouFormData)
+          }
+          savedItems.push('MOU')
+          console.log('MOU saved successfully')
+        } catch (mouError: any) {
+          console.error('MOU save failed:', mouError)
+          errors.push('MOU')
+        }
+      }
+    }
+
+    // Prepare success message
+    if (errors.length === 0) {
+      alert(`${savedItems.join(', ')} saved successfully!`)
+    } else {
+      alert(`${savedItems.join(', ')} saved, but ${errors.join(', ')} failed.`)
     }
     
-    console.log('🔵 Backend response:', response.data)
-
-    alert('Organization saved successfully!')
     emit('saved')
     emit('update:modelValue', false)
   } catch (error: any) {
-    const errorMessage = error.response?.data?.message || error.message || 'Failed to save organization'
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to save data'
     console.error('Save error:', error)
     alert(`Error: ${errorMessage}`)
   } finally {
@@ -446,88 +516,17 @@ const handleSaveOrganization = async () => {
   }
 }
 
-const handleSaveReview = async () => {
-  if (!reviewData.jobPosition || !reviewData.review || reviewData.rating === 0) {
-    alert('Please fill in all fields and provide a rating')
-    return
-  }
-  
-  if (!props.organizationId) {
-    alert('Please save organization first before adding review')
-    return
-  }
+// Wrapper functions for each tab
+const handleSaveOrganization = async () => {
+  await saveAllData()
+}
 
-  loading.value = true
-  try {
-    const reviewPayload = {
-      organization_id: props.organizationId,
-      job_position: reviewData.jobPosition,
-      review_text: reviewData.review,
-      rating: reviewData.rating
-    }
-    
-    await reviewAPI.create(reviewPayload)
-    alert('Review created successfully!')
-    emit('saved')
-    emit('update:modelValue', false)
-  } catch (error: any) {
-    console.error('Error saving review:', error)
-    const errorMsg = error.response?.data?.message || 'Failed to save review'
-    alert(`Error: ${errorMsg}`)
-  } finally {
-    loading.value = false
-  }
+const handleSaveReview = async () => {
+  await saveAllData()
 }
 
 const handleSaveMOU = async () => {
-  if (!mouData.startDate || !mouData.endDate) {
-    alert('Please select start and end dates')
-    return
-  }
-  
-  if (new Date(mouData.endDate) <= new Date(mouData.startDate)) {
-    alert('End date must be after start date')
-    return
-  }
-  
-  if (!props.organizationId) {
-    alert('Please save organization first before adding MOU')
-    return
-  }
-
-  loading.value = true
-  try {
-    const formDataToSend = new FormData()
-    
-    const orgResponse = await organizationAPI.getById(props.organizationId)
-    const orgData = orgResponse.data.data
-    
-    formDataToSend.append('organization_name', orgData.name_en || orgData.name_th || 'Unknown')
-    formDataToSend.append('organization_id', props.organizationId)
-    formDataToSend.append('start_date', mouData.startDate)
-    formDataToSend.append('end_date', mouData.endDate)
-    
-    if (mouData.mouFile) {
-      formDataToSend.append('mou', mouData.mouFile)
-    }
-
-    if (existingMouId.value) {
-      await mouAPI.update(existingMouId.value, formDataToSend)
-      alert('MOU updated successfully!')
-    } else {
-      await mouAPI.create(formDataToSend)
-      alert('MOU created successfully!')
-    }
-    
-    emit('saved')
-    emit('update:modelValue', false)
-  } catch (error: any) {
-    console.error('Error saving MOU:', error)
-    const errorMsg = error.response?.data?.message || 'Failed to save MOU'
-    alert(`Error: ${errorMsg}`)
-  } finally {
-    loading.value = false
-  }
+  await saveAllData()
 }
 
 // Load organization data when editing
