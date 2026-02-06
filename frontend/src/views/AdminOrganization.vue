@@ -482,21 +482,6 @@
         <h2 class="modal-title">Import Organizations</h2>
         <div class="form-divider"></div>
         
-        <div class="import-instructions">
-          <p>Upload a CSV or Excel file with the following columns:</p>
-          <ul>
-            <li><strong>Name (TH)</strong> - Thai organization name (required)</li>
-            <li><strong>Name (EN)</strong> - English organization name (required)</li>
-            <li><strong>Address (TH)</strong> - Thai address (required)</li>
-            <li><strong>Address (EN)</strong> - English address (required)</li>
-            <li><strong>Organization Type</strong> - MFU, private company, Government, or Oversea (required)</li>
-            <li><strong>Email</strong> - Contact email (required)</li>
-            <li><strong>Phone</strong> - Phone number (optional)</li>
-            <li><strong>Details</strong> - Organization details (optional)</li>
-            <li><strong>Public</strong> - true or false (optional, default: false)</li>
-          </ul>
-        </div>
-        
         <div class="file-upload-section">
           <input 
             type="file" 
@@ -520,9 +505,25 @@
           </p>
           <div v-if="importResults.failed.length > 0" class="failed-items">
             <p><strong>Failed rows:</strong></p>
+            <div style="max-height: 300px; overflow-y: auto;">
+              <ul>
+                <li v-for="fail in importResults.failed" :key="fail.row" style="margin-bottom: 8px;">
+                  <strong>Row {{ fail.row }}:</strong> {{ fail.error }}
+                  <div v-if="fail.data" style="font-size: 0.85em; color: #666; margin-left: 20px;">
+                    Data: {{ JSON.stringify(fail.data).substring(0, 100) }}...
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div v-if="importResults.success.length > 0" class="success-items" style="margin-top: 10px;">
+            <p><strong>Successfully imported:</strong></p>
             <ul>
-              <li v-for="fail in importResults.failed.slice(0, 5)" :key="fail.row">
-                Row {{ fail.row }}: {{ fail.error }}
+              <li v-for="success in importResults.success.slice(0, 5)" :key="success.row">
+                Row {{ success.row }}: {{ success.name }}
+              </li>
+              <li v-if="importResults.success.length > 5" style="color: #666;">
+                ... and {{ importResults.success.length - 5 }} more
               </li>
             </ul>
           </div>
@@ -550,7 +551,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, reactive } from 'vue'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
-import { organizationAPI, mouAPI } from '../services/api'
+import { organizationAPI, mouAPI, checkTokenValidity } from '../services/api'
 
 // Reactive state management
 const state = reactive({
@@ -1014,6 +1015,11 @@ const saveOrganization = async () => {
 // Fetch organizations from backend
 const fetchOrganizations = async () => {  
   try {
+    // Check token validity before making request
+    if (!checkTokenValidity()) {
+      return
+    }
+    
     const response = await organizationAPI.getAll({ limit: 100, public: 'false' })
     
     // Fetch all MOUs
@@ -1279,7 +1285,32 @@ const handleImportOverlayMouseUp = (event: MouseEvent) => {
 const handleImportFile = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files[0]) {
-    importFile.value = target.files[0]
+    const file = target.files[0]
+    
+    // Validate file type
+    const validTypes = ['.csv', '.xlsx', '.xls']
+    const fileName = file.name.toLowerCase()
+    const isValid = validTypes.some(type => fileName.endsWith(type))
+    
+    if (!isValid) {
+      notificationMessage.value = 'Invalid file type. Please upload CSV or Excel file (.csv, .xlsx, .xls)'
+      notificationType.value = 'error'
+      showNotificationModal.value = true
+      target.value = ''
+      return
+    }
+    
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      notificationMessage.value = 'File size too large. Maximum 10MB allowed'
+      notificationType.value = 'error'
+      showNotificationModal.value = true
+      target.value = ''
+      return
+    }
+    
+    importFile.value = file
+    console.log('File selected:', file.name, 'Size:', (file.size / 1024).toFixed(2), 'KB')
   }
 }
 
@@ -1291,8 +1322,18 @@ const submitImport = async () => {
     return
   }
 
+  // Check token validity before import
+  if (!checkTokenValidity()) {
+    notificationMessage.value = 'Session expired. Please login again.'
+    notificationType.value = 'error'
+    showNotificationModal.value = true
+    return
+  }
+
   state.loading = true
   try {
+    console.log('Starting import for file:', importFile.value.name)
+    
     const formData = new FormData()
     formData.append('file', importFile.value)
 
@@ -1304,15 +1345,35 @@ const submitImport = async () => {
       body: formData
     })
 
-    if (!response.ok) throw new Error('Import failed')
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
+      console.error('Import failed:', response.status, errorData)
+      throw new Error(errorData.message || `Import failed (${response.status})`)
+    }
     
     const result = await response.json()
+    console.log('Import result:', result)
+    console.log('Success count:', result.data.success.length)
+    console.log('Failed count:', result.data.failed.length)
+    
+    // Log all failed rows for debugging
+    if (result.data.failed.length > 0) {
+      console.error('Failed rows details:')
+      result.data.failed.forEach((fail: any, index: number) => {
+        console.error(`  ${index + 1}. Row ${fail.row}: ${fail.error}`)
+        if (fail.data) {
+          console.error('     Columns found:', Object.keys(fail.data))
+          console.error('     Data:', fail.data)
+        }
+      })
+    }
+    
     importResults.value = result.data
     
     // Refresh organizations list
     await fetchOrganizations()
     
-    notificationMessage.value = result.message
+    notificationMessage.value = result.message || 'Organizations imported successfully'
     notificationType.value = 'success'
     showNotificationModal.value = true
     
@@ -1323,6 +1384,7 @@ const submitImport = async () => {
     }, 2000)
     
   } catch (error: any) {
+    console.error('Import error:', error)
     notificationMessage.value = error.message || 'Failed to import file'
     notificationType.value = 'error'
     showNotificationModal.value = true

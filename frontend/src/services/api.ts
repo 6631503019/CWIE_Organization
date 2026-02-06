@@ -31,14 +31,55 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
+            // Clear all auth data
             localStorage.removeItem('auth_token')
             localStorage.removeItem('auth_user')
             localStorage.removeItem('token')
-            window.location.href = '/login'
+
+            // Show alert before redirect
+            const message = error.response?.data?.message || 'Session expired. Please login again.'
+            console.warn('Authentication failed:', message)
+
+            // Redirect to login
+            if (window.location.pathname !== '/login') {
+                window.location.href = '/login'
+            }
         }
         return Promise.reject(error)
     }
 )
+
+// Helper function to check if token is expired
+export const isTokenExpired = (token: string): boolean => {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        const exp = payload.exp * 1000 // Convert to milliseconds
+        return Date.now() >= exp
+    } catch (error) {
+        return true // If can't parse, consider it expired
+    }
+}
+
+// Helper function to check token before making requests
+export const checkTokenValidity = (): boolean => {
+    const token = localStorage.getItem('auth_token') || localStorage.getItem('token')
+
+    if (!token) {
+        console.warn('No auth token found')
+        return false
+    }
+
+    if (isTokenExpired(token)) {
+        console.warn('Token has expired')
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        return false
+    }
+
+    return true
+}
 
 export default api
 

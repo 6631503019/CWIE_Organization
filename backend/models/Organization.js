@@ -43,7 +43,8 @@ const organizationSchema = new mongoose.Schema({
         lowercase: true,
         validate: {
             validator: function (v) {
-                return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v);
+                // More flexible email validation
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
             },
             message: 'Please enter a valid email'
         }
