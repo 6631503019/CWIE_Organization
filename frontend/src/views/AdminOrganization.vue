@@ -64,7 +64,16 @@
               <div class="dropdown-arrow"></div>
             </div>
             <div v-if="dropdowns.industryCat" class="dropdown-options">
-              <div class="dropdown-option" v-for="option in industryCatOptions" :key="option" @click="selectOption('industryCat', option)">
+              <div class="dropdown-search">
+                <input 
+                  type="text" 
+                  v-model="dropdownSearch.industryCat" 
+                  placeholder="Search..."
+                  @click.stop
+                  class="dropdown-search-input"
+                />
+              </div>
+              <div class="dropdown-option" v-for="option in filteredIndustryCat" :key="option" @click="selectOption('industryCat', option)">
                 {{ option }}
               </div>
             </div>
@@ -77,7 +86,16 @@
               <div class="dropdown-arrow"></div>
             </div>
             <div v-if="dropdowns.country" class="dropdown-options">
-              <div class="dropdown-option" v-for="option in countryOptions" :key="option" @click="selectOption('country', option)">
+              <div class="dropdown-search">
+                <input 
+                  type="text" 
+                  v-model="dropdownSearch.country" 
+                  placeholder="Search..."
+                  @click.stop
+                  class="dropdown-search-input"
+                />
+              </div>
+              <div class="dropdown-option" v-for="option in filteredCountry" :key="option" @click="selectOption('country', option)">
                 {{ option }}
               </div>
             </div>
@@ -90,7 +108,16 @@
               <div class="dropdown-arrow"></div>
             </div>
             <div v-if="dropdowns.geography" class="dropdown-options">
-              <div class="dropdown-option" v-for="option in geographyOptions" :key="option" @click="selectOption('geography', option)">
+              <div class="dropdown-search">
+                <input 
+                  type="text" 
+                  v-model="dropdownSearch.geography" 
+                  placeholder="Search..."
+                  @click.stop
+                  class="dropdown-search-input"
+                />
+              </div>
+              <div class="dropdown-option" v-for="option in filteredGeography" :key="option" @click="selectOption('geography', option)">
                 {{ option }}
               </div>
             </div>
@@ -103,7 +130,16 @@
               <div class="dropdown-arrow"></div>
             </div>
             <div v-if="dropdowns.province" class="dropdown-options">
-              <div class="dropdown-option" v-for="option in provinceOptions" :key="option" @click="selectOption('province', option)">
+              <div class="dropdown-search">
+                <input 
+                  type="text" 
+                  v-model="dropdownSearch.province" 
+                  placeholder="Search..."
+                  @click.stop
+                  class="dropdown-search-input"
+                />
+              </div>
+              <div class="dropdown-option" v-for="option in filteredProvince" :key="option" @click="selectOption('province', option)">
                 {{ option }}
               </div>
             </div>
@@ -280,34 +316,87 @@
             <div class="form-row">
               <div class="form-group">
                 <label>Country*</label>
-                <select v-model="formData.country">
-                  <option value="">---Country---</option>
-                  <option value="Thailand">Thailand</option>
-                  <option value="USA">USA</option>
-                  <option value="Japan">Japan</option>
-                  <option value="China">China</option>
-                  <option value="Korea">Korea</option>
-                </select>
+                <div class="modal-dropdown-wrapper">
+                  <div class="modal-dropdown-header" @click="modalDropdownOpen.country = !modalDropdownOpen.country">
+                    <span class="modal-dropdown-text">{{ formData.country || '---Country---' }}</span>
+                    <div class="modal-dropdown-arrow" :class="{ open: modalDropdownOpen.country }"></div>
+                  </div>
+                  <div v-if="modalDropdownOpen.country" class="modal-dropdown-options">
+                    <div class="modal-dropdown-search">
+                      <input 
+                        type="text" 
+                        v-model="modalDropdownSearch.country" 
+                        placeholder="Search..."
+                        @click.stop
+                        class="modal-dropdown-search-input"
+                      />
+                    </div>
+                    <div 
+                      class="modal-dropdown-option" 
+                      v-for="option in modalFilteredCountry" 
+                      :key="option" 
+                      @click="formData.country = option; modalDropdownOpen.country = false"
+                    >
+                      {{ option }}
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="form-group">
                 <label>Geography*</label>
-                <select v-model="formData.geography">
-                  <option value="">--Geography--</option>
-                  <option value="Northern Thailand">Northern Thailand</option>
-                  <option value="Central Thailand">Central Thailand</option>
-                  <option value="Southern Thailand">Southern Thailand</option>
-                  <option value="Northeastern Thailand">Northeastern Thailand</option>
-                </select>
+                <div class="modal-dropdown-wrapper">
+                  <div class="modal-dropdown-header" @click="modalDropdownOpen.geography = !modalDropdownOpen.geography">
+                    <span class="modal-dropdown-text">{{ formData.geography || '--Geography--' }}</span>
+                    <div class="modal-dropdown-arrow" :class="{ open: modalDropdownOpen.geography }"></div>
+                  </div>
+                  <div v-if="modalDropdownOpen.geography" class="modal-dropdown-options">
+                    <div class="modal-dropdown-search">
+                      <input 
+                        type="text" 
+                        v-model="modalDropdownSearch.geography" 
+                        placeholder="Search..."
+                        @click.stop
+                        class="modal-dropdown-search-input"
+                      />
+                    </div>
+                    <div 
+                      class="modal-dropdown-option" 
+                      v-for="option in modalFilteredGeography" 
+                      :key="option" 
+                      @click="formData.geography = option; modalDropdownOpen.geography = false"
+                    >
+                      {{ option }}
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="form-group">
                 <label>Province*</label>
-                <select v-model="formData.province">
-                  <option value="">--Province--</option>
-                  <option value="Bangkok">Bangkok</option>
-                  <option value="Chiang Mai">Chiang Mai</option>
-                  <option value="Chiang Rai">Chiang Rai</option>
-                  <option value="Mae Hong Son">Mae Hong Son</option>
-                </select>
+                <div class="modal-dropdown-wrapper">
+                  <div class="modal-dropdown-header" @click="modalDropdownOpen.province = !modalDropdownOpen.province">
+                    <span class="modal-dropdown-text">{{ formData.province || '--Province--' }}</span>
+                    <div class="modal-dropdown-arrow" :class="{ open: modalDropdownOpen.province }"></div>
+                  </div>
+                  <div v-if="modalDropdownOpen.province" class="modal-dropdown-options">
+                    <div class="modal-dropdown-search">
+                      <input 
+                        type="text" 
+                        v-model="modalDropdownSearch.province" 
+                        placeholder="Search..."
+                        @click.stop
+                        class="modal-dropdown-search-input"
+                      />
+                    </div>
+                    <div 
+                      class="modal-dropdown-option" 
+                      v-for="option in modalFilteredProvince" 
+                      :key="option" 
+                      @click="formData.province = option; modalDropdownOpen.province = false"
+                    >
+                      {{ option }}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -584,6 +673,15 @@ const dropdowns = ref({
   province: false
 })
 
+// Search text for each dropdown
+const dropdownSearch = ref({
+  orgType: '',
+  industryCat: '',
+  country: '',
+  geography: '',
+  province: ''
+})
+
 // Filter selections
 const selectedFilters = reactive({
   orgType: 'All',
@@ -622,10 +720,52 @@ const industryCatOptions = [
 const countryOptions = ['Thailand', 'USA', 'Japan', 'China', 'Others']
 const geographyOptions = ['Central Region', 'Northern Region', 'Northeastern Region', 'Southern Region', 'Eastern Region', 'Western Region']
 const provinceOptions = [
-  'Bangkok', 'Chiang Rai', 'Chiang Mai', 'Phuket', 'Pattaya', 'Khon Kaen', 
-  'Nakhon Ratchasima', 'Udon Thani', 'Songkhla', 'Rayong', 'Samut Prakan', 
-  'Nonthaburi', 'Pathum Thani', 'Hat Yai', 'Lopburi'
+  'Amnat Charoen', 'Ang Thong', 'Bangkok', 'Bueng Kan', 'Buri Ram', 
+  'Chachoengsao', 'Chai Nat', 'Chaiyaphum', 'Chanthaburi', 'Chiang Mai', 
+  'Chiang Rai', 'Chon Buri', 'Chumphon', 'Kalasin', 'Kamphaeng Phet', 
+  'Kanchanaburi', 'Khon Kaen', 'Krabi', 'Lampang', 'Lamphun', 
+  'Loei', 'Lop Buri', 'Mae Hong Son', 'Maha Sarakham', 'Mukdahan', 
+  'Nakhon Nayok', 'Nakhon Pathom', 'Nakhon Phanom', 'Nakhon Ratchasima', 'Nakhon Sawan', 
+  'Nakhon Si Thammarat', 'Nan', 'Narathiwat', 'Nong Bua Lam Phu', 'Nong Khai', 
+  'Nonthaburi', 'Pathum Thani', 'Pattani', 'Phang Nga', 'Phatthalung', 
+  'Phayao', 'Phetchabun', 'Phetchaburi', 'Phichit', 'Phitsanulok', 
+  'Phra Nakhon Si Ayutthaya', 'Phrae', 'Phuket', 'Prachin Buri', 'Prachuap Khiri Khan', 
+  'Ranong', 'Ratchaburi', 'Rayong', 'Roi Et', 'Sa Kaeo', 
+  'Sakon Nakhon', 'Samut Prakan', 'Samut Sakhon', 'Samut Songkhram', 'Saraburi', 
+  'Satun', 'Sing Buri', 'Si Sa Ket', 'Songkhla', 'Sukhothai', 
+  'Suphan Buri', 'Surat Thani', 'Surin', 'Tak', 'Trang', 
+  'Trat', 'Ubon Ratchathani', 'Udon Thani', 'Uthai Thani', 'Uttaradit', 
+  'Yala', 'Yasothon'
 ]
+
+// Filtered options based on search
+const filteredIndustryCat = computed(() => {
+  if (!dropdownSearch.value.industryCat) return industryCatOptions
+  return industryCatOptions.filter(option => 
+    option.toLowerCase().includes(dropdownSearch.value.industryCat.toLowerCase())
+  )
+})
+
+const filteredCountry = computed(() => {
+  if (!dropdownSearch.value.country) return countryOptions
+  return countryOptions.filter(option => 
+    option.toLowerCase().includes(dropdownSearch.value.country.toLowerCase())
+  )
+})
+
+const filteredGeography = computed(() => {
+  if (!dropdownSearch.value.geography) return geographyOptions
+  return geographyOptions.filter(option => 
+    option.toLowerCase().includes(dropdownSearch.value.geography.toLowerCase())
+  )
+})
+
+const filteredProvince = computed(() => {
+  if (!dropdownSearch.value.province) return provinceOptions
+  return provinceOptions.filter(option => 
+    option.toLowerCase().includes(dropdownSearch.value.province.toLowerCase())
+  )
+})
 
 // Organizations data from backend
 const allOrganizations = ref<any[]>([])
@@ -748,14 +888,23 @@ watch(selectedFilters, () => {
 
 // Methods
 const toggleDropdown = (dropdown: string) => {
-  dropdowns.value[dropdown as keyof typeof dropdowns.value] = !dropdowns.value[dropdown as keyof typeof dropdowns.value]
+  const isOpening = !dropdowns.value[dropdown as keyof typeof dropdowns.value]
   
-  // Close other dropdowns
+  // Close other dropdowns and clear their search
   Object.keys(dropdowns.value).forEach(key => {
     if (key !== dropdown) {
       dropdowns.value[key as keyof typeof dropdowns.value] = false
+      dropdownSearch.value[key as keyof typeof dropdownSearch.value] = ''
     }
   })
+  
+  // Toggle current dropdown
+  dropdowns.value[dropdown as keyof typeof dropdowns.value] = isOpening
+  
+  // Clear search if closing
+  if (!isOpening) {
+    dropdownSearch.value[dropdown as keyof typeof dropdownSearch.value] = ''
+  }
 }
 
 const selectOption = (dropdown: string, option: string) => {
@@ -792,6 +941,42 @@ const formData = reactive({
   phoneNumber: '',
   details: '',
   isPublic: false
+})
+
+// Modal dropdown search states
+const modalDropdownSearch = ref({
+  country: '',
+  geography: '',
+  province: ''
+})
+
+const modalDropdownOpen = ref({
+  country: false,
+  geography: false,
+  province: false
+})
+
+// Filtered options for modal dropdowns
+const modalFilteredCountry = computed(() => {
+  if (!modalDropdownSearch.value.country) return countryOptions
+  return countryOptions.filter(option => 
+    option.toLowerCase().includes(modalDropdownSearch.value.country.toLowerCase())
+  )
+})
+
+const modalFilteredGeography = computed(() => {
+  const geoOptions = ['Northern Thailand', 'Central Thailand', 'Southern Thailand', 'Northeastern Thailand']
+  if (!modalDropdownSearch.value.geography) return geoOptions
+  return geoOptions.filter(option => 
+    option.toLowerCase().includes(modalDropdownSearch.value.geography.toLowerCase())
+  )
+})
+
+const modalFilteredProvince = computed(() => {
+  if (!modalDropdownSearch.value.province) return provinceOptions
+  return provinceOptions.filter(option => 
+    option.toLowerCase().includes(modalDropdownSearch.value.province.toLowerCase())
+  )
 })
 
 // Review form data
@@ -1616,10 +1801,38 @@ onBeforeUnmount(() => {
   border: 1px solid #B1B1B1;
   border-top: none;
   border-radius: 0 0 8px 8px;
-  max-height: 200px;
+  max-height: 250px;
   overflow-y: auto;
   z-index: 9999;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-search {
+  position: sticky;
+  top: 0;
+  background: #FFFFFF;
+  padding: 8px;
+  border-bottom: 1px solid #E0E0E0;
+  z-index: 10000;
+}
+
+.dropdown-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #D0D0D0;
+  border-radius: 4px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #333333;
+}
+
+.dropdown-search-input:focus {
+  outline: none;
+  border-color: #AB1C03;
+}
+
+.dropdown-search-input::placeholder {
+  color: #999999;
 }
 
 .dropdown-option {
@@ -2508,6 +2721,105 @@ onBeforeUnmount(() => {
   font-size: 16px;
   line-height: 19px;
   color: #000000;
+}
+
+/* Modal Dropdown Styles */
+.modal-dropdown-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.modal-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 40px;
+  padding: 8px 12px;
+  background: #FFFFFF;
+  border: 1px solid #B1B1B1;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.modal-dropdown-header:hover {
+  border-color: #AB1C03;
+}
+
+.modal-dropdown-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #333333;
+}
+
+.modal-dropdown-arrow {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #000000;
+  transition: transform 0.2s;
+}
+
+.modal-dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.modal-dropdown-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  max-height: 250px;
+  overflow-y: auto;
+  background: #FFFFFF;
+  border: 1px solid #B1B1B1;
+  border-radius: 6px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.modal-dropdown-search {
+  position: sticky;
+  top: 0;
+  background: #FFFFFF;
+  padding: 8px;
+  border-bottom: 1px solid #E0E0E0;
+  z-index: 1001;
+}
+
+.modal-dropdown-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #D0D0D0;
+  border-radius: 4px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #333333;
+}
+
+.modal-dropdown-search-input:focus {
+  outline: none;
+  border-color: #AB1C03;
+}
+
+.modal-dropdown-search-input::placeholder {
+  color: #999999;
+}
+
+.modal-dropdown-option {
+  padding: 10px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #333333;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.modal-dropdown-option:hover {
+  background-color: #F5F5F5;
 }
 
 .form-group input,

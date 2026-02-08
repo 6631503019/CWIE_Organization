@@ -23,12 +23,20 @@
           <!-- Status Filter -->
           <div class="status-filter">
             <div class="status-dropdown" @click="toggleStatusDropdown">
-              <span class="status-label">--status--</span>
+              <span class="status-label">{{ selectedStatus || '--status--' }}</span>
               <div class="dropdown-arrow"></div>
             </div>
             <div v-if="showStatusDropdown" class="status-options">
-              <div class="status-option" @click="selectStatus('Active')">Active</div>
-              <div class="status-option" @click="selectStatus('Inactive')">Inactive</div>
+              <div class="dropdown-search">
+                <input 
+                  type="text" 
+                  v-model="statusDropdownSearch" 
+                  placeholder="Search..."
+                  @click.stop
+                  class="dropdown-search-input"
+                />
+              </div>
+              <div class="status-option" v-for="status in filteredStatusOptions" :key="status" @click="selectStatus(status)">{{ status }}</div>
             </div>
           </div>
           
@@ -155,7 +163,19 @@ const state = reactive({
 const searchText = ref('')
 const selectedStatus = ref('')
 const showStatusDropdown = ref(false)
+const statusDropdownSearch = ref('')
 const mouDocumentImage = ref('/api/placeholder/291/408')
+
+// Status options
+const statusOptions = ['All', 'Active', 'Inactive']
+
+// Filtered status options
+const filteredStatusOptions = computed(() => {
+  if (!statusDropdownSearch.value) return statusOptions
+  return statusOptions.filter(option => 
+    option.toLowerCase().includes(statusDropdownSearch.value.toLowerCase())
+  )
+})
 
 // Modal state
 const showEditModal = ref(false)
@@ -237,7 +257,11 @@ const handlePageChange = async (page: number) => {
 }
 
 const toggleStatusDropdown = () => {
-  showStatusDropdown.value = !showStatusDropdown.value
+  const isOpening = !showStatusDropdown.value
+  showStatusDropdown.value = isOpening
+  if (!isOpening) {
+    statusDropdownSearch.value = ''
+  }
 }
 
 const selectStatus = (status: string) => {
@@ -536,11 +560,41 @@ onBeforeUnmount(() => {
   top: 38px;
   left: 0;
   width: 276px;
+  max-height: 250px;
+  overflow-y: auto;
   background: #FFFFFF;
   border: 1px solid #B1B1B1;
   border-radius: 8px;
   z-index: 10;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-search {
+  position: sticky;
+  top: 0;
+  background: #FFFFFF;
+  padding: 8px;
+  border-bottom: 1px solid #E0E0E0;
+  z-index: 11;
+}
+
+.dropdown-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #D0D0D0;
+  border-radius: 4px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #333333;
+}
+
+.dropdown-search-input:focus {
+  outline: none;
+  border-color: #AB1C03;
+}
+
+.dropdown-search-input::placeholder {
+  color: #999999;
 }
 
 .status-option {

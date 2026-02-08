@@ -114,50 +114,90 @@
           <div class="form-row">
             <div class="form-field">
               <label>Country</label>
-              <select v-model="formData.country">
-                <option value="">--Select Country--</option>
-                <option>Thailand</option>
-                <option>USA</option>
-                <option>Japan</option>
-                <option>China</option>
-                <option>Others</option>
-              </select>
+              <div class="dropdown-wrapper">
+                <div class="dropdown-header" @click="dropdownOpen.country = !dropdownOpen.country">
+                  <span class="dropdown-text">{{ formData.country || '--Select Country--' }}</span>
+                  <div class="dropdown-arrow" :class="{ open: dropdownOpen.country }"></div>
+                </div>
+                <div v-if="dropdownOpen.country" class="dropdown-options">
+                  <div class="dropdown-search">
+                    <input 
+                      type="text" 
+                      v-model="dropdownSearch.country" 
+                      placeholder="Search..."
+                      @click.stop
+                      class="dropdown-search-input"
+                    />
+                  </div>
+                  <div 
+                    class="dropdown-option" 
+                    v-for="option in filteredCountries" 
+                    :key="option" 
+                    @click="formData.country = option; dropdownOpen.country = false"
+                  >
+                    {{ option }}
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="form-field">
               <label>Geography</label>
-              <select v-model="formData.geography">
-                <option value="">--Select Geography--</option>
-                <option>Central Region</option>
-                <option>Northern Region</option>
-                <option>Northeastern Region</option>
-                <option>Southern Region</option>
-                <option>Eastern Region</option>
-                <option>Western Region</option>
-              </select>
+              <div class="dropdown-wrapper">
+                <div class="dropdown-header" @click="dropdownOpen.geography = !dropdownOpen.geography">
+                  <span class="dropdown-text">{{ formData.geography || '--Select Geography--' }}</span>
+                  <div class="dropdown-arrow" :class="{ open: dropdownOpen.geography }"></div>
+                </div>
+                <div v-if="dropdownOpen.geography" class="dropdown-options">
+                  <div class="dropdown-search">
+                    <input 
+                      type="text" 
+                      v-model="dropdownSearch.geography" 
+                      placeholder="Search..."
+                      @click.stop
+                      class="dropdown-search-input"
+                    />
+                  </div>
+                  <div 
+                    class="dropdown-option" 
+                    v-for="option in filteredGeographies" 
+                    :key="option" 
+                    @click="formData.geography = option; dropdownOpen.geography = false"
+                  >
+                    {{ option }}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
           <div class="form-row">
             <div class="form-field">
               <label>Province</label>
-              <select v-model="formData.province">
-                <option value="">--Select Province--</option>
-                <option>Bangkok</option>
-                <option>Chiang Rai</option>
-                <option>Chiang Mai</option>
-                <option>Phuket</option>
-                <option>Pattaya</option>
-                <option>Khon Kaen</option>
-                <option>Nakhon Ratchasima</option>
-                <option>Udon Thani</option>
-                <option>Songkhla</option>
-                <option>Rayong</option>
-                <option>Samut Prakan</option>
-                <option>Nonthaburi</option>
-                <option>Pathum Thani</option>
-                <option>Hat Yai</option>
-                <option>Lopburi</option>
-              </select>
+              <div class="dropdown-wrapper">
+                <div class="dropdown-header" @click="dropdownOpen.province = !dropdownOpen.province">
+                  <span class="dropdown-text">{{ formData.province || '--Select Province--' }}</span>
+                  <div class="dropdown-arrow" :class="{ open: dropdownOpen.province }"></div>
+                </div>
+                <div v-if="dropdownOpen.province" class="dropdown-options">
+                  <div class="dropdown-search">
+                    <input 
+                      type="text" 
+                      v-model="dropdownSearch.province" 
+                      placeholder="Search..."
+                      @click.stop
+                      class="dropdown-search-input"
+                    />
+                  </div>
+                  <div 
+                    class="dropdown-option" 
+                    v-for="option in filteredProvinces" 
+                    :key="option" 
+                    @click="formData.province = option; dropdownOpen.province = false"
+                  >
+                    {{ option }}
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="form-field">
               <label>Email <span class="required">*</span></label>
@@ -291,7 +331,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { organizationAPI, mouAPI, reviewAPI } from '../services/api'
 
 // Props
@@ -348,6 +388,63 @@ const formData = reactive({
   phoneNumber: '',
   details: '',
   isPublic: false
+})
+
+// Dropdown search states
+const dropdownSearch = ref({
+  country: '',
+  geography: '',
+  province: ''
+})
+
+const dropdownOpen = ref({
+  country: false,
+  geography: false,
+  province: false
+})
+
+// Dropdown options
+const countryOptions = ['Thailand', 'USA', 'Japan', 'China', 'Others']
+const geographyOptions = ['Central Region', 'Northern Region', 'Northeastern Region', 'Southern Region', 'Eastern Region', 'Western Region']
+const provinceOptions = [
+  'Amnat Charoen', 'Ang Thong', 'Bangkok', 'Bueng Kan', 'Buri Ram', 
+  'Chachoengsao', 'Chai Nat', 'Chaiyaphum', 'Chanthaburi', 'Chiang Mai', 
+  'Chiang Rai', 'Chon Buri', 'Chumphon', 'Kalasin', 'Kamphaeng Phet', 
+  'Kanchanaburi', 'Khon Kaen', 'Krabi', 'Lampang', 'Lamphun', 
+  'Loei', 'Lop Buri', 'Mae Hong Son', 'Maha Sarakham', 'Mukdahan', 
+  'Nakhon Nayok', 'Nakhon Pathom', 'Nakhon Phanom', 'Nakhon Ratchasima', 'Nakhon Sawan', 
+  'Nakhon Si Thammarat', 'Nan', 'Narathiwat', 'Nong Bua Lam Phu', 'Nong Khai', 
+  'Nonthaburi', 'Pathum Thani', 'Pattani', 'Phang Nga', 'Phatthalung', 
+  'Phayao', 'Phetchabun', 'Phetchaburi', 'Phichit', 'Phitsanulok', 
+  'Phra Nakhon Si Ayutthaya', 'Phrae', 'Phuket', 'Prachin Buri', 'Prachuap Khiri Khan', 
+  'Ranong', 'Ratchaburi', 'Rayong', 'Roi Et', 'Sa Kaeo', 
+  'Sakon Nakhon', 'Samut Prakan', 'Samut Sakhon', 'Samut Songkhram', 'Saraburi', 
+  'Satun', 'Sing Buri', 'Si Sa Ket', 'Songkhla', 'Sukhothai', 
+  'Suphan Buri', 'Surat Thani', 'Surin', 'Tak', 'Trang', 
+  'Trat', 'Ubon Ratchathani', 'Udon Thani', 'Uthai Thani', 'Uttaradit', 
+  'Yala', 'Yasothon'
+]
+
+// Filtered options
+const filteredCountries = computed(() => {
+  if (!dropdownSearch.value.country) return countryOptions
+  return countryOptions.filter(option => 
+    option.toLowerCase().includes(dropdownSearch.value.country.toLowerCase())
+  )
+})
+
+const filteredGeographies = computed(() => {
+  if (!dropdownSearch.value.geography) return geographyOptions
+  return geographyOptions.filter(option => 
+    option.toLowerCase().includes(dropdownSearch.value.geography.toLowerCase())
+  )
+})
+
+const filteredProvinces = computed(() => {
+  if (!dropdownSearch.value.province) return provinceOptions
+  return provinceOptions.filter(option => 
+    option.toLowerCase().includes(dropdownSearch.value.province.toLowerCase())
+  )
 })
 
 const reviewData = reactive({
@@ -812,6 +909,104 @@ watch(() => props.modelValue, (newValue) => {
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: #000000;
+}
+
+/* Custom Dropdown Styles */
+.dropdown-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px;
+  background: #FFFFFF;
+  border: 1px solid #B1B1B1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.dropdown-header:hover {
+  border-color: #AB1C03;
+}
+
+.dropdown-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #333333;
+}
+
+.dropdown-arrow {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #000000;
+  transition: transform 0.2s;
+}
+
+.dropdown-arrow.open {
+  transform: rotate(180deg);
+}
+
+.dropdown-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  max-height: 250px;
+  overflow-y: auto;
+  background: #FFFFFF;
+  border: 1px solid #B1B1B1;
+  border-radius: 8px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+.dropdown-search {
+  position: sticky;
+  top: 0;
+  background: #FFFFFF;
+  padding: 8px;
+  border-bottom: 1px solid #E0E0E0;
+  z-index: 1001;
+}
+
+.dropdown-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #D0D0D0;
+  border-radius: 4px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #333333;
+}
+
+.dropdown-search-input:focus {
+  outline: none;
+  border-color: #AB1C03;
+}
+
+.dropdown-search-input::placeholder {
+  color: #999999;
+}
+
+.dropdown-option {
+  padding: 10px 12px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #333333;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dropdown-option:hover {
+  background-color: #F5F5F5;
 }
 
 .form-field input:focus,

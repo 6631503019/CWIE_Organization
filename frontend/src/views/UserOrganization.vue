@@ -42,7 +42,16 @@
             <div class="dropdown-arrow"></div>
           </div>
           <div v-if="showDropdowns.industry" class="dropdown-menu">
-            <div class="dropdown-item" v-for="cat in industryCategories" :key="cat" @click="selectIndustry(cat)">
+            <div class="dropdown-search">
+              <input 
+                type="text" 
+                v-model="dropdownSearch.industry" 
+                placeholder="Search..."
+                @click.stop
+                class="dropdown-search-input"
+              />
+            </div>
+            <div class="dropdown-item" v-for="cat in filteredIndustryCategories" :key="cat" @click="selectIndustry(cat)">
               {{ cat }}
             </div>
           </div>
@@ -55,7 +64,16 @@
             <div class="dropdown-arrow"></div>
           </div>
           <div v-if="showDropdowns.country" class="dropdown-menu">
-            <div class="dropdown-item" v-for="country in countries" :key="country" @click="selectCountry(country)">
+            <div class="dropdown-search">
+              <input 
+                type="text" 
+                v-model="dropdownSearch.country" 
+                placeholder="Search..."
+                @click.stop
+                class="dropdown-search-input"
+              />
+            </div>
+            <div class="dropdown-item" v-for="country in filteredCountries" :key="country" @click="selectCountry(country)">
               {{ country }}
             </div>
           </div>
@@ -68,7 +86,16 @@
             <div class="dropdown-arrow"></div>
           </div>
           <div v-if="showDropdowns.geography" class="dropdown-menu">
-            <div class="dropdown-item" v-for="geo in geographies" :key="geo" @click="selectGeography(geo)">
+            <div class="dropdown-search">
+              <input 
+                type="text" 
+                v-model="dropdownSearch.geography" 
+                placeholder="Search..."
+                @click.stop
+                class="dropdown-search-input"
+              />
+            </div>
+            <div class="dropdown-item" v-for="geo in filteredGeographies" :key="geo" @click="selectGeography(geo)">
               {{ geo }}
             </div>
           </div>
@@ -81,7 +108,16 @@
             <div class="dropdown-arrow"></div>
           </div>
           <div v-if="showDropdowns.province" class="dropdown-menu">
-            <div class="dropdown-item" v-for="province in provinces" :key="province" @click="selectProvince(province)">
+            <div class="dropdown-search">
+              <input 
+                type="text" 
+                v-model="dropdownSearch.province" 
+                placeholder="Search..."
+                @click.stop
+                class="dropdown-search-input"
+              />
+            </div>
+            <div class="dropdown-item" v-for="province in filteredProvinces" :key="province" @click="selectProvince(province)">
               {{ province }}
             </div>
           </div>
@@ -201,6 +237,13 @@ const showDropdowns = reactive({
   province: false
 })
 
+const dropdownSearch = ref({
+  industry: '',
+  country: '',
+  geography: '',
+  province: ''
+})
+
 // Data
 const organizations = ref<any[]>([])
 const reviews = ref<any[]>([])
@@ -219,9 +262,53 @@ const industryCategories = ref(['ALL', 'Agriculture, forestry and fishing',
 const countries = ref(['Thailand', 'Laos', 'Vietnam', 'China', 'Myanmar'])
 const geographies = ref(['Northern Thailand', 'Northeastern Thailand', 'Central Thailand', 
   'Eastern Thailand', 'Western Thailand', 'Southern Thailand'])
-const provinces = ref(['Chiang Rai', 'Chiang Mai', 'Lamphun', 'Phayao', 'Lampang',
-  'Phrae', 'Nan', 'Uttaradit', 'Mae Hong Son', 'Sukhothai', 'Tak',
-  'Phitsanulok', 'Kamphaeng Phet', 'Phetchabun', 'Phichit'])
+const provinces = ref([
+  'Amnat Charoen', 'Ang Thong', 'Bangkok', 'Bueng Kan', 'Buri Ram', 
+  'Chachoengsao', 'Chai Nat', 'Chaiyaphum', 'Chanthaburi', 'Chiang Mai', 
+  'Chiang Rai', 'Chon Buri', 'Chumphon', 'Kalasin', 'Kamphaeng Phet', 
+  'Kanchanaburi', 'Khon Kaen', 'Krabi', 'Lampang', 'Lamphun', 
+  'Loei', 'Lop Buri', 'Mae Hong Son', 'Maha Sarakham', 'Mukdahan', 
+  'Nakhon Nayok', 'Nakhon Pathom', 'Nakhon Phanom', 'Nakhon Ratchasima', 'Nakhon Sawan', 
+  'Nakhon Si Thammarat', 'Nan', 'Narathiwat', 'Nong Bua Lam Phu', 'Nong Khai', 
+  'Nonthaburi', 'Pathum Thani', 'Pattani', 'Phang Nga', 'Phatthalung', 
+  'Phayao', 'Phetchabun', 'Phetchaburi', 'Phichit', 'Phitsanulok', 
+  'Phra Nakhon Si Ayutthaya', 'Phrae', 'Phuket', 'Prachin Buri', 'Prachuap Khiri Khan', 
+  'Ranong', 'Ratchaburi', 'Rayong', 'Roi Et', 'Sa Kaeo', 
+  'Sakon Nakhon', 'Samut Prakan', 'Samut Sakhon', 'Samut Songkhram', 'Saraburi', 
+  'Satun', 'Sing Buri', 'Si Sa Ket', 'Songkhla', 'Sukhothai', 
+  'Suphan Buri', 'Surat Thani', 'Surin', 'Tak', 'Trang', 
+  'Trat', 'Ubon Ratchathani', 'Udon Thani', 'Uthai Thani', 'Uttaradit', 
+  'Yala', 'Yasothon'
+])
+
+// Filtered options based on search
+const filteredIndustryCategories = computed(() => {
+  if (!dropdownSearch.value.industry) return industryCategories.value
+  return industryCategories.value.filter(option => 
+    option.toLowerCase().includes(dropdownSearch.value.industry.toLowerCase())
+  )
+})
+
+const filteredCountries = computed(() => {
+  if (!dropdownSearch.value.country) return countries.value
+  return countries.value.filter(option => 
+    option.toLowerCase().includes(dropdownSearch.value.country.toLowerCase())
+  )
+})
+
+const filteredGeographies = computed(() => {
+  if (!dropdownSearch.value.geography) return geographies.value
+  return geographies.value.filter(option => 
+    option.toLowerCase().includes(dropdownSearch.value.geography.toLowerCase())
+  )
+})
+
+const filteredProvinces = computed(() => {
+  if (!dropdownSearch.value.province) return provinces.value
+  return provinces.value.filter(option => 
+    option.toLowerCase().includes(dropdownSearch.value.province.toLowerCase())
+  )
+})
 
 // Computed properties
 const filteredOrganizations = computed(() => {
@@ -271,13 +358,24 @@ const totalPages = computed(() =>
 
 // Methods
 const toggleDropdown = (dropdown: string) => {
-  // Close all other dropdowns
+  const isOpening = !showDropdowns[dropdown as keyof typeof showDropdowns]
+  
+  // Close all other dropdowns and clear their search
   Object.keys(showDropdowns).forEach(key => {
     if (key !== dropdown) {
       showDropdowns[key as keyof typeof showDropdowns] = false
+      if (key in dropdownSearch.value) {
+        dropdownSearch.value[key as keyof typeof dropdownSearch.value] = ''
+      }
     }
   })
-  showDropdowns[dropdown as keyof typeof showDropdowns] = !showDropdowns[dropdown as keyof typeof showDropdowns]
+  
+  showDropdowns[dropdown as keyof typeof showDropdowns] = isOpening
+  
+  // Clear search if closing
+  if (!isOpening && dropdown in dropdownSearch.value) {
+    dropdownSearch.value[dropdown as keyof typeof dropdownSearch.value] = ''
+  }
 }
 
 const selectOrgType = (type: string) => {
@@ -540,13 +638,41 @@ onMounted(async () => {
   top: 36px;
   left: 0;
   right: 0;
-  max-height: 200px;
+  max-height: 250px;
   overflow-y: auto;
   background: #FFFFFF;
   border: 1px solid #B1B1B1;
   border-radius: 8px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
   z-index: 10;
+}
+
+.dropdown-search {
+  position: sticky;
+  top: 0;
+  background: #FFFFFF;
+  padding: 8px;
+  border-bottom: 1px solid #E0E0E0;
+  z-index: 11;
+}
+
+.dropdown-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #D0D0D0;
+  border-radius: 4px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: #333333;
+}
+
+.dropdown-search-input:focus {
+  outline: none;
+  border-color: #AB1C03;
+}
+
+.dropdown-search-input::placeholder {
+  color: #999999;
 }
 
 .dropdown-item {

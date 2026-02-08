@@ -77,9 +77,14 @@ const importOrganizations = async (req, res, next) => {
                     "(Organisation's Name)",
                     'Organisation\'s Name',
                     'Organization Name',
+                    'Processing by Site-visit Advisor',
+                    'Application Status',
                     'ลำดับ',
                     'No.',
-                    '__EMPTY'
+                    '__EMPTY',
+                    'Internship Status',
+                    'Site-visit',
+                    'Advisor'
                 ];
 
                 if (invalidNames.some(invalid =>
