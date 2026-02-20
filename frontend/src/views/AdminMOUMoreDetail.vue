@@ -118,7 +118,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
-import { organizationAPI, reviewAPI, mouAPI } from '../services/api'
+import { organizationAPI, reviewAPI, mouAPI, BACKEND_URL } from '../services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -142,7 +142,7 @@ const logoUrl = computed(() => {
     if (!logoPath.startsWith('/')) {
       logoPath = '/' + logoPath
     }
-    return `http://localhost:5000${logoPath}`
+    return `${BACKEND_URL}${logoPath}`
   }
   return '/api/placeholder/435/435'
 })
@@ -274,7 +274,7 @@ const fetchMOUDocument = async () => {
     console.log('Found MOU:', mou)
     
     if (mou && mou.mou_path) {
-      mouDocumentUrl.value = `http://localhost:5000${mou.mou_path}`
+      mouDocumentUrl.value = `${BACKEND_URL}${mou.mou_path}`
       console.log('✅ MOU document found:', mouDocumentUrl.value)
     } else {
       mouDocumentUrl.value = null

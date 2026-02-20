@@ -1,6 +1,8 @@
 const MOU = require('../models/MOU');
 const Organization = require('../models/Organization');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
+const fs = require('fs');
+const path = require('path');
 
 // @desc    Get all MOUs
 // @route   GET /api/mou
@@ -125,6 +127,19 @@ const createMOU = async (req, res, next) => {
             // Update existing MOU instead of throwing error
             console.log('MOU already exists, updating instead:', existingMOU._id);
 
+            // Delete old MOU file if a new file is uploaded
+            if (req.file && existingMOU.mou_file_path) {
+                const oldFilePath = path.join(__dirname, '..', existingMOU.mou_file_path);
+                if (fs.existsSync(oldFilePath)) {
+                    try {
+                        fs.unlinkSync(oldFilePath);
+                        console.log('✅ Deleted old MOU file:', oldFilePath);
+                    } catch (err) {
+                        console.error('⚠️ Failed to delete old MOU:', err);
+                    }
+                }
+            }
+
             req.body.mou_file_path = req.file.path;
             req.body.admin_id = req.user._id;
 
@@ -221,6 +236,20 @@ const updateMOU = async (req, res, next) => {
                     { receivedType: req.file.mimetype }
                 );
             }
+            
+            // Delete old MOU file if exists
+            if (mou.mou_file_path) {
+                const oldFilePath = path.join(__dirname, '..', mou.mou_file_path);
+                if (fs.existsSync(oldFilePath)) {
+                    try {
+                        fs.unlinkSync(oldFilePath);
+                        console.log('✅ Deleted old MOU file:', oldFilePath);
+                    } catch (err) {
+                        console.error('⚠️ Failed to delete old MOU:', err);
+                    }
+                }
+            }
+            
             req.body.mou_file_path = req.file.path;
         }
 
@@ -251,6 +280,19 @@ const deleteMOU = async (req, res, next) => {
 
         if (!mou) {
             throw createNotFoundError('mou', req.params.id);
+        }
+
+        // Delete associated MOU file if exists
+        if (mou.mou_file_path) {
+            const mouFilePath = path.join(__dirname, '..', mou.mou_file_path);
+            if (fs.existsSync(mouFilePath)) {
+                try {
+                    fs.unlinkSync(mouFilePath);
+                    console.log('✅ Deleted MOU file:', mouFilePath);
+                } catch (err) {
+                    console.error('⚠️ Failed to delete MOU file:', err);
+                }
+            }
         }
 
         await MOU.findByIdAndDelete(req.params.id);

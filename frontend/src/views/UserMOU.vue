@@ -74,7 +74,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 import Pagination from '../components/Pagination.vue'
-import { organizationAPI, mouAPI } from '../services/api'
+import { organizationAPI, mouAPI, BACKEND_URL } from '../services/api'
 
 const router = useRouter()
 
@@ -198,7 +198,7 @@ const fetchPublishedMOUs = async () => {
             logoPath = '/' + logoPath
           }
         }
-        const logoUrl = logoPath ? `http://localhost:5000${logoPath}` : '/api/placeholder/95/95'
+        const logoUrl = logoPath ? `${BACKEND_URL}${logoPath}` : '/api/placeholder/95/95'
         
         return {
           id: item._id,

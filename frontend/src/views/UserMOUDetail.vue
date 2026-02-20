@@ -111,7 +111,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 import Pagination from '../components/Pagination.vue'
-import { organizationAPI, mouAPI } from '../services/api'
+import { organizationAPI, mouAPI, BACKEND_URL } from '../services/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -234,7 +234,7 @@ const fetchMOUDocument = async (orgId: string) => {
     console.log('Found MOU:', mou)
     
     if (mou && mou.mou_path) {
-      mouDocumentImage.value = `http://localhost:5000${mou.mou_path}`
+      mouDocumentImage.value = `${BACKEND_URL}${mou.mou_path}`
       isMOUDocumentPDF.value = mou.mou_path.toLowerCase().endsWith('.pdf')
       console.log('MOU document URL set to:', mouDocumentImage.value)
     } else {
@@ -287,7 +287,7 @@ const fetchPublishedMOUs = async () => {
             logoPath = '/' + logoPath
           }
         }
-        const logoUrl = logoPath ? `http://localhost:5000${logoPath}` : '/api/placeholder/95/95'
+        const logoUrl = logoPath ? `${BACKEND_URL}${logoPath}` : '/api/placeholder/95/95'
         
         return {
           id: item._id,
@@ -613,19 +613,25 @@ onMounted(async () => {
 
 .org-detail-name {
   position: absolute;
-  width: 91px;
-  height: 38.08px;
-  left: 213px;
+  width: 400px;
+  max-height: 80px;
+  left: 59px;
   top: 146px;
   
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 600;
-  font-size: 29px;
-  line-height: 37px;
-  letter-spacing: 0.12em;
+  font-size: 24px;
+  line-height: 30px;
+  letter-spacing: 0.08em;
   color: #000000;
   text-align: center;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-wrap: break-word;
 }
 
 .org-detail-duration {

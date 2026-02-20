@@ -332,7 +332,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
-import { organizationAPI, mouAPI, reviewAPI } from '../services/api'
+import { organizationAPI, mouAPI, reviewAPI, BACKEND_URL } from '../services/api'
 
 // Props
 const props = defineProps<{
@@ -651,7 +651,7 @@ const loadOrganizationData = async () => {
     formData.isPublic = orgData.is_public || false
     
     if (orgData.logo_path) {
-      logoPreview.value = `http://localhost:5000${orgData.logo_path}`
+      logoPreview.value = `${BACKEND_URL}${orgData.logo_path}`
     }
     
     // Load existing MOU if any
@@ -681,7 +681,7 @@ const loadMOUData = async () => {
       mouData.endDate = mou.end_date ? new Date(mou.end_date).toISOString().split('T')[0] : ''
       
       if (mou.mou_path) {
-        mouPreview.value = `http://localhost:5000${mou.mou_path}`
+        mouPreview.value = `${BACKEND_URL}${mou.mou_path}`
       }
     }
   } catch (error: any) {
@@ -902,7 +902,7 @@ watch(() => props.modelValue, (newValue) => {
 .form-field input,
 .form-field select,
 .form-field textarea {
-  width: 100%;
+  width: 90%;
   padding: 10px;
   border: 1px solid #B1B1B1;
   border-radius: 8px;
@@ -921,7 +921,7 @@ watch(() => props.modelValue, (newValue) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
+  width: 90%;
   padding: 10px;
   background: #FFFFFF;
   border: 1px solid #B1B1B1;
@@ -1173,7 +1173,7 @@ watch(() => props.modelValue, (newValue) => {
 }
 
 .date-input {
-  width: 100%;
+  width: 90%;
   height: 40px;
   padding: 8px 12px;
   background: #FFFFFF;

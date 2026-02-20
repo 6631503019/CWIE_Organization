@@ -108,7 +108,7 @@ import { useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import Pagination from '../components/Pagination.vue'
 import OrganizationEditModal from '../components/OrganizationEditModal.vue'
-import { organizationAPI, mouAPI } from '../services/api'
+import { organizationAPI, mouAPI, BACKEND_URL } from '../services/api'
 
 const router = useRouter()
 
@@ -322,7 +322,7 @@ const fetchOrganizations = async () => {
             logoPath = '/' + logoPath
           }
         }
-        const logoUrl = logoPath ? `http://localhost:5000${logoPath}` : '/api/placeholder/95/95'
+        const logoUrl = logoPath ? `${BACKEND_URL}${logoPath}` : '/api/placeholder/95/95'
         console.log(`Logo URL for ${item.name_en}:`, logoUrl, 'Raw path:', item.logo_path)
         
         return {

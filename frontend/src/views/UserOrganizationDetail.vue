@@ -109,7 +109,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
-import { organizationAPI, reviewAPI, mouAPI } from '../services/api'
+import { organizationAPI, reviewAPI, mouAPI, BACKEND_URL } from '../services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -129,7 +129,7 @@ const logoUrl = computed(() => {
     if (!logoPath.startsWith('/')) {
       logoPath = '/' + logoPath
     }
-    return `http://localhost:5000${logoPath}`
+    return `${BACKEND_URL}${logoPath}`
   }
   return 'https://via.placeholder.com/435x435?text=No+Logo'
 })
@@ -226,7 +226,7 @@ const fetchMOUDocument = async () => {
     })
     
     if (mou && mou.mou_path) {
-      mouDocumentUrl.value = `http://localhost:5000${mou.mou_path}`
+      mouDocumentUrl.value = `${BACKEND_URL}${mou.mou_path}`
     } else {
       mouDocumentUrl.value = null
     }

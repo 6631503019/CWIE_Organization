@@ -1,6 +1,8 @@
 const Organization = require('../models/Organization');
 const Notification = require('../models/Notification');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
+const fs = require('fs');
+const path = require('path');
 
 // @desc    Get all organizations
 // @route   GET /api/organizations
@@ -254,6 +256,19 @@ const updateOrganization = async (req, res, next) => {
         }
 
         if (req.file) {
+            // Delete old logo file if exists
+            if (existingOrg.logo_path) {
+                const oldFilePath = path.join(__dirname, '..', existingOrg.logo_path);
+                if (fs.existsSync(oldFilePath)) {
+                    try {
+                        fs.unlinkSync(oldFilePath);
+                        console.log('✅ Deleted old logo file:', oldFilePath);
+                    } catch (err) {
+                        console.error('⚠️ Failed to delete old logo:', err);
+                    }
+                }
+            }
+            
             // Normalize path for serving static files (ensure forward slashes and leading /)
             req.body.logo_path = '/' + req.file.path.replace(/\\/g, '/').replace(/^\/+/, '')
         }
@@ -303,6 +318,19 @@ const deleteOrganization = async (req, res, next) => {
 
         if (!organization) {
             throw createNotFoundError('organization', req.params.id);
+        }
+
+        // Delete associated logo file if exists
+        if (organization.logo_path) {
+            const logoFilePath = path.join(__dirname, '..', organization.logo_path);
+            if (fs.existsSync(logoFilePath)) {
+                try {
+                    fs.unlinkSync(logoFilePath);
+                    console.log('✅ Deleted logo file:', logoFilePath);
+                } catch (err) {
+                    console.error('⚠️ Failed to delete logo file:', err);
+                }
+            }
         }
 
         // Create notification before deleting

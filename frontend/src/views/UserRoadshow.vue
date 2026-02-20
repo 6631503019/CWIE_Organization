@@ -55,22 +55,19 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 import Pagination from '../components/Pagination.vue'
-import { roadshowAPI } from '../services/api'
+import { roadshowAPI, BACKEND_URL } from '../services/api'
 
 const router = useRouter()
 
-// Reactive state
 const state = reactive({
   loading: false,
   error: null as string | null,
   currentPage: 1,
-  itemsPerPage: 4
+  itemsPerPage: 2
 })
 
-// Roadshow data (only public roadshows)
 const roadshows = ref<any[]>([])
 
-// Computed properties
 const paginatedRoadshows = computed(() => {
   const start = (state.currentPage - 1) * state.itemsPerPage
   const end = start + state.itemsPerPage
@@ -81,7 +78,6 @@ const totalPages = computed(() =>
   Math.ceil(roadshows.value.length / state.itemsPerPage)
 )
 
-// Methods
 const handlePageChange = async (page: number) => {
   if (page >= 1 && page <= totalPages.value && !state.loading) {
     state.loading = true
@@ -94,20 +90,16 @@ const handlePageChange = async (page: number) => {
   }
 }
 
-// Fetch public roadshows only
 const fetchPublicRoadshows = async () => {
   try {
-    // Get all roadshows (API will filter public ones by default)
     const response = await roadshowAPI.getAll({ limit: 100 })
     console.log('All public roadshows:', response.data.data)
     
     roadshows.value = response.data.data
       .filter((item: any) => {
-        // Extra safety: ensure only public roadshows
         return item.is_public === true || item.is_public === 'true' || item.is_public === 1
       })
       .map((item: any) => {
-        // Normalize poster path
         let posterPath = item.poster_path
         if (posterPath) {
           posterPath = posterPath.replace(/\\/g, '/')
@@ -115,7 +107,7 @@ const fetchPublicRoadshows = async () => {
             posterPath = '/' + posterPath
           }
         }
-        const imageUrl = posterPath ? `http://localhost:5000${posterPath}` : 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27271%27 height=%27272%27%3E%3Crect fill=%27%23ddd%27 width=%27271%27 height=%27272%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'
+        const imageUrl = posterPath ? `${BACKEND_URL}${posterPath}` : 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27271%27 height=%27272%27%3E%3Crect fill=%27%23ddd%27 width=%27271%27 height=%27272%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'
         
         return {
           id: item._id,
@@ -134,7 +126,6 @@ const fetchPublicRoadshows = async () => {
   }
 }
 
-// Lifecycle
 onMounted(async () => {
   console.log('UserRoadshow mounted')
   state.loading = true
@@ -167,7 +158,6 @@ onMounted(async () => {
   left: 251px;
   top: 58px;
   margin: 0;
-  
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -202,18 +192,15 @@ onMounted(async () => {
   font-size: 16px;
 }
 
-/* Large Roadshow Card */
 .roadshow-large-card {
   position: relative;
   width: 1035px;
   height: 287px;
   margin-bottom: 25px;
-  
   background: #FFFFFF;
   border: 1px solid #000000;
   border-radius: 15px;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-  
   display: flex;
   overflow: hidden;
   cursor: pointer;
@@ -225,7 +212,6 @@ onMounted(async () => {
   box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.15);
 }
 
-/* Large Roadshow Image */
 .roadshow-image-large {
   width: 270.72px;
   height: 271.7px;
@@ -241,7 +227,6 @@ onMounted(async () => {
   object-fit: cover;
 }
 
-/* Roadshow Content */
 .roadshow-content {
   flex: 1;
   padding: 17px 20px 20px 40px;
@@ -249,7 +234,6 @@ onMounted(async () => {
   flex-direction: column;
 }
 
-/* Large Roadshow Title */
 .roadshow-title-large {
   margin: 0 0 15px 0;
   font-family: 'Outfit', sans-serif;
@@ -260,7 +244,6 @@ onMounted(async () => {
   color: #000000;
 }
 
-/* Roadshow Description */
 .roadshow-description {
   margin: 0;
   font-family: 'Outfit', sans-serif;
@@ -272,7 +255,6 @@ onMounted(async () => {
   flex: 1;
 }
 
-/* Roadshow Pagination Container */
 .roadshow-pagination-container {
   position: absolute;
   left: 1090px;

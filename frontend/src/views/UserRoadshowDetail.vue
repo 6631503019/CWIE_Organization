@@ -22,7 +22,7 @@
         <!-- Image -->
         <div class="roadshow-image-detail">
           <img 
-            :src="roadshow.poster_path ? `http://localhost:5000/${roadshow.poster_path.replace(/\\/g, '/')}` : 'https://via.placeholder.com/493x495?text=No+Image'" 
+            :src="roadshow.poster_path ? `${BACKEND_URL}/${roadshow.poster_path.replace(/\\/g, '/')}` : 'https://via.placeholder.com/493x495?text=No+Image'" 
             :alt="roadshow.topic"
             @error="(e) => (e.target as HTMLImageElement).src = 'https://via.placeholder.com/493x495?text=No+Image'"
           />
@@ -42,6 +42,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 
+import { BACKEND_URL } from '../services/api'
+
 const route = useRoute()
 
 const state = reactive({
@@ -56,7 +58,7 @@ onMounted(async () => {
   state.loading = true
   
   try {
-    const response = await fetch(`http://localhost:5000/api/roadshows/${route.params.id}`, {
+    const response = await fetch(`${BACKEND_URL}/api/roadshows/${route.params.id}`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
       }

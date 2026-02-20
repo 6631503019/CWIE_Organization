@@ -640,7 +640,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount, reactive } from 'vue'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
-import { organizationAPI, mouAPI, checkTokenValidity } from '../services/api'
+import { organizationAPI, mouAPI, checkTokenValidity, BACKEND_URL } from '../services/api'
 
 // Reactive state management
 const state = reactive({
@@ -1353,7 +1353,7 @@ const editOrganization = async (id: string | number) => {
     
     // Load existing logo if available
     if (orgData.logo_path) {
-      logoPreviewUrl.value = `http://localhost:5000${orgData.logo_path}`
+      logoPreviewUrl.value = `${BACKEND_URL}${orgData.logo_path}`
     } else {
       logoPreviewUrl.value = null
     }
@@ -1440,7 +1440,7 @@ const viewDocument = async (id: number) => {
   const mou = mouDataMap.value[orgId]
   
   if (mou && mou.mou_path) {
-    const mouUrl = `http://localhost:5000${mou.mou_path}`
+    const mouUrl = `${BACKEND_URL}${mou.mou_path}`
     window.open(mouUrl, '_blank')
   } else {
     notificationMessage.value = 'No MOU document available for this organization'
@@ -1522,7 +1522,7 @@ const submitImport = async () => {
     const formData = new FormData()
     formData.append('file', importFile.value)
 
-    const response = await fetch('http://localhost:5000/api/import/organizations', {
+    const response = await fetch(`${BACKEND_URL}/api/import/organizations`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
@@ -2733,7 +2733,7 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  width: 100%;
+  width: 90%;
   height: 40px;
   padding: 8px 12px;
   background: #FFFFFF;
@@ -3085,7 +3085,7 @@ onBeforeUnmount(() => {
 }
 
 .date-input {
-  width: 100%;
+  width: 90%;
   height: 40px;
   padding: 8px 12px;
   background: #FFFFFF;

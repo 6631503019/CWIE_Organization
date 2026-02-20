@@ -114,7 +114,7 @@
         
         <!-- Delete Icons -->
         <div class="delete-icons">
-          <i v-for="(notif, index) in notifications" :key="notif._id" class="pi pi-trash delete-icon" :style="{ top: (62.33 + index * 44) + 'px' }" @click="deleteNotification(notif._id)"></i>
+          <i v-for="(notif, index) in notifications" :key="notif._id" class="pi pi-trash delete-icon" :style="{ top: (66.92 + index * 45.83) + 'px' }" @click="deleteNotification(notif._id)"></i>
         </div>
       </div>
     </div>
@@ -137,6 +137,7 @@ import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import Pagination from '../components/Pagination.vue'
+import { BACKEND_URL } from '../services/api'
 
 const authStore = useAuthStore()
 
@@ -174,7 +175,7 @@ const refreshStats = async () => {
   state.loading = true
   try {
     // Fetch organization statistics - include both public and private
-    const orgResponse = await fetch('http://localhost:5000/api/organizations?limit=1000&public=false')
+    const orgResponse = await fetch(`${BACKEND_URL}/api/organizations?limit=1000&public=false`)
     if (!orgResponse.ok) throw new Error('Failed to load organizations')
     
     const orgData = await orgResponse.json()
@@ -197,7 +198,7 @@ const refreshStats = async () => {
     })
     
     // Fetch roadshow count
-    const roadshowResponse = await fetch('http://localhost:5000/api/roadshows?limit=1&public=false', {
+    const roadshowResponse = await fetch(`${BACKEND_URL}/api/roadshows?limit=1&public=false`, {
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
       }
@@ -262,7 +263,7 @@ const fetchNotifications = async () => {
     const token = localStorage.getItem('auth_token')
     if (!token) return
     
-    const response = await fetch('http://localhost:5000/api/notifications?limit=11&page=' + notificationPage.value, {
+    const response = await fetch(`${BACKEND_URL}/api/notifications?limit=11&page=` + notificationPage.value, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -283,7 +284,7 @@ const deleteNotification = async (id: string) => {
     const token = localStorage.getItem('auth_token')
     if (!token) return
     
-    const response = await fetch(`http://localhost:5000/api/notifications/${id}`, {
+    const response = await fetch(`${BACKEND_URL}/api/notifications/${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -726,6 +727,10 @@ const goToPage = (page: number) => {
 .establishment-item {
   text-align: left;
   justify-content: flex-start;
+  width: 429.71px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .date-item {
@@ -766,7 +771,7 @@ const goToPage = (page: number) => {
   position: absolute;
   width: 25.98px;
   height: 22px;
-  left: 1064.38px;
+  left: 1060px;
   color: #C70000;
   font-size: 18px;
   cursor: pointer;

@@ -1,7 +1,8 @@
 import axios from 'axios'
 
 // Use environment variables with fallback
-const API_BASE_URL = 'http://localhost:5000/api'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'
 
 // Create axios instance
 const api = axios.create({
@@ -82,6 +83,7 @@ export const checkTokenValidity = (): boolean => {
 }
 
 export default api
+export { BACKEND_URL }
 
 // API endpoints
 export const authAPI = {

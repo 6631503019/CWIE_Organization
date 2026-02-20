@@ -130,6 +130,24 @@ const importOrganizations = async (req, res, next) => {
                     continue;
                 }
 
+                // Extract welfare and compensation details from student report
+                const paymentDetails = row['__EMPTY_5'] || row['รายละเอียดค่าตอบแทนจากสถานประกอบการ'] || '';
+                const welfareDetails = row['__EMPTY_7'] || row['รายละเอียดสวัสดิการ'] || '';
+                
+                // Build details text from available information
+                let detailsText = '';
+                if (paymentDetails && paymentDetails.trim()) {
+                    detailsText += `ค่าตอบแทน: ${paymentDetails.trim()}`;
+                }
+                if (welfareDetails && welfareDetails.trim()) {
+                    if (detailsText) detailsText += '\n';
+                    detailsText += `สวัสดิการ: ${welfareDetails.trim()}`;
+                }
+                // Fallback to manual Details field or default message
+                if (!detailsText) {
+                    detailsText = row['Details'] || row['details'] || 'Imported from student report';
+                }
+
                 // Map Excel columns to database fields
                 const orgData = {
                     name_th: name_th || name_en,
@@ -139,7 +157,7 @@ const importOrganizations = async (req, res, next) => {
                     organization_type: row['Organization Type'] || row['organization_type'] || 'private company',
                     email: row['Email'] || row['email'] || generateEmail(name_en || name_th),
                     phone_number: row['Phone'] || row['phone_number'] || '',
-                    details: row['Details'] || row['details'] || `Imported from student report`,
+                    details: detailsText,
                     is_public: row['Public'] === 'true' || row['Public'] === true || row['is_public'] === true || false,
                     admin_id: req.user._id
                 };
