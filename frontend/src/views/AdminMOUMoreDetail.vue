@@ -1,103 +1,103 @@
 <template>
-  <div class="admin-mou-more-detail">
+  <div class="admin_mou_more_detail">
     <AdminNavbar />
     
     <!-- Main Content Card -->
-    <div class="content-card">
+    <div class="content_card">
       <!-- Back Button -->
-      <div class="back-button" @click="goBack">
-        <div class="back-arrow"></div>
+      <div class="back_button" @click="goBack">
+        <div class="back_arrow"></div>
       </div>
       
       <!-- MOU Badge -->
-      <div class="mou-badge" @click="openMOUDocument" :class="{ 'has-mou': mouDocumentUrl }">
+      <div class="mou_badge" @click="openMOUDocument" :class="{ 'has_mou': mouDocumentUrl }">
         MOU
       </div>
       
       <!-- Organization Name -->
-      <h1 class="org-title">{{ organization?.name_en || organization?.name_th || 'Organization Name' }}</h1>
+      <h1 class="org_title">{{ organization?.name_en || organization?.name_th || 'Organization Name' }}</h1>
       
       <!-- Organization Logo -->
-      <div class="org-logo-large">
+      <div class="org_logo_large">
         <img :src="logoUrl" :alt="organization?.name_en" />
       </div>
       
       <!-- Address -->
-      <div class="org-address">{{ fullAddress }}</div>
+      <div class="org_address">{{ fullAddress }}</div>
       
       <!-- Business Type Section -->
-      <div class="section-label business-type-label">Business Type</div>
-      <div class="tags-container business-tags">
+      <div class="section_label business_type_label">Business Type</div>
+      <div class="tags_container business_tags">
         <div class="tag" v-for="(type, index) in businessTypes" :key="index">{{ type }}</div>
       </div>
       
       <!-- Location Section -->
-      <div class="section-label location-label">Location</div>
-      <div class="tags-container location-tags">
+      <div class="section_label location_label">Location</div>
+      <div class="tags_container location_tags">
         <div class="tag">{{ organization?.address?.country || 'Thailand' }}</div>
         <div class="tag">{{ organization?.address?.region || 'Central' }}</div>
         <div class="tag">{{ organization?.address?.province || 'Bangkok' }}</div>
       </div>
       
       <!-- Email -->
-      <div class="contact-item email-item">
-        <div class="icon email-icon"></div>
-        <span class="contact-text">{{ organization?.email || 'N/A' }}</span>
+      <div class="contact_item email_item">
+        <div class="icon email_icon"></div>
+        <span class="contact_text">{{ organization?.email || 'N/A' }}</span>
       </div>
       
       <!-- Phone -->
-      <div class="contact-item phone-item">
-        <div class="icon phone-icon"></div>
-        <span class="contact-text">{{ organization?.tel || 'N/A' }}</span>
+      <div class="contact_item phone_item">
+        <div class="icon phone_icon"></div>
+        <span class="contact_text">{{ organization?.tel || 'N/A' }}</span>
       </div>
       
       <!-- Details Section -->
-      <div class="details-section">
-        <h2 class="section-title">Details</h2>
-        <p class="details-text">{{ organization?.details || 'No details available.' }}</p>
+      <div class="details_section">
+        <h2 class="section_title">Details</h2>
+        <p class="details_text">{{ organization?.details || 'No details available.' }}</p>
       </div>
       
       <!-- Reviews Section -->
-      <div class="reviews-section">
-        <h2 class="section-title">Reviews</h2>
+      <div class="reviews_section">
+        <h2 class="section_title">Reviews</h2>
         
         <!-- Review Navigation -->
-        <div class="review-carousel" v-if="reviews.length > 0">
+        <div class="review_carousel" v-if="reviews.length > 0">
           <!-- Previous Button -->
           <button 
-            class="review-nav-btn prev" 
+            class="review_nav_btn prev" 
             @click="prevReview" 
             :disabled="currentReviewIndex === 0"
           >
-            <div class="nav-arrow left"></div>
+            <div class="nav_arrow left"></div>
           </button>
           
           <!-- Current Review Card -->
-          <div class="review-card" v-if="currentReview">
-            <div class="review-header">
-              <span class="job-position-label">Job position : </span>
-              <span class="job-position-value">{{ currentReview.job_position || 'N/A' }}</span>
+          <div class="review_card" v-if="currentReview">
+            <div class="review_header">
+              <span class="job_position_label">Job position : </span>
+              <span class="job_position_value">{{ currentReview.job_position || 'N/A' }}</span>
             </div>
-            <p class="review-text">{{ currentReview.review_text || 'No review available.' }}</p>
-            <div class="review-rating">
+            <p class="review_text">{{ currentReview.review_text || 'No review available.' }}</p>
+            <div class="review_rating">
               <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= (currentReview.rating || 0) }">
                 ★
               </span>
             </div>
-            <div class="review-counter">{{ currentReviewIndex + 1 }} / {{ reviews.length }}</div>
+            <div class="review_counter">{{ currentReviewIndex + 1 }} / {{ reviews.length }}</div>
           </div>
           
           <!-- Next Button -->
           <button 
-            class="review-nav-btn next" 
+            class="review_nav_btn next" 
             @click="nextReview" 
             :disabled="currentReviewIndex === reviews.length - 1"
           >
-            <div class="nav-arrow right"></div>
+            <div class="nav_arrow right"></div>
           </button>
         </div>
         
-        <div class="no-reviews" v-else>
+        <div class="no_reviews" v-else>
           <p>No reviews available yet.</p>
         </div>
       </div>
@@ -316,7 +316,7 @@ onMounted(async () => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
-.admin-mou-more-detail {
+.admin_mou_more_detail {
   position: relative;
   width: 1440px;
   height: 1176px;
@@ -324,7 +324,7 @@ onMounted(async () => {
   overflow-x: auto;
 }
 
-.content-card {
+.content_card {
   box-sizing: border-box;
   position: absolute;
   width: 1118px;
@@ -337,7 +337,7 @@ onMounted(async () => {
   border-radius: 15px;
 }
 
-.back-button {
+.back_button {
   position: absolute;
   width: 40px;
   height: 40px;
@@ -350,11 +350,11 @@ onMounted(async () => {
   transition: transform 0.2s ease;
 }
 
-.back-button:hover {
+.back_button:hover {
   transform: translateX(-3px);
 }
 
-.back-arrow {
+.back_arrow {
   width: 24px;
   height: 24px;
   background: #000000;
@@ -362,7 +362,7 @@ onMounted(async () => {
   mask-size: contain;
 }
 
-.mou-badge {
+.mou_badge {
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
@@ -391,21 +391,21 @@ onMounted(async () => {
   transition: all 0.2s ease;
 }
 
-.mou-badge:hover {
+.mou_badge:hover {
   background: #C70000;
   color: #FFFFFF;
 }
 
-.mou-badge.has-mou {
+.mou_badge.has_mou {
   cursor: pointer;
 }
 
-.mou-badge:not(.has-mou) {
+.mou_badge:not(.has_mou) {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.org-title {
+.org_title {
   position: absolute;
   width: 744px;
   height: 48px;
@@ -422,7 +422,7 @@ onMounted(async () => {
   color: #000000;
 }
 
-.org-logo-large {
+.org_logo_large {
   position: absolute;
   width: 435px;
   height: 435px;
@@ -432,14 +432,14 @@ onMounted(async () => {
   overflow: hidden;
 }
 
-.org-logo-large img {
+.org_logo_large img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   background: #e0e0e0;
 }
 
-.org-address {
+.org_address {
   position: absolute;
   width: 909px;
   height: auto;
@@ -455,7 +455,7 @@ onMounted(async () => {
   text-align: center;
 }
 
-.section-label {
+.section_label {
   position: absolute;
   font-family: 'Outfit', sans-serif;
   font-style: normal;
@@ -465,32 +465,32 @@ onMounted(async () => {
   color: #000000;
 }
 
-.business-type-label {
+.business_type_label {
   width: 124px;
   height: 25px;
   left: 83px;
   top: 703px;
 }
 
-.location-label {
+.location_label {
   width: 124px;
   height: 25px;
   left: 366px;
   top: 700px;
 }
 
-.tags-container {
+.tags_container {
   position: absolute;
   display: flex;
   gap: 8px;
 }
 
-.business-tags {
+.business_tags {
   left: 79px;
   top: 743px;
 }
 
-.location-tags {
+.location_tags {
   left: 366px;
   top: 739px;
 }
@@ -516,19 +516,19 @@ onMounted(async () => {
   justify-content: center;
 }
 
-.contact-item {
+.contact_item {
   position: absolute;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.email-item {
+.email_item {
   left: 79px;
   top: 786px;
 }
 
-.phone-item {
+.phone_item {
   left: 366px;
   top: 783px;
 }
@@ -541,15 +541,15 @@ onMounted(async () => {
   background-position: center;
 }
 
-.email-icon {
+.email_icon {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000'%3E%3Cpath d='M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'/%3E%3C/svg%3E");
 }
 
-.phone-icon {
+.phone_icon {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000'%3E%3Cpath d='M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z'/%3E%3C/svg%3E");
 }
 
-.contact-text {
+.contact_text {
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 400;
@@ -558,14 +558,14 @@ onMounted(async () => {
   color: #000000;
 }
 
-.details-section {
+.details_section {
   position: absolute;
   left: 83px;
   top: 850px;
   width: 967px;
 }
 
-.section-title {
+.section_title {
   margin: 0 0 15px 0;
   font-family: 'Inter', sans-serif;
   font-style: normal;
@@ -575,7 +575,7 @@ onMounted(async () => {
   color: #000000;
 }
 
-.details-text {
+.details_text {
   margin: 0;
   font-family: 'Inter', sans-serif;
   font-style: normal;
@@ -583,23 +583,24 @@ onMounted(async () => {
   font-size: 16px;
   line-height: 19px;
   color: #000000;
+  white-space: pre-line;
 }
 
-.reviews-section {
+.reviews_section {
   position: absolute;
   left: 83px;
-  top: 950px;
+  top: 1050px;
   width: 900px;
 }
 
-.review-carousel {
+.review_carousel {
   display: flex;
   align-items: center;
   gap: 15px;
   margin-top: 33px;
 }
 
-.review-nav-btn {
+.review_nav_btn {
   width: 40px;
   height: 40px;
   background: #FFFFFF;
@@ -613,17 +614,17 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
-.review-nav-btn:hover:not(:disabled) {
+.review_nav_btn:hover:not(:disabled) {
   background: #F5F5F5;
   border-color: #AB1C03;
 }
 
-.review-nav-btn:disabled {
+.review_nav_btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
 
-.nav-arrow {
+.nav_arrow {
   width: 20px;
   height: 20px;
   background: #000000;
@@ -640,7 +641,7 @@ onMounted(async () => {
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z'/%3E%3C/svg%3E");
 }
 
-.review-card {
+.review_card {
   flex: 1;
   height: auto;
   min-height: 70px;
@@ -651,7 +652,7 @@ onMounted(async () => {
   border-radius: 5px;
 }
 
-.review-counter {
+.review_counter {
   position: absolute;
   bottom: 10px;
   right: 10px;
@@ -661,11 +662,11 @@ onMounted(async () => {
   color: #767676;
 }
 
-.review-header {
+.review_header {
   margin-bottom: 10px;
 }
 
-.job-position-label {
+.job_position_label {
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -674,7 +675,7 @@ onMounted(async () => {
   color: #545454;
 }
 
-.job-position-value {
+.job_position_value {
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -683,7 +684,7 @@ onMounted(async () => {
   color: #000000;
 }
 
-.review-text {
+.review_text {
   margin: 0 0 10px 0;
   font-family: 'Inter', sans-serif;
   font-style: normal;
@@ -693,7 +694,7 @@ onMounted(async () => {
   color: #000000;
 }
 
-.review-rating {
+.review_rating {
   display: flex;
   gap: 4px;
   margin-top: 8px;
@@ -708,7 +709,7 @@ onMounted(async () => {
   color: #FFD700;
 }
 
-.no-reviews {
+.no_reviews {
   margin-top: 33px;
   font-family: 'Inter', sans-serif;
   font-style: normal;
@@ -718,3 +719,5 @@ onMounted(async () => {
   color: #767676;
 }
 </style>
+
+

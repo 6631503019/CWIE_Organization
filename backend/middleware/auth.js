@@ -71,7 +71,41 @@ const authorize = (...roles) => {
     };
 };
 
+// Optional auth middleware - tries to attach user but doesn't fail if token is missing
+const optionalAuth = async (req, res, next) => {
+    try {
+        let token;
+
+        // Check for token in headers
+        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+            token = req.headers.authorization.split(' ')[1];
+        }
+
+        if (!token) {
+            // No token - just continue without user
+            return next();
+        }
+
+        // Verify token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        // Get user from token
+        const user = await User.findById(decoded.id);
+
+        if (user && user.isActive) {
+            req.user = user;
+        }
+
+        next();
+    } catch (error) {
+        // Silently ignore auth errors - allow unauthenticated access
+        console.debug('Optional auth error (non-blocking):', error.message);
+        next();
+    }
+};
+
 module.exports = {
     protect,
+    optionalAuth,
     authorize
 };

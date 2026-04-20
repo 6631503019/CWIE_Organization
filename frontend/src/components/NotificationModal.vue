@@ -1,11 +1,11 @@
 <template>
-  <div v-if="show" class="modal-overlay" @click="$emit('close')">
-    <div class="notification-modal" @click.stop :class="`type-${type}`">
-      <div class="icon-container">
-        <div class="icon" :class="`icon-${type}`"></div>
+  <div v-if="show" class="modal_overlay" @click="$emit('close')">
+    <div class="notification_modal" @click.stop :class="`type_${type}`">
+      <div class="icon_container">
+        <div class="icon" :class="`icon_${type}`"></div>
       </div>
       <p class="message">{{ message }}</p>
-      <button class="btn-ok" @click="$emit('close')">OK</button>
+      <button class="btn_ok" @click="$emit('close')">OK</button>
     </div>
   </div>
 </template>
@@ -23,7 +23,7 @@ defineEmits<{
 </script>
 
 <style scoped>
-.modal-overlay {
+.modal_overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -36,7 +36,7 @@ defineEmits<{
   z-index: 10000;
 }
 
-.notification-modal {
+.notification_modal {
   background: #FFFFFF;
   border-radius: 12px;
   padding: 32px 24px 24px;
@@ -46,7 +46,7 @@ defineEmits<{
   text-align: center;
 }
 
-.icon-container {
+.icon_container {
   width: 64px;
   height: 64px;
   margin: 0 auto 16px;
@@ -56,15 +56,15 @@ defineEmits<{
   justify-content: center;
 }
 
-.type-success .icon-container {
+.type-success .icon_container {
   background: #DCFCE7;
 }
 
-.type-error .icon-container {
+.type-error .icon_container {
   background: #FEE2E2;
 }
 
-.type-warning .icon-container {
+.type-warning .icon_container {
   background: #FEF3C7;
 }
 
@@ -76,17 +76,17 @@ defineEmits<{
   mask-position: center;
 }
 
-.icon-success {
+.icon_success {
   background: #16A34A;
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z'/%3E%3C/svg%3E");
 }
 
-.icon-error {
+.icon_error {
   background: #DC2626;
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z'/%3E%3C/svg%3E");
 }
 
-.icon-warning {
+.icon_warning {
   background: #F59E0B;
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z'/%3E%3C/svg%3E");
 }
@@ -99,7 +99,7 @@ defineEmits<{
   line-height: 1.5;
 }
 
-.btn-ok {
+.btn_ok {
   padding: 10px 32px;
   background: #AB1C03;
   border: none;
@@ -113,11 +113,11 @@ defineEmits<{
   transition: background 0.2s ease;
 }
 
-.btn-ok:hover {
+.btn_ok:hover {
   background: #8B1600;
 }
 
-.type-error .btn-ok {
+.type-error .btn_ok {
   background: #DC2626;
 }
 
@@ -125,7 +125,7 @@ defineEmits<{
   background: #B91C1C;
 }
 
-.type-warning .btn-ok {
+.type-warning .btn_ok {
   background: #F59E0B;
 }
 
@@ -133,3 +133,5 @@ defineEmits<{
   background: #D97706;
 }
 </style>
+
+

@@ -1,5 +1,5 @@
 const User = require('../models/User');
-const { generateToken } = require('../config/jwt');
+const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../config/jwt');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 
 // @desc    Register user
@@ -51,13 +51,15 @@ const register = async (req, res, next) => {
             role: email === 'admin@mfu.ac.th' ? 'admin' : 'user'
         });
 
-        // Generate token
+        // Generate tokens
         const token = generateToken({ id: user._id });
+        const refreshToken = generateRefreshToken({ id: user._id });
 
         res.status(201).json({
             success: true,
             message: 'User registered successfully',
             token,
+            refreshToken,
             data: {
                 id: user._id,
                 name: user.name,
@@ -112,13 +114,15 @@ const login = async (req, res, next) => {
             );
         }
 
-        // Generate token
+        // Generate tokens
         const token = generateToken({ id: user._id });
+        const refreshToken = generateRefreshToken({ id: user._id });
 
         res.status(200).json({
             success: true,
             message: 'Login successful',
             token,
+            refreshToken,
             data: {
                 id: user._id,
                 name: user.name,
@@ -127,6 +131,67 @@ const login = async (req, res, next) => {
             }
         });
     } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Refresh access token
+// @route   POST /api/auth/refresh
+// @access  Public
+const refresh = async (req, res, next) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            throw new CustomError(
+                ERROR_CODES.AUTH_TOKEN_MISSING,
+                'Refresh token is required'
+            );
+        }
+
+        // Verify refresh token
+        const decoded = verifyRefreshToken(refreshToken);
+
+        // Get user
+        const user = await User.findById(decoded.id);
+
+        if (!user) {
+            throw new CustomError(
+                ERROR_CODES.AUTH_USER_NOT_FOUND,
+                'User not found'
+            );
+        }
+
+        if (!user.isActive) {
+            throw new CustomError(
+                ERROR_CODES.FORBIDDEN_ACCOUNT_INACTIVE,
+                'User account is disabled'
+            );
+        }
+
+        // Generate new access token
+        const token = generateToken({ id: user._id });
+
+        res.status(200).json({
+            success: true,
+            message: 'Token refreshed successfully',
+            token
+        });
+    } catch (error) {
+        if (error.name === 'JsonWebTokenError') {
+            return next(new CustomError(
+                ERROR_CODES.AUTH_TOKEN_INVALID,
+                'Invalid refresh token'
+            ));
+        }
+
+        if (error.name === 'TokenExpiredError') {
+            return next(new CustomError(
+                ERROR_CODES.AUTH_TOKEN_EXPIRED,
+                'Refresh token has expired. Please login again'
+            ));
+        }
+
         next(error);
     }
 };
@@ -154,5 +219,6 @@ const getMe = async (req, res, next) => {
 module.exports = {
     register,
     login,
+    refresh,
     getMe
 };

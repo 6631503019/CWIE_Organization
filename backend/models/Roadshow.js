@@ -15,11 +15,19 @@ const roadshowSchema = new mongoose.Schema({
         type: Date,
         required: [true, 'Event date is required']
     },
+    posted_date: {
+        type: Date,
+        required: [true, 'Posted date is required']
+    },
+    deleted_date: {
+        type: Date
+    },
     poster_path: {
         type: String
     },
-    activity_image_path: {
-        type: String
+    activity_image_paths: {
+        type: [String],
+        default: []
     },
     is_public: {
         type: Boolean,
@@ -35,6 +43,8 @@ const roadshowSchema = new mongoose.Schema({
 });
 
 roadshowSchema.index({ event_date: -1 });
+roadshowSchema.index({ posted_date: -1 });
+roadshowSchema.index({ deleted_date: -1 });
 roadshowSchema.index({ is_public: 1 });
 
 module.exports = mongoose.model('Roadshow', roadshowSchema);

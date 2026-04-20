@@ -1,21 +1,21 @@
 <template>
-  <div class="organization-card">
-    <div class="card-header">
+  <div class="organization_card">
+    <div class="card_header">
       <img 
         v-if="organization.logoUrl" 
         :src="organization.logoUrl" 
         :alt="`${organization.name} logo`"
-        class="org-logo"
+        class="org_logo"
       />
-      <div class="org-info">
-        <h3 class="org-name">{{ organization.name }}</h3>
-        <p class="org-category">{{ organization.category }}</p>
+      <div class="org_info">
+        <h3 class="org_name">{{ organization.name }}</h3>
+        <p class="org_category">{{ organization.category }}</p>
       </div>
-      <div class="card-actions">
+      <div class="card_actions">
         <button 
           v-if="showActions"
           @click="$emit('edit', organization)"
-          class="btn-edit"
+          class="btn_edit"
           :disabled="isLoading"
         >
           Edit
@@ -23,7 +23,7 @@
         <button 
           v-if="showActions"
           @click="handleDelete"
-          class="btn-delete"
+          class="btn_delete"
           :disabled="isLoading"
         >
           Delete
@@ -31,29 +31,29 @@
       </div>
     </div>
 
-    <div class="card-body">
-      <p class="org-description">{{ organization.description }}</p>
+    <div class="card_body">
+      <p class="org_description">{{ organization.description }}</p>
       
-      <div class="org-details">
-        <div class="detail-item">
+      <div class="org_details">
+        <div class="detail_item">
           <strong>Location:</strong> {{ organization.location }}
         </div>
-        <div class="detail-item" v-if="organization.website">
+        <div class="detail_item" v-if="organization.website">
           <strong>Website:</strong> 
           <a :href="organization.website" target="_blank" rel="noopener">
             {{ organization.website }}
           </a>
         </div>
-        <div class="detail-item">
+        <div class="detail_item">
           <strong>Contact:</strong> {{ organization.contactEmail }}
         </div>
       </div>
 
-      <div class="card-footer">
-        <span :class="['status-badge', organization.isActive ? 'active' : 'inactive']">
+      <div class="card_footer">
+        <span :class="['status_badge', organization.isActive ? 'active' : 'inactive']">
           {{ organization.isActive ? 'Active' : 'Inactive' }}
         </span>
-        <span class="created-date">
+        <span class="created_date">
           Created: {{ formatDate(organization.createdAt) }}
         </span>
       </div>
@@ -114,7 +114,7 @@ const formatDate = (dateString: string) => {
 </script>
 
 <style scoped>
-.organization-card {
+.organization_card {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -122,19 +122,19 @@ const formatDate = (dateString: string) => {
   overflow: hidden;
 }
 
-.organization-card:hover {
+.organization_card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
-.card-header {
+.card_header {
   display: flex;
   align-items: center;
   padding: 20px;
   border-bottom: 1px solid #eee;
 }
 
-.org-logo {
+.org_logo {
   width: 60px;
   height: 60px;
   border-radius: 8px;
@@ -142,30 +142,30 @@ const formatDate = (dateString: string) => {
   margin-right: 16px;
 }
 
-.org-info {
+.org_info {
   flex: 1;
 }
 
-.org-name {
+.org_name {
   margin: 0 0 4px 0;
   font-size: 1.25rem;
   font-weight: 600;
   color: #333;
 }
 
-.org-category {
+.org_category {
   margin: 0;
   color: #666;
   font-size: 0.9rem;
 }
 
-.card-actions {
+.card_actions {
   display: flex;
   gap: 8px;
 }
 
 .btn-edit,
-.btn-delete {
+.btn_delete {
   padding: 6px 12px;
   border: none;
   border-radius: 6px;
@@ -174,45 +174,45 @@ const formatDate = (dateString: string) => {
   transition: background-color 0.2s;
 }
 
-.btn-edit {
+.btn_edit {
   background-color: #007bff;
   color: white;
 }
 
-.btn-edit:hover:not(:disabled) {
+.btn_edit:hover:not(:disabled) {
   background-color: #0056b3;
 }
 
-.btn-delete {
+.btn_delete {
   background-color: #dc3545;
   color: white;
 }
 
-.btn-delete:hover:not(:disabled) {
+.btn_delete:hover:not(:disabled) {
   background-color: #c82333;
 }
 
-.btn-edit:disabled,
-.btn-delete:disabled {
+.btn_edit:disabled,
+.btn_delete:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.card-body {
+.card_body {
   padding: 20px;
 }
 
-.org-description {
+.org_description {
   margin: 0 0 16px 0;
   color: #555;
   line-height: 1.5;
 }
 
-.org-details {
+.org_details {
   margin-bottom: 16px;
 }
 
-.detail-item {
+.detail_item {
   margin-bottom: 8px;
   font-size: 0.9rem;
 }
@@ -230,14 +230,14 @@ const formatDate = (dateString: string) => {
   text-decoration: underline;
 }
 
-.card-footer {
+.card_footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 0.8rem;
 }
 
-.status-badge {
+.status_badge {
   padding: 4px 8px;
   border-radius: 12px;
   font-weight: 500;
@@ -254,7 +254,7 @@ const formatDate = (dateString: string) => {
   color: #721c24;
 }
 
-.created-date {
+.created_date {
   color: #666;
 }
 </style>

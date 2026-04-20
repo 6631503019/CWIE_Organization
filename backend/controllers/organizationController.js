@@ -1,8 +1,7 @@
 const Organization = require('../models/Organization');
 const Notification = require('../models/Notification');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
-const fs = require('fs');
-const path = require('path');
+const { deleteStoredFile } = require('../utils/fileCleanup');
 
 // @desc    Get all organizations
 // @route   GET /api/organizations
@@ -47,9 +46,9 @@ const getOrganizations = async (req, res, next) => {
 
         const organizations = await Organization.find(filter)
             .populate('industry_category_id', 'name')
-            .populate('country_id', 'name')
-            .populate('geography_id', 'name')
-            .populate('province_id', 'name')
+            .populate('country_id', 'name_th name_en')
+            .populate('geography_id', 'name_th name_en')
+            .populate('province_id', 'name_th name_en')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -80,9 +79,9 @@ const getOrganization = async (req, res, next) => {
     try {
         const organization = await Organization.findById(req.params.id)
             .populate('industry_category_id', 'name')
-            .populate('country_id', 'name')
-            .populate('geography_id', 'name')
-            .populate('province_id', 'name');
+            .populate('country_id', 'name_th name_en')
+            .populate('geography_id', 'name_th name_en')
+            .populate('province_id', 'name_th name_en');
 
         if (!organization) {
             throw createNotFoundError('organization', req.params.id);
@@ -258,17 +257,9 @@ const updateOrganization = async (req, res, next) => {
         if (req.file) {
             // Delete old logo file if exists
             if (existingOrg.logo_path) {
-                const oldFilePath = path.join(__dirname, '..', existingOrg.logo_path);
-                if (fs.existsSync(oldFilePath)) {
-                    try {
-                        fs.unlinkSync(oldFilePath);
-                        console.log('✅ Deleted old logo file:', oldFilePath);
-                    } catch (err) {
-                        console.error('⚠️ Failed to delete old logo:', err);
-                    }
-                }
+                deleteStoredFile(existingOrg.logo_path, 'old logo file');
             }
-            
+
             // Normalize path for serving static files (ensure forward slashes and leading /)
             req.body.logo_path = '/' + req.file.path.replace(/\\/g, '/').replace(/^\/+/, '')
         }
@@ -322,15 +313,7 @@ const deleteOrganization = async (req, res, next) => {
 
         // Delete associated logo file if exists
         if (organization.logo_path) {
-            const logoFilePath = path.join(__dirname, '..', organization.logo_path);
-            if (fs.existsSync(logoFilePath)) {
-                try {
-                    fs.unlinkSync(logoFilePath);
-                    console.log('✅ Deleted logo file:', logoFilePath);
-                } catch (err) {
-                    console.error('⚠️ Failed to delete logo file:', err);
-                }
-            }
+            deleteStoredFile(organization.logo_path, 'logo file');
         }
 
         // Create notification before deleting

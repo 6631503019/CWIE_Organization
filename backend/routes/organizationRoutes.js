@@ -6,7 +6,7 @@ const {
     updateOrganization,
     deleteOrganization
 } = require('../controllers/organizationController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
 const router = express.Router();
@@ -16,7 +16,7 @@ router.route('/')
     .post(protect, authorize('admin'), upload.single('logo'), createOrganization);
 
 router.route('/:id')
-    .get(protect, getOrganization)
+    .get(optionalAuth, getOrganization)
     .put(protect, authorize('admin'), upload.single('logo'), updateOrganization)
     .delete(protect, authorize('admin'), deleteOrganization);
 

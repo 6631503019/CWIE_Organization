@@ -1,21 +1,21 @@
 <template>
-  <div class="admin-navbar">
+  <div class="admin_navbar">
     <!-- Logo Image -->
     <img 
       src="https://archives.mfu.ac.th/wp-content/uploads/2019/06/Mae-Fah-Luang-University-2.png" 
       alt="MFU Logo"
-      class="logo-image"
+      class="logo_image"
     />
     
     <!-- MFU CWIE Title -->
-    <span class="brand-title">MFU CWIE</span>
+    <span class="brand_title">MFU CWIE</span>
     
     <!-- Organization Database Subtitle -->
-    <span class="brand-subtitle">Organization Database</span>
+    <span class="brand_subtitle">Organization Database</span>
 
     <!-- Dashboard Link -->
     <a href="/admin/dashboard" 
-       class="nav-dashboard" 
+       class="nav_dashboard" 
        :class="{ active: currentRoute === 'dashboard' }"
        @click.prevent="navigateTo('/admin/dashboard')">
       Dashboard
@@ -23,7 +23,7 @@
 
     <!-- Organization Link -->
     <a href="/admin/organization" 
-       class="nav-organization"
+       class="nav_organization"
        :class="{ active: currentRoute === 'organization' }"
        @click.prevent="navigateTo('/admin/organization')">
       Organization
@@ -31,7 +31,7 @@
 
     <!-- MOU Link -->
     <a href="/admin/mou" 
-       class="nav-mou"
+       class="nav_mou"
        :class="{ active: currentRoute === 'mou' }"
        @click.prevent="navigateTo('/admin/mou')">
       MOU
@@ -39,30 +39,25 @@
 
     <!-- Roadshow Link -->
     <a href="/admin/roadshow" 
-       class="nav-roadshow"
+       class="nav_roadshow"
        :class="{ active: currentRoute === 'roadshow' }"
        @click.prevent="navigateTo('/admin/roadshow')">
       Roadshow
     </a>
 
     <!-- Profile Separator Line -->
-    <div class="profile-separator"></div>
+    <div class="profile_separator"></div>
 
     <!-- Profile Avatar -->
-    <div class="profile-avatar" @click="toggleProfileMenu">
+    <div class="profile_avatar">
       <i class="pi pi-user"></i>
     </div>
 
     <!-- Profile Name -->
-    <span class="profile-name" @click="toggleProfileMenu">{{ authStore.user?.name || 'Thiwakorn Boayair...' }}</span>
-    
-    <!-- Logout Popup -->
-    <div v-if="showProfileMenu" class="logout-popup">
-      <div class="logout-option" @click="handleLogout">
-        <i class="pi pi-sign-out"></i>
-        <span>Logout</span>
-      </div>
-    </div>
+    <span class="profile_name">{{ authStore.obj_Current_User?.name || 'Thiwakorn Boayair...' }}</span>
+
+    <!-- Logout Icon -->
+    <i class="pi pi-sign-out logout_icon" @click="handleLogout" title="Logout"></i>
   </div>
 </template>
 
@@ -77,9 +72,6 @@ const route = useRoute()
 
 // Force reactivity with ref
 const forceUpdate = ref(0)
-
-// Profile menu state
-const showProfileMenu = ref(false)
 
 // Current route detection using Vue Router
 const currentRoute = computed(() => {
@@ -125,10 +117,6 @@ const navigateTo = (path: string) => {
   router.push(path)
 }
 
-const toggleProfileMenu = () => {
-  showProfileMenu.value = !showProfileMenu.value
-}
-
 const handleLogout = async () => {
   try {
     await authStore.logout()
@@ -144,7 +132,7 @@ const handleLogout = async () => {
 @import url('https://cdn.jsdelivr.net/npm/primeicons@6.0.1/primeicons.css');
 
 /* Main Navbar Container */
-.admin-navbar {
+.admin_navbar {
   position: fixed;
   width: 232px;
   height: 100vh;
@@ -156,7 +144,7 @@ const handleLogout = async () => {
 }
 
 /* Logo Image */
-.logo-image {
+.logo_image {
   position: absolute;
   height: 62px;
   left: 35px;
@@ -166,7 +154,7 @@ const handleLogout = async () => {
 }
 
 /* Brand Title - MFU CWIE */
-.brand-title {
+.brand_title {
   position: absolute;
   left: 82px;
   right: 35px;
@@ -181,7 +169,7 @@ const handleLogout = async () => {
 }
 
 /* Brand Subtitle - Organization Database */
-.brand-subtitle {
+.brand_subtitle {
   position: absolute;
   left: 87px;
   right: 45px;
@@ -196,7 +184,7 @@ const handleLogout = async () => {
 }
 
 /* Dashboard Navigation */
-.nav-dashboard {
+.nav_dashboard {
   position: absolute;
   left: 35px;
   right: 35px;
@@ -212,7 +200,7 @@ const handleLogout = async () => {
 }
 
 /* Organization Navigation */
-.nav-organization {
+.nav_organization {
   position: absolute;
   left: 35px;
   right: 35px;
@@ -228,7 +216,7 @@ const handleLogout = async () => {
 }
 
 /* MOU Navigation */
-.nav-mou {
+.nav_mou {
   position: absolute;
   left: 35px;
   right: 35px;
@@ -244,7 +232,7 @@ const handleLogout = async () => {
 }
 
 /* Roadshow Navigation */
-.nav-roadshow {
+.nav_roadshow {
   position: absolute;
   left: 35px;
   right: 35px;
@@ -260,7 +248,7 @@ const handleLogout = async () => {
 }
 
 /* Profile Separator Line */
-.profile-separator {
+.profile_separator {
   position: absolute;
   left: 10px;
   right: 10px;
@@ -270,7 +258,7 @@ const handleLogout = async () => {
 }
 
 /* Profile Avatar */
-.profile-avatar {
+.profile_avatar {
   position: absolute;
   left: 13px;
   bottom: 10px;
@@ -284,16 +272,16 @@ const handleLogout = async () => {
   cursor: pointer;
 }
 
-.profile-avatar .pi {
+.profile_avatar .pi {
   font-size: 18px;
   color: #545454;
 }
 
 /* Profile Name */
-.profile-name {
+.profile_name {
   position: absolute;
   left: 60px;
-  right: 10px;
+  right: 40px;
   bottom: 20px;
   font-family: 'Outfit';
   font-style: normal;
@@ -301,13 +289,26 @@ const handleLogout = async () => {
   font-size: 14px;
   line-height: 18px;
   color: #000000;
+}
+
+/* Logout Icon */
+.logout_icon {
+  position: absolute;
+  right: 13px;
+  bottom: 18px;
+  font-size: 18px;
+  color: #C70000;
   cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.logout_icon:hover {
+  transform: scale(1.2);
 }
 
 /* Logout Popup */
-.logout-popup {
+.logout_popup {
   position: absolute;
-  left: 10px;
   right: 10px;
   bottom: 60px;
   background: #FFFFFF;
@@ -315,46 +316,23 @@ const handleLogout = async () => {
   border-radius: 8px;
   box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
   z-index: 1001;
-}
-
-.logout-option {
-  padding: 12px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.logout-option:hover {
-  background: #F6F7F8;
-}
-
-.logout-option i {
-  font-size: 16px;
-  color: #C70000;
-}
-
-.logout-option span {
-  font-family: 'Outfit';
-  font-size: 14px;
-  font-weight: 600;
-  color: #000000;
+  min-width: 120px;
 }
 
 /* Active Navigation State */
-.nav-dashboard.active,
-.nav-organization.active,
-.nav-mou.active,
-.nav-roadshow.active {
+.nav_dashboard.active,
+.nav_organization.active,
+.nav_mou.active,
+.nav_roadshow.active {
   color: #C70000 !important;
 }
 
 /* Hover States */
-.nav-dashboard:hover,
-.nav-organization:hover,
-.nav-mou:hover,
-.nav-roadshow:hover {
+.nav_dashboard:hover,
+.nav_organization:hover,
+.nav_mou:hover,
+.nav_roadshow:hover {
   color: #C70000;
 }
 </style>
+

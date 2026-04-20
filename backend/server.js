@@ -69,15 +69,37 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/cwie_organization')
-    .then(() => {
+const primaryMongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/cwie_organization';
+const fallbackMongoUri = process.env.MONGODB_URI_FALLBACK || 'mongodb://127.0.0.1:27017/cwie_organization';
+
+const connectMongo = async () => {
+    try {
+        await mongoose.connect(primaryMongoUri);
         console.log('✅ MongoDB connected successfully');
         console.log(`📡 Database: ${mongoose.connection.db.databaseName}`);
-    })
-    .catch((error) => {
+    } catch (error) {
+        const isSrvDnsError =
+            primaryMongoUri.startsWith('mongodb+srv://') &&
+            (error?.code === 'ESERVFAIL' || error?.syscall === 'querySrv');
+
+        if (isSrvDnsError && fallbackMongoUri && fallbackMongoUri !== primaryMongoUri) {
+            console.warn('⚠️ Atlas SRV DNS lookup failed, trying fallback MongoDB URI...');
+            try {
+                await mongoose.connect(fallbackMongoUri);
+                console.log('✅ MongoDB connected successfully (fallback URI)');
+                console.log(`📡 Database: ${mongoose.connection.db.databaseName}`);
+                return;
+            } catch (fallbackError) {
+                console.error('❌ MongoDB fallback connection error:', fallbackError);
+            }
+        }
+
         console.error('❌ MongoDB connection error:', error);
         process.exit(1);
-    });
+    }
+};
+
+connectMongo();
 
 // MongoDB connection events
 mongoose.connection.on('disconnected', () => {

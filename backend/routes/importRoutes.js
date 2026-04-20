@@ -20,13 +20,20 @@ const fileFilter = (req, file, cb) => {
     const allowedTypes = [
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/csv'
+        'text/csv',
+        'application/csv',
+        'application/octet-stream'
     ];
 
-    if (allowedTypes.includes(file.mimetype)) {
+    const fileExtension = path.extname(file.originalname || '').toLowerCase();
+    const allowedExtensions = ['.csv', '.xlsx', '.xls', '.xlxs'];
+    const isValidMimeType = allowedTypes.includes(file.mimetype);
+    const isValidExtension = allowedExtensions.includes(fileExtension);
+
+    if (isValidMimeType || isValidExtension) {
         cb(null, true);
     } else {
-        cb(new Error('Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed'), false);
+        cb(new Error('Invalid file type. Only Excel (.xlsx, .xls, .xlxs) and CSV files are allowed'), false);
     }
 };
 

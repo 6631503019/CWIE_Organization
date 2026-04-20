@@ -1,6 +1,7 @@
 const Roadshow = require('../models/Roadshow');
 const Notification = require('../models/Notification');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
+const { deleteStoredFile } = require('../utils/fileCleanup');
 
 // @desc    Get all roadshows
 // @route   GET /api/roadshows
@@ -11,12 +12,23 @@ const getRoadshows = async (req, res, next) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        const filter = req.query.public !== 'false' ? { is_public: true } : {};
+        const filter = {};
+
+        // Filter by public/private
+        if (req.query.public !== 'false') {
+            filter.is_public = true;
+        }
 
         // Filter by upcoming events only if requested
         if (req.query.upcoming === 'true') {
             filter.event_date = { $gte: new Date() };
         }
+
+        // Auto-exclude roadshows with deleted_date in the past
+        const now = new Date();
+        filter.$and = [
+            { $or: [{ deleted_date: null }, { deleted_date: { $gte: now } }] }
+        ];
 
         const roadshows = await Roadshow.find(filter)
             .sort({ event_date: -1 })
@@ -77,10 +89,10 @@ const getRoadshow = async (req, res, next) => {
 // @access  Private (Admin)
 const createRoadshow = async (req, res, next) => {
     try {
-        const { topic, details, event_date } = req.body;
+        const { topic, details, posted_date, deleted_date } = req.body;
 
-        // Check required fields
-        const requiredFields = ['topic', 'details', 'event_date'];
+        // Check required fields - accept posted_date from frontend
+        const requiredFields = ['topic', 'details', 'posted_date'];
         const missingFields = requiredFields.filter(field => !req.body[field]);
 
         if (missingFields.length > 0) {
@@ -91,27 +103,41 @@ const createRoadshow = async (req, res, next) => {
             );
         }
 
-        // Validate event date
-        const eventDate = new Date(event_date);
-        if (isNaN(eventDate.getTime())) {
+        // Validate posted date
+        const postedDate = new Date(posted_date);
+        if (isNaN(postedDate.getTime())) {
             throw new CustomError(
                 ERROR_CODES.VALIDATION_DATE_INVALID,
-                'Invalid event date format'
+                'Invalid posted date format'
             );
         }
 
-        // Check if event date is in the past (optional warning)
-        if (eventDate < new Date()) {
-            console.warn('Warning: Event date is in the past');
+        // Map posted_date to event_date for backward compatibility AND set posted_date as Date object
+        req.body.event_date = postedDate;
+        req.body.posted_date = postedDate;
+
+        // Validate deleted date if provided
+        if (deleted_date) {
+            const deletedDate = new Date(deleted_date);
+            if (isNaN(deletedDate.getTime())) {
+                throw new CustomError(
+                    ERROR_CODES.VALIDATION_DATE_INVALID,
+                    'Invalid deleted date format'
+                );
+            }
+            req.body.deleted_date = deletedDate;
         }
 
         // Handle file uploads
         if (req.files) {
             if (req.files.poster) {
-                req.body.poster_path = req.files.poster[0].path;
+                req.body.poster_path = '/' + req.files.poster[0].path.replace(/\\/g, '/').replace(/^\/+/, '');
             }
             if (req.files.activity_image) {
-                req.body.activity_image_path = req.files.activity_image[0].path;
+                // Store all activity images as an array
+                req.body.activity_image_paths = req.files.activity_image.map(file =>
+                    '/' + file.path.replace(/\\/g, '/').replace(/^\/+/, '')
+                );
             }
         }
 
@@ -156,7 +182,34 @@ const updateRoadshow = async (req, res, next) => {
             throw createNotFoundError('roadshow', req.params.id);
         }
 
-        // Validate event date if provided
+        // Handle date fields - map posted_date to event_date for backward compatibility
+        if (req.body.posted_date) {
+            const postedDate = new Date(req.body.posted_date);
+            if (isNaN(postedDate.getTime())) {
+                throw new CustomError(
+                    ERROR_CODES.VALIDATION_DATE_INVALID,
+                    'Invalid posted date format'
+                );
+            }
+            req.body.event_date = postedDate;
+            req.body.posted_date = postedDate;
+        }
+
+        // Validate deleted date if provided
+        if (req.body.deleted_date) {
+            const deletedDate = new Date(req.body.deleted_date);
+            if (isNaN(deletedDate.getTime())) {
+                throw new CustomError(
+                    ERROR_CODES.VALIDATION_DATE_INVALID,
+                    'Invalid deleted date format'
+                );
+            }
+        } else if (req.body.deleted_date === '') {
+            // Allow clearing deleted_date by sending empty string
+            req.body.deleted_date = null;
+        }
+
+        // Validate event date if provided (backward compatibility)
         if (req.body.event_date) {
             const eventDate = new Date(req.body.event_date);
             if (isNaN(eventDate.getTime())) {
@@ -170,11 +223,56 @@ const updateRoadshow = async (req, res, next) => {
         // Handle file uploads
         if (req.files) {
             if (req.files.poster) {
-                req.body.poster_path = req.files.poster[0].path;
+                if (roadshow.poster_path) {
+                    deleteStoredFile(roadshow.poster_path, 'old roadshow poster');
+                }
+                req.body.poster_path = '/' + req.files.poster[0].path.replace(/\\/g, '/').replace(/^\/+/, '');
             }
             if (req.files.activity_image) {
-                req.body.activity_image_path = req.files.activity_image[0].path;
+                // Delete old activity images if replacing
+                if (roadshow.activity_image_paths && roadshow.activity_image_paths.length > 0) {
+                    roadshow.activity_image_paths.forEach(imagePath => {
+                        deleteStoredFile(imagePath, 'old roadshow activity image');
+                    });
+                }
+                // Store all new activity images
+                req.body.activity_image_paths = req.files.activity_image.map(file =>
+                    '/' + file.path.replace(/\\/g, '/').replace(/^\/+/, '')
+                );
             }
+        }
+
+        // Handle activity image deletion if requested
+        if (req.body.delete_activity_image === 'true') {
+            if (roadshow.activity_image_paths && roadshow.activity_image_paths.length > 0) {
+                roadshow.activity_image_paths.forEach(imagePath => {
+                    deleteStoredFile(imagePath, 'roadshow activity image');
+                });
+            }
+            req.body.activity_image_paths = [];
+            delete req.body.delete_activity_image; // Remove this field from update
+        }
+
+        // Handle deletion of specific activity images (for editing individual images)
+        if (req.body.delete_activity_image_indices) {
+            try {
+                const indices = JSON.parse(req.body.delete_activity_image_indices);
+                if (Array.isArray(indices) && roadshow.activity_image_paths) {
+                    // Delete files
+                    indices.sort((a, b) => b - a).forEach(index => {
+                        if (index >= 0 && index < roadshow.activity_image_paths.length) {
+                            deleteStoredFile(roadshow.activity_image_paths[index], 'roadshow activity image');
+                        }
+                    });
+                    // Remove from array
+                    req.body.activity_image_paths = roadshow.activity_image_paths.filter(
+                        (_, index) => !indices.includes(index)
+                    );
+                }
+            } catch (err) {
+                console.warn('Invalid delete_activity_image_indices format');
+            }
+            delete req.body.delete_activity_image_indices;
         }
 
         // Convert is_public from string to boolean (FormData always sends strings)
@@ -217,6 +315,14 @@ const deleteRoadshow = async (req, res, next) => {
 
         if (!roadshow) {
             throw createNotFoundError('roadshow', req.params.id);
+        }
+
+        if (roadshow.poster_path) {
+            deleteStoredFile(roadshow.poster_path, 'roadshow poster');
+        }
+
+        if (roadshow.activity_image_path) {
+            deleteStoredFile(roadshow.activity_image_path, 'roadshow activity image');
         }
 
         // Create notification before deletion

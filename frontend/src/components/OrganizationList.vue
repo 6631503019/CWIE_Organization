@@ -1,28 +1,28 @@
 <template>
-  <div class="organization-list">
+  <div class="organization_list">
     <!-- Loading State -->
-    <div v-if="isLoading" class="loading-state">
+    <div v-if="isLoading" class="loading_state">
       <div class="spinner"></div>
       <p>Loading organizations...</p>
     </div>
 
     <!-- Error State -->
-    <div v-else-if="error" class="error-state">
+    <div v-else-if="error" class="error_state">
       <p>{{ error }}</p>
-      <button @click="retry" class="btn-retry">Retry</button>
+      <button @click="retry" class="btn_retry">Retry</button>
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="organizations.length === 0" class="empty-state">
+    <div v-else-if="organizations.length === 0" class="empty_state">
       <h3>No Organizations Found</h3>
       <p>{{ emptyMessage || 'Start by adding your first organization.' }}</p>
-      <button v-if="showAddButton" @click="$emit('add')" class="btn-add">
+      <button v-if="showAddButton" @click="$emit('add')" class="btn_add">
         Add Organization
       </button>
     </div>
 
     <!-- Organizations Grid -->
-    <div v-else class="organizations-grid">
+    <div v-else class="organizations_grid">
       <OrganizationCard
         v-for="organization in organizations"
         :key="organization.id"
@@ -37,28 +37,28 @@
     <!-- Pagination -->
     <div v-if="showPagination && pagination.totalPages > 1" class="pagination">
       <button
-        @click="$emit('page-change', pagination.currentPage - 1)"
+        @click="$emit('page_change', pagination.currentPage - 1)"
         :disabled="pagination.currentPage <= 1"
-        class="pagination-btn"
+        class="pagination_btn"
       >
         Previous
       </button>
 
-      <div class="page-numbers">
+      <div class="page_numbers">
         <button
           v-for="page in visiblePages"
           :key="page"
-          @click="$emit('page-change', page)"
-          :class="['page-btn', { active: page === pagination.currentPage }]"
+          @click="$emit('page_change', page)"
+          :class="['page_btn', { active: page === pagination.currentPage }]"
         >
           {{ page }}
         </button>
       </div>
 
       <button
-        @click="$emit('page-change', pagination.currentPage + 1)"
+        @click="$emit('page_change', pagination.currentPage + 1)"
         :disabled="pagination.currentPage >= pagination.totalPages"
-        class="pagination-btn"
+        class="pagination_btn"
       >
         Next
       </button>
@@ -109,7 +109,7 @@ interface Emits {
   (e: 'view', id: string): void
   (e: 'add'): void
   (e: 'retry'): void
-  (e: 'page-change', page: number): void
+  (e: 'page_change', page: number): void
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -150,11 +150,11 @@ const retry = () => {
 </script>
 
 <style scoped>
-.organization-list {
+.organization_list {
   width: 100%;
 }
 
-.loading-state {
+.loading_state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -178,7 +178,7 @@ const retry = () => {
   100% { transform: rotate(360deg); }
 }
 
-.error-state {
+.error_state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -195,7 +195,7 @@ const retry = () => {
   margin-bottom: 16px;
 }
 
-.btn-retry {
+.btn_retry {
   background-color: #007bff;
   color: white;
   border: none;
@@ -205,11 +205,11 @@ const retry = () => {
   transition: background-color 0.2s;
 }
 
-.btn-retry:hover {
+.btn_retry:hover {
   background-color: #0056b3;
 }
 
-.empty-state {
+.empty_state {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -230,7 +230,7 @@ const retry = () => {
   margin-bottom: 20px;
 }
 
-.btn-add {
+.btn_add {
   background-color: #28a745;
   color: white;
   border: none;
@@ -241,11 +241,11 @@ const retry = () => {
   transition: background-color 0.2s;
 }
 
-.btn-add:hover {
+.btn_add:hover {
   background-color: #218838;
 }
 
-.organizations-grid {
+.organizations_grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   gap: 20px;
@@ -260,7 +260,7 @@ const retry = () => {
   margin-top: 32px;
 }
 
-.pagination-btn {
+.pagination_btn {
   padding: 8px 16px;
   border: 1px solid #dee2e6;
   background-color: white;
@@ -270,22 +270,22 @@ const retry = () => {
   transition: all 0.2s;
 }
 
-.pagination-btn:hover:not(:disabled) {
+.pagination_btn:hover:not(:disabled) {
   background-color: #e9ecef;
   border-color: #adb5bd;
 }
 
-.pagination-btn:disabled {
+.pagination_btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.page-numbers {
+.page_numbers {
   display: flex;
   gap: 4px;
 }
 
-.page-btn {
+.page_btn {
   padding: 8px 12px;
   border: 1px solid #dee2e6;
   background-color: white;
@@ -296,7 +296,7 @@ const retry = () => {
   min-width: 40px;
 }
 
-.page-btn:hover {
+.page_btn:hover {
   background-color: #e9ecef;
   border-color: #adb5bd;
 }
@@ -314,7 +314,7 @@ const retry = () => {
 
 /* Responsive */
 @media (max-width: 768px) {
-  .organizations-grid {
+  .organizations_grid {
     grid-template-columns: 1fr;
   }
   
@@ -322,7 +322,7 @@ const retry = () => {
     flex-wrap: wrap;
   }
   
-  .page-numbers {
+  .page_numbers {
     order: -1;
     width: 100%;
     justify-content: center;

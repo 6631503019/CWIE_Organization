@@ -64,7 +64,7 @@ const routes: RouteRecordRaw[] = [
         path: '/user/organization/:id',
         name: 'UserOrganizationDetail',
         component: () => import('../views/UserOrganizationDetail.vue'),
-        meta: { title: 'Organization Detail', requiresAuth: true, requiresUser: true }
+        meta: { title: 'Organization Detail' }
     },
     {
         path: '/user/mou',
@@ -81,8 +81,8 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/user/mou/:id/more',
         name: 'UserMOUMoreDetail',
-        component: () => import('../views/UserMOUMoreDetail.vue'),
-        meta: { title: 'MOU More Detail', requiresAuth: true, requiresUser: true }
+        component: () => import('../views/UserOrganizationDetail.vue'),
+        meta: { title: 'MOU More Detail' }
     },
     {
         path: '/user/roadshow',
@@ -94,7 +94,7 @@ const routes: RouteRecordRaw[] = [
         path: '/user/roadshow/:id',
         name: 'UserRoadshowDetail',
         component: () => import('../views/UserRoadshowDetail.vue'),
-        meta: { title: 'Roadshow Detail', requiresAuth: true, requiresUser: true }
+        meta: { title: 'Roadshow Detail' }
     }
 ]
 
@@ -123,22 +123,22 @@ router.beforeEach(async (to, from, next) => {
             const authStore = useAuthStore()
 
             // CRITICAL: Initialize auth from localStorage before checking
-            authStore.initAuth()
+            authStore.Initialize_Auth()
 
             // Check if user is logged in
-            if (!authStore.isLoggedIn) {
+            if (!authStore.bln_Is_Logged_In) {
                 next('/')
                 return
             }
 
             // Check if route requires admin role
-            if (to.meta.requiresAdmin && !authStore.isAdmin) {
+            if (to.meta.requiresAdmin && !authStore.bln_Is_Admin) {
                 next('/')
                 return
             }
 
             // Check if route requires user role (non-admin)
-            if (to.meta.requiresUser && !authStore.isUser) {
+            if (to.meta.requiresUser && !authStore.bln_Is_User) {
                 next('/')
                 return
             }
@@ -159,10 +159,10 @@ router.beforeEach(async (to, from, next) => {
             const authStore = useAuthStore()
 
             // CRITICAL: Initialize auth from localStorage before checking
-            authStore.initAuth()
+            authStore.Initialize_Auth()
 
-            if (authStore.isLoggedIn) {
-                if (authStore.isAdmin) {
+            if (authStore.bln_Is_Logged_In) {
+                if (authStore.bln_Is_Admin) {
                     next('/admin/dashboard')
                 } else {
                     next('/user/organization')

@@ -1,24 +1,24 @@
 <template>
-  <div v-if="show" class="modal-overlay" @click="$emit('close')">
-    <div class="add-org-modal" :class="`${activeTab}-active`" @click.stop>
+  <div v-if="show" class="modal_overlay" @click="$emit('close')">
+    <div class="add_org_modal" :class="`${activeTab}_active`" @click.stop>
       <!-- Right side tabs -->
-      <div class="modal-tabs">
+      <div class="modal_tabs">
         <div 
-          class="tab-item"
+          class="tab_item"
           :class="{ active: activeTab === 'organization' }"
           @click="switchTab('organization')"
         >
           <span>Organization</span>
         </div>
         <div 
-          class="tab-item"
+          class="tab_item"
           :class="{ active: activeTab === 'review' }"
           @click="switchTab('review')"
         >
           <span>Review</span>
         </div>
         <div 
-          class="tab-item"
+          class="tab_item"
           :class="{ active: activeTab === 'mou' }"
           @click="switchTab('mou')"
         >
@@ -27,27 +27,27 @@
       </div>
 
       <!-- Modal Content -->
-      <div class="modal-content">
+      <div class="modal_content">
         <!-- Organization Tab -->
-        <div v-if="activeTab === 'organization'" class="organization-tab">
-          <h2 class="modal-title">{{ isEditing ? 'Edit' : 'Add' }} Organization</h2>
-          <div class="form-divider"></div>
+        <div v-if="activeTab === 'organization'" class="organization_tab">
+          <h2 class="modal_title">{{ isEditing ? 'Edit' : 'Add' }} Organization</h2>
+          <div class="form_divider"></div>
           
           <slot name="organization-form"></slot>
         </div>
         
         <!-- Review Tab -->
-        <div v-if="activeTab === 'review'" class="review-tab">
-          <h2 class="modal-title">Add Review</h2>
-          <div class="form-divider"></div>
+        <div v-if="activeTab === 'review'" class="review_tab">
+          <h2 class="modal_title">Add Review</h2>
+          <div class="form_divider"></div>
           
           <slot name="review-form"></slot>
         </div>
         
         <!-- MOU Tab -->
-        <div v-if="activeTab === 'mou'" class="mou-tab">
-          <h2 class="modal-title">{{ isEditing ? 'Edit' : 'Add' }} MOU</h2>
-          <div class="form-divider"></div>
+        <div v-if="activeTab === 'mou'" class="mou_tab">
+          <h2 class="modal_title">{{ isEditing ? 'Edit' : 'Add' }} MOU</h2>
+          <div class="form_divider"></div>
           
           <slot name="mou-form"></slot>
         </div>
@@ -67,7 +67,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  'tab-change': [tab: 'organization' | 'review' | 'mou']
+  'tab_change': [tab: 'organization' | 'review' | 'mou']
 }>()
 
 const activeTab = ref<'organization' | 'review' | 'mou'>(props.initialTab || 'organization')
@@ -80,13 +80,13 @@ watch(() => props.initialTab, (newTab) => {
 
 const switchTab = (tab: 'organization' | 'review' | 'mou') => {
   activeTab.value = tab
-  emit('tab-change', tab)
+  emit('tab_change', tab)
 }
 </script>
 
 <style scoped>
 /* Modal Styles */
-.modal-overlay {
+.modal_overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -100,7 +100,7 @@ const switchTab = (tab: 'organization' | 'review' | 'mou') => {
   animation: fadeIn 0.2s;
 }
 
-.add-org-modal {
+.add_org_modal {
   position: relative;
   width: 1200px;
   height: 720px;
@@ -110,18 +110,18 @@ const switchTab = (tab: 'organization' | 'review' | 'mou') => {
   animation: slideIn 0.3s ease-out;
 }
 
-.add-org-modal.organization-active {
+.add-org-modal.organization_active {
   width: 1200px;
   height: 720px;
 }
 
 .add-org-modal.review-active,
-.add-org-modal.mou-active {
+.add-org-modal.mou_active {
   width: 800px;
   height: 600px;
 }
 
-.modal-tabs {
+.modal_tabs {
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -131,7 +131,7 @@ const switchTab = (tab: 'organization' | 'review' | 'mou') => {
   padding: 40px 0;
 }
 
-.tab-item {
+.tab_item {
   width: 100%;
   height: 60px;
   display: flex;
@@ -156,18 +156,18 @@ const switchTab = (tab: 'organization' | 'review' | 'mou') => {
   background: #FFFFFF;
 }
 
-.tab-item:hover:not(.active) {
+.tab_item:hover:not(.active) {
   background: rgba(255, 255, 255, 0.5);
 }
 
-.modal-content {
+.modal_content {
   flex: 1;
   padding: 40px;
   overflow-y: auto;
   max-height: 720px;
 }
 
-.modal-title {
+.modal_title {
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -177,7 +177,7 @@ const switchTab = (tab: 'organization' | 'review' | 'mou') => {
   margin: 0 0 20px 0;
 }
 
-.form-divider {
+.form_divider {
   width: 100%;
   height: 1px;
   background: #E0E0E0;
@@ -200,3 +200,5 @@ const switchTab = (tab: 'organization' | 'review' | 'mou') => {
   }
 }
 </style>
+
+

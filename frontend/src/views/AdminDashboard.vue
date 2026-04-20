@@ -1,126 +1,127 @@
 <template>
-  <div class="admin-dashboard">
+  <div class="admin_dashboard">
     <AdminNavbar />
     
     <!-- Dashboard Title -->
-    <h1 class="dashboard-title">Dashboard</h1>
+    <h1 class="dashboard_title">Dashboard</h1>
     
     <!-- Statistics Card -->
-    <div class="stats-card">
+    <div class="stats_card">
       <!-- Establishment Section -->
-      <div class="establishment-section">
-        <span class="establishment-label">Establishment</span>
-        <span class="establishment-count">{{ stats.totalEstablishments }}</span>
+      <div class="establishment_section">
+        <span class="establishment_label">Establishment</span>
+        <span class="establishment_count">{{ stats.totalEstablishments }}</span>
       </div>
       
       <!-- First Separator Line -->
-      <div class="separator-line-1"></div>
+      <div class="separator_line_1"></div>
       
       <!-- Categories Frame -->
-      <div class="categories-frame">
-        <div class="category-item private">
-          <span class="category-label">private company</span>
-          <span class="category-count">{{ stats.privateCompany }}</span>
+      <div class="categories_frame">
+        <div class="category_item private">
+          <span class="category_label">private company</span>
+          <span class="category_count">{{ stats.privateCompany }}</span>
         </div>
-        <div class="category-item government">
-          <span class="category-label">Government</span>
-          <span class="category-count">{{ stats.government }}</span>
+        <div class="category_item government">
+          <span class="category_label">Government</span>
+          <span class="category_count">{{ stats.government }}</span>
         </div>
-        <div class="category-item overseas">
-          <span class="category-label">Oversea</span>
-          <span class="category-count">{{ stats.overseas }}</span>
+        <div class="category_item overseas">
+          <span class="category_label">Oversea</span>
+          <span class="category_count">{{ stats.overseas }}</span>
         </div>
-        <div class="category-item mfu">
-          <span class="category-label">MFU</span>
-          <span class="category-count">{{ stats.mfu }}</span>
+        <div class="category_item mfu">
+          <span class="category_label">MFU</span>
+          <span class="category_count">{{ stats.mfu }}</span>
         </div>
       </div>
       
       <!-- Second Separator Line -->
-      <div class="separator-line-2"></div>
+      <div class="separator_line_2"></div>
       
       <!-- Roadshow Section -->
-      <div class="roadshow-section">
-        <span class="roadshow-label">Roadshow</span>
-        <span class="roadshow-count">{{ stats.roadshows }}</span>
+      <div class="roadshow_section">
+        <span class="roadshow_label">Roadshow</span>
+        <span class="roadshow_count">{{ stats.roadshows }}</span>
       </div>
     </div>
     
     <!-- Notification Title -->
-    <h2 class="notification-title">Notification</h2>
+    <h2 class="notification_title">Notification</h2>
     
     <!-- Notification Table -->
-    <div class="notification-table">
+    <div class="notification_table">
       <!-- Table Header Line -->
-      <div class="table-header-line"></div>
+      <div class="table_header_line"></div>
       
       <!-- Column Headers -->
-      <div class="requested-by-header">Requested By</div>
-      <div class="annotation-header">Annotation</div>
-      <div class="establishment-header">Establishment</div>
-      <div class="date-header">Date</div>
+      <div class="requested_by_header">Requested By</div>
+      <div class="annotation_header">Annotation</div>
+      <div class="establishment_header">Establishment</div>
+      <div class="date_header">Date</div>
       
       <!-- Header Separator -->
-      <div class="header-separator-line"></div>
+      <div class="header_separator_line"></div>
       
       <!-- Table Rows -->
-      <div class="table-rows">
+      <div class="table_rows">
         <!-- Row separators -->
-        <div class="row-separator" style="top: 45.83px;"></div>
-        <div class="row-separator" style="top: 91.67px;"></div>
-        <div class="row-separator" style="top: 137.5px;"></div>
-        <div class="row-separator" style="top: 183.33px;"></div>
-        <div class="row-separator" style="top: 229.17px;"></div>
-        <div class="row-separator" style="top: 275px;"></div>
-        <div class="row-separator" style="top: 320.83px;"></div>
-        <div class="row-separator" style="top: 366.67px;"></div>
-        <div class="row-separator" style="top: 412.5px;"></div>
-        <div class="row-separator" style="top: 458.33px;"></div>
+        <div class="row_separator" style="top: 45.83px;"></div>
+        <div class="row_separator" style="top: 91.67px;"></div>
+        <div class="row_separator" style="top: 137.5px;"></div>
+        <div class="row_separator" style="top: 183.33px;"></div>
+        <div class="row_separator" style="top: 229.17px;"></div>
+        <div class="row_separator" style="top: 275px;"></div>
+        <div class="row_separator" style="top: 320.83px;"></div>
+        <div class="row_separator" style="top: 366.67px;"></div>
+        <div class="row_separator" style="top: 412.5px;"></div>
+        <div class="row_separator" style="top: 458.33px;"></div>
         
         <!-- Highlighted rows -->
-        <div class="row-highlight" style="top: 91.67px;"></div>
-        <div class="row-highlight" style="top: 137.5px;"></div>
-        <div class="row-highlight" style="top: 365.75px;"></div>
-        <div class="row-highlight" style="top: 320.83px;"></div>
-        <div class="row-highlight" style="top: 458.33px;"></div>
+        <div class="row_highlight" style="top: 91.67px;"></div>
+        <div class="row_highlight" style="top: 137.5px;"></div>
+        <div class="row_highlight" style="top: 365.75px;"></div>
+        <div class="row_highlight" style="top: 320.83px;"></div>
+        <div class="row_highlight" style="top: 458.33px;"></div>
         
         <!-- Requested By Column -->
-        <div class="requested-by-column">
-          <div v-for="(notif, index) in notifications" :key="notif._id" class="requested-by-item" :class="{ grayed: notif.is_read }">
+        <div class="requested_by_column">
+          <div v-for="(notif, index) in notifications" :key="notif._id" class="requested_by_item" :class="{ grayed: notif.is_read }">
             {{ notif.requested_by_name?.substring(0, 10) || 'Unknown' }}{{ notif.requested_by_name?.length > 10 ? '...' : '' }}
           </div>
         </div>
         
         <!-- Annotation Column -->
-        <div class="annotation-column">
-          <div v-for="(notif, index) in notifications" :key="notif._id" class="annotation-item" :class="{ grayed: notif.is_read }">
+        <div class="annotation_column">
+          <div v-for="(notif, index) in notifications" :key="notif._id" class="annotation_item" :class="{ grayed: notif.is_read }">
             {{ notif.action }}
           </div>
         </div>
         
         <!-- Establishment Column -->
-        <div class="establishment-column">
-          <div v-for="(notif, index) in notifications" :key="notif._id" class="establishment-item" :class="{ grayed: notif.is_read }">
+        <div class="establishment_column">
+          <div v-for="(notif, index) in notifications" :key="notif._id" class="establishment_item" :class="{ grayed: notif.is_read }">
             {{ notif.establishment_name }}
           </div>
         </div>
         
         <!-- Date Column -->
-        <div class="date-column">
-          <div v-for="(notif, index) in notifications" :key="notif._id" class="date-item" :class="{ grayed: notif.is_read }" :style="{ top: (index * 45.83) + 'px' }">
+        <div class="date_column">
+          <div v-for="(notif, index) in notifications" :key="notif._id" class="date_item" :class="{ grayed: notif.is_read }" :style="{ top: (index * 45.83) + 'px' }">
             {{ new Date(notif.date).toISOString().split('T')[0] }}
           </div>
         </div>
         
         <!-- Delete Icons -->
-        <div class="delete-icons">
-          <i v-for="(notif, index) in notifications" :key="notif._id" class="pi pi-trash delete-icon" :style="{ top: (66.92 + index * 45.83) + 'px' }" @click="deleteNotification(notif._id)"></i>
+        <div class="delete_icons">
+          <button v-if="notifications.length > 0" class="clear_all_button" @click="deleteAllNotifications" title="Clear all notifications">Clear</button>
+          <i v-for="(notif, index) in notifications" :key="notif._id" class="pi pi-trash delete_icon" :style="{ top: (66.92 + index * 45.83) + 'px' }" @click="deleteNotification(notif._id)"></i>
         </div>
       </div>
     </div>
     
     <!-- Pagination Component -->
-    <div class="dashboard-pagination-container">
+    <div class="dashboard_pagination_container">
       <Pagination 
         :currentPage="notificationPage"
         :totalPages="Math.ceil(notificationTotal / 11)"
@@ -128,6 +129,30 @@
         :showInfo="false"
         @page-change="goToPage"
       />
+    </div>
+  </div>
+
+  <!-- Alert Popup (Outside Dashboard to escape stacking context) -->
+  <div v-if="state.showAlert" class="alert_popup" :class="`alert_${state.alertType}`">
+    <i :class="state.alertType === 'success' ? 'pi pi-check-circle' : 'pi pi-exclamation-circle'" class="alert_icon"></i>
+    <span class="alert_message">{{ state.alertMessage }}</span>
+    <button class="alert_close" @click="state.showAlert = false">&times;</button>
+  </div>
+
+  <!-- Confirmation Dialog (Custom instead of browser confirm) -->
+  <div v-if="state.showConfirmDialog" class="confirm_overlay">
+    <div class="confirm_dialog">
+      <div class="confirm_header">
+        <i class="pi pi-exclamation-circle confirm_icon"></i>
+        <span>Confirm Delete</span>
+      </div>
+      <div class="confirm_message">
+        Are you sure you want to delete all notifications? This action cannot be undone.
+      </div>
+      <div class="confirm_buttons">
+        <button class="confirm_btn cancel" @click="cancelDeleteAllNotifications">Cancel</button>
+        <button class="confirm_btn ok" @click="confirmDeleteAllNotifications">Delete All</button>
+      </div>
     </div>
   </div>
 </template>
@@ -145,7 +170,11 @@ const authStore = useAuthStore()
 const state = reactive({
   loading: false,
   error: null as string | null,
-  refreshInterval: null as number | null
+  refreshInterval: null as number | null,
+  alertMessage: '',
+  alertType: 'info' as 'success' | 'error' | 'info',
+  showAlert: false,
+  showConfirmDialog: false
 })
 
 // Dashboard statistics from backend
@@ -164,9 +193,9 @@ const totalCalculated = computed(() =>
 )
 
 // Check if user is admin with reactive auth check
-watch(() => authStore.isAdmin, (isAdmin) => {
-  if (!isAdmin) {
-    window.location.href = authStore.user?.role === 'user' ? '/home' : '/'
+watch(() => authStore.bln_Is_Admin, (bln_Is_Admin) => {
+  if (!bln_Is_Admin) {
+    window.location.href = authStore.obj_Current_User?.role === 'user' ? '/home' : '/'
   }
 })
 
@@ -229,8 +258,8 @@ const refreshStats = async () => {
 // Lifecycle hooks
 onMounted(async () => {
   console.log('Dashboard mounted')
-  if (!authStore.isAdmin) {
-    window.location.href = authStore.user?.role === 'user' ? '/home' : '/'
+  if (!authStore.bln_Is_Admin) {
+    window.location.href = authStore.obj_Current_User?.role === 'user' ? '/home' : '/'
     return
   }
   
@@ -300,6 +329,125 @@ const deleteNotification = async (id: string) => {
   }
 }
 
+const deleteAllNotifications = async () => {
+  console.log('=== CLEAR BUTTON CLICKED ===')
+  console.log('Notifications count:', notifications.value.length)
+  
+  // Show custom confirmation dialog instead of browser confirm()
+  state.showConfirmDialog = true
+}
+
+const confirmDeleteAllNotifications = async () => {
+  console.log('User confirmed deletion')
+  state.showConfirmDialog = false
+  
+  try {
+    const token = localStorage.getItem('auth_token')
+    console.log('Token exists:', !!token)
+    
+    if (!token) {
+      state.alertMessage = 'Error: No authentication token found'
+      state.alertType = 'error'
+      state.showAlert = true
+      return
+    }
+    
+    state.loading = true
+    
+    // Fetch ALL notifications (not just current page)
+    console.log('Fetching ALL notifications to delete...')
+    const response = await fetch(`${BACKEND_URL}/api/notifications?limit=10000`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    if (!response.ok) throw new Error('Failed to fetch notifications')
+    
+    const data = await response.json()
+    const allNotifications = data.data || []
+    
+    console.log('Total notifications to delete:', allNotifications.length)
+    
+    if (allNotifications.length === 0) {
+      state.alertMessage = 'No notifications to delete'
+      state.alertType = 'info'
+      state.showAlert = true
+      state.loading = false
+      return
+    }
+    
+    let successCount = 0
+    let failureCount = 0
+    
+    // Delete all notifications
+    console.log('Starting deletion loop...')
+    for (const notif of allNotifications) {
+      try {
+        const deleteResponse = await fetch(`${BACKEND_URL}/api/notifications/${notif._id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+        
+        if (deleteResponse.ok) {
+          successCount++
+          console.log(`Deleted ${successCount}/${allNotifications.length}`)
+        } else {
+          failureCount++
+        }
+      } catch (err) {
+        console.error('Delete error:', err)
+        failureCount++
+      }
+    }
+    
+    state.loading = false
+    console.log('Deletion complete - Success:', successCount, 'Failed:', failureCount)
+    
+    // Show result message
+    let alertMsg = ''
+    if (failureCount === 0 && successCount > 0) {
+      alertMsg = `Successfully deleted all ${successCount} notification(s)`
+      state.alertType = 'success'
+    } else if (failureCount > 0) {
+      alertMsg = `Deleted ${successCount} notification(s), but ${failureCount} failed`
+      state.alertType = failureCount > successCount ? 'error' : 'success'
+    } else {
+      alertMsg = `Failed to delete notifications`
+      state.alertType = 'error'
+    }
+    
+    state.alertMessage = alertMsg
+    state.showAlert = true
+    
+    console.log('Alert displayed:', alertMsg)
+    
+    // Auto-hide alert after 3 seconds
+    setTimeout(() => {
+      state.showAlert = false
+    }, 3000)
+    
+    // Refresh notifications after deleting all
+    await fetchNotifications()
+    notificationPage.value = 1 // Reset to first page
+    
+    console.log('=== DELETE ALL NOTIFICATIONS COMPLETED ===')
+  } catch (error) {
+    console.error('Delete all error:', error)
+    state.loading = false
+    state.alertMessage = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+    state.alertType = 'error'
+    state.showAlert = true
+  }
+}
+
+const cancelDeleteAllNotifications = () => {
+  console.log('User cancelled deletion')
+  state.showConfirmDialog = false
+}
+
 const goToPage = (page: number) => {
   notificationPage.value = page
   fetchNotifications()
@@ -311,7 +459,7 @@ const goToPage = (page: number) => {
 @import url('https://cdn.jsdelivr.net/npm/primeicons@6.0.1/primeicons.css');
 
 /* Admin Dashboard */
-.admin-dashboard {
+.admin_dashboard {
   position: relative;
   width: 100vw;
   height: 100vh;
@@ -320,7 +468,7 @@ const goToPage = (page: number) => {
 }
 
 /* Dashboard Title */
-.dashboard-title {
+.dashboard_title {
   position: absolute;
   width: 204px;
   height: 50px;
@@ -336,7 +484,7 @@ const goToPage = (page: number) => {
 }
 
 /* Statistics Card */
-.stats-card {
+.stats_card {
   position: absolute;
   width: 1127px;
   height: 136px;
@@ -350,7 +498,7 @@ const goToPage = (page: number) => {
 }
 
 /* Establishment Section */
-.establishment-section {
+.establishment_section {
   position: absolute;
   width: 160.05px;
   height: 112px;
@@ -363,7 +511,7 @@ const goToPage = (page: number) => {
   gap: 15px;
 }
 
-.establishment-label {
+.establishment_label {
   font-family: 'Outfit';
   font-style: normal;
   font-weight: 600;
@@ -373,7 +521,7 @@ const goToPage = (page: number) => {
   color: #000000;
 }
 
-.establishment-count {
+.establishment_count {
   font-family: 'Outfit';
   font-style: normal;
   font-weight: 600;
@@ -384,7 +532,7 @@ const goToPage = (page: number) => {
 }
 
 /* Separator Lines */
-.separator-line-1 {
+.separator_line_1 {
   position: absolute;
   width: 100px;
   height: 0px;
@@ -394,7 +542,7 @@ const goToPage = (page: number) => {
   transform: rotate(90deg);
 }
 
-.separator-line-2 {
+.separator_line_2 {
   position: absolute;
   width: 100px;
   height: 0px;
@@ -405,7 +553,7 @@ const goToPage = (page: number) => {
 }
 
 /* Categories Frame */
-.categories-frame {
+.categories_frame {
   position: absolute;
   display: flex;
   flex-direction: row;
@@ -418,7 +566,7 @@ const goToPage = (page: number) => {
   top: 27px;
 }
 
-.category-item {
+.category_item {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -426,27 +574,27 @@ const goToPage = (page: number) => {
   gap: 15px;
 }
 
-.category-item.private {
+.category_item.private {
   width: 178px;
   height: 81px;
 }
 
-.category-item.government {
+.category_item.government {
   width: 132px;
   height: 81px;
 }
 
-.category-item.overseas {
+.category_item.overseas {
   width: 89px;
   height: 81px;
 }
 
-.category-item.mfu {
+.category_item.mfu {
   width: 49px;
   height: 81px;
 }
 
-.category-label {
+.category_label {
   font-family: 'Inter';
   font-style: normal;
   font-weight: 600;
@@ -456,7 +604,7 @@ const goToPage = (page: number) => {
   white-space: nowrap;
 }
 
-.category-count {
+.category_count {
   font-family: 'Inter';
   font-style: normal;
   font-weight: 600;
@@ -465,28 +613,28 @@ const goToPage = (page: number) => {
   text-align: center;
 }
 
-.category-item.private .category-label,
-.category-item.private .category-count {
+.category_item.private .category_label,
+.category_item.private .category_count {
   color: #0A48A6;
 }
 
-.category-item.government .category-label,
-.category-item.government .category-count {
+.category_item.government .category_label,
+.category_item.government .category_count {
   color: #CF8200;
 }
 
-.category-item.overseas .category-label,
-.category-item.overseas .category-count {
+.category_item.overseas .category_label,
+.category_item.overseas .category_count {
   color: #25A554;
 }
 
-.category-item.mfu .category-label,
-.category-item.mfu .category-count {
+.category_item.mfu .category_label,
+.category_item.mfu .category_count {
   color: #AB1C03;
 }
 
 /* Roadshow Section */
-.roadshow-section {
+.roadshow_section {
   position: absolute;
   width: 111.14px;
   height: 84px;
@@ -499,7 +647,7 @@ const goToPage = (page: number) => {
   gap: 15px;
 }
 
-.roadshow-label {
+.roadshow_label {
   font-family: 'Outfit';
   font-style: normal;
   font-weight: 600;
@@ -509,7 +657,7 @@ const goToPage = (page: number) => {
   color: #000000;
 }
 
-.roadshow-count {
+.roadshow_count {
   font-family: 'Outfit';
   font-style: normal;
   font-weight: 600;
@@ -520,7 +668,7 @@ const goToPage = (page: number) => {
 }
 
 /* Notification Title */
-.notification-title {
+.notification_title {
   position: absolute;
   width: 136px;
   height: 29px;
@@ -537,7 +685,7 @@ const goToPage = (page: number) => {
 }
 
 /* Notification Table */
-.notification-table {
+.notification_table {
   position: absolute;
   width: 1125px;
   height: 554.25px;
@@ -545,7 +693,7 @@ const goToPage = (page: number) => {
   top: 308px;
 }
 
-.table-header-line {
+.table_header_line {
   box-sizing: border-box;
   position: absolute;
   width: 1125px;
@@ -558,7 +706,7 @@ const goToPage = (page: number) => {
 }
 
 /* Column Headers */
-.requested-by-header {
+.requested_by_header {
   position: absolute;
   left: 36px;
   top: 10px;
@@ -573,7 +721,7 @@ const goToPage = (page: number) => {
   color: #000000;
 }
 
-.annotation-header {
+.annotation_header {
   position: absolute;
   left: 246px;
   top: 10px;
@@ -588,7 +736,7 @@ const goToPage = (page: number) => {
   color: #000000;
 }
 
-.establishment-header {
+.establishment_header {
   position: absolute;
   left: 445px;
   top: 14.67px;
@@ -602,7 +750,7 @@ const goToPage = (page: number) => {
   color: #000000;
 }
 
-.date-header {
+.date_header {
   position: absolute;
   left: 959.58px;
   top: 15.58px;
@@ -616,8 +764,37 @@ const goToPage = (page: number) => {
   color: #000000;
 }
 
+/* Clear All Button */
+.clear_all_button {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  background: #AB1C03;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 17px;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 100;
+  pointer-events: auto;
+}
+
+.clear_all_button:hover {
+  background: #8B160A;
+}
+
+.clear_all_button:active {
+  transform: scale(0.95);
+}
+
 /* Header Separator */
-.header-separator-line {
+.header_separator_line {
   position: absolute;
   width: 1124.13px;
   height: 0px;
@@ -627,14 +804,14 @@ const goToPage = (page: number) => {
 }
 
 /* Table Rows */
-.table-rows {
+.table_rows {
   position: relative;
   width: 100%;
   height: 100%;
 }
 
 /* Row Separators */
-.row-separator {
+.row_separator {
   position: absolute;
   width: 1124.13px;
   height: 0px;
@@ -643,7 +820,7 @@ const goToPage = (page: number) => {
 }
 
 /* Row Highlights */
-.row-highlight {
+.row_highlight {
   position: absolute;
   width: 1124.13px;
   height: 45.83px;
@@ -652,7 +829,7 @@ const goToPage = (page: number) => {
 }
 
 /* Columns */
-.requested-by-column {
+.requested_by_column {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -665,7 +842,7 @@ const goToPage = (page: number) => {
   top: 55px;
 }
 
-.annotation-column {
+.annotation_column {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -678,7 +855,7 @@ const goToPage = (page: number) => {
   top: 55px;
 }
 
-.establishment-column {
+.establishment_column {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -691,7 +868,7 @@ const goToPage = (page: number) => {
   top: 59.67px;
 }
 
-.date-column {
+.date_column {
   position: absolute;
   left: 932.74px;
   top: 66.92px;
@@ -699,9 +876,9 @@ const goToPage = (page: number) => {
 }
 
 /* Column Items */
-.requested-by-item,
-.annotation-item,
-.establishment-item {
+.requested_by_item,
+.annotation_item,
+.establishment_item {
   font-family: 'Outfit';
   font-style: normal;
   font-weight: 400;
@@ -715,7 +892,7 @@ const goToPage = (page: number) => {
   justify-content: center;
 }
 
-.annotation-item {
+.annotation_item {
   font-family: 'Inter';
   font-style: normal;
   font-weight: 400;
@@ -724,7 +901,7 @@ const goToPage = (page: number) => {
   height: 22px;
 }
 
-.establishment-item {
+.establishment_item {
   text-align: left;
   justify-content: flex-start;
   width: 429.71px;
@@ -733,7 +910,7 @@ const goToPage = (page: number) => {
   white-space: nowrap;
 }
 
-.date-item {
+.date_item {
   position: absolute;
   width: 97.86px;
   height: 19.25px;
@@ -745,17 +922,17 @@ const goToPage = (page: number) => {
   color: #000000;
 }
 
-.date-item:nth-child(1) { top: 0px; }
-.date-item:nth-child(2) { top: 44px; }
-.date-item:nth-child(3) { top: 85.25px; }
-.date-item:nth-child(4) { top: 132px; }
-.date-item:nth-child(5) { top: 178.75px; }
-.date-item:nth-child(6) { top: 225.5px; }
-.date-item:nth-child(7) { top: 270.42px; }
-.date-item:nth-child(8) { top: 316.25px; }
-.date-item:nth-child(9) { top: 361.17px; }
-.date-item:nth-child(10) { top: 407.92px; }
-.date-item:nth-child(11) { top: 451px; }
+.date_item:nth-child(1) { top: 0px; }
+.date_item:nth-child(2) { top: 44px; }
+.date_item:nth-child(3) { top: 85.25px; }
+.date_item:nth-child(4) { top: 132px; }
+.date_item:nth-child(5) { top: 178.75px; }
+.date_item:nth-child(6) { top: 225.5px; }
+.date_item:nth-child(7) { top: 270.42px; }
+.date_item:nth-child(8) { top: 316.25px; }
+.date_item:nth-child(9) { top: 361.17px; }
+.date_item:nth-child(10) { top: 407.92px; }
+.date_item:nth-child(11) { top: 451px; }
 
 /* Grayed Items */
 .grayed {
@@ -763,11 +940,11 @@ const goToPage = (page: number) => {
 }
 
 /* Delete Icons */
-.delete-icons {
+.delete_icons {
   position: relative;
 }
 
-.delete-icon {
+.delete_icon {
   position: absolute;
   width: 25.98px;
   height: 22px;
@@ -778,11 +955,214 @@ const goToPage = (page: number) => {
 }
 
 /* Dashboard Pagination Container */
-.dashboard-pagination-container {
+.dashboard_pagination_container {
   position: absolute;
   left: 1182px;
   top: 892px;
   width: 218px;
   height: 28px;
 }
+
+/* Alert Popup Styles */
+.alert_popup {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 500px;
+  padding: 16px 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.alert_popup.alert_success {
+  border-left: 4px solid #4CAF50;
+  background: #f1f8f4;
+}
+
+.alert_popup.alert_success .alert_icon {
+  color: #4CAF50;
+}
+
+.alert_popup.alert_error {
+  border-left: 4px solid #AB1C03;
+  background: #fae8e5;
+}
+
+.alert_popup.alert_error .alert_icon {
+  color: #AB1C03;
+}
+
+.alert_popup.alert_info {
+  border-left: 4px solid #2196F3;
+  background: #e3f2fd;
+}
+
+.alert_popup.alert_info .alert_icon {
+  color: #2196F3;
+}
+
+.alert_icon {
+  font-size: 20px;
+  min-width: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.alert_message {
+  font-family: 'Outfit';
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 17px;
+  color: #333;
+  flex: 1;
+}
+
+.alert_close {
+  background: transparent;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  margin: 0;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.alert_close:hover {
+  color: #333;
+}
+
+/* Confirmation Dialog Styles */
+.confirm_overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.confirm_dialog {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  min-width: 350px;
+  max-width: 450px;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.confirm_header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid #e0e0e0;
+  font-family: 'Outfit';
+  font-weight: 600;
+  font-size: 18px;
+  color: #333;
+}
+
+.confirm_icon {
+  font-size: 24px;
+  color: #AB1C03;
+}
+
+.confirm_message {
+  padding: 20px;
+  font-family: 'Outfit';
+  font-size: 14px;
+  line-height: 20px;
+  color: #666;
+  text-align: center;
+}
+
+.confirm_buttons {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid #e0e0e0;
+  justify-content: flex-end;
+}
+
+.confirm_btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Outfit';
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.confirm_btn.cancel {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.confirm_btn.cancel:hover {
+  background: #e0e0e0;
+}
+
+.confirm_btn.ok {
+  background: #AB1C03;
+  color: white;
+}
+
+.confirm_btn.ok:hover {
+  background: #8B160A;
+}
+
+.confirm_btn.ok:active {
+  transform: scale(0.95);
+}
 </style>
+

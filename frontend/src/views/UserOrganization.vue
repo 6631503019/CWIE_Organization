@@ -1,163 +1,163 @@
 <template>
-  <div class="user-organization">
+  <div class="user_organization">
     <UserNavbar />
     
     <!-- Main Content Area -->
-    <div class="main-content">
+    <div class="main_content">
       <!-- Page Title -->
-      <h1 class="page-title">Organization</h1>
+      <h1 class="page_title">Organization</h1>
       
       <!-- Filter Section -->
-      <div class="filter-section">
-        <div class="filter-title">Filter Organization</div>
+      <div class="filter_section">
+        <div class="filter_title">Filter Organization</div>
         
         <!-- Text Search -->
-        <div class="search-input-wrapper">
+        <div class="search_input_wrapper">
           <input 
             type="text" 
-            class="search-input" 
+            class="search_input" 
             placeholder="Text Search (Name, Tags)"
             v-model="searchText"
           />
         </div>
         
         <!-- Organization Type Dropdown -->
-        <div class="filter-dropdown org-type-dropdown">
-          <div class="dropdown-toggle" @click="toggleDropdown('orgType')">
-            <span class="dropdown-label">{{ selectedOrgType || '--Organization Type--' }}</span>
-            <div class="dropdown-arrow"></div>
+        <div class="filter_dropdown org_type_dropdown">
+          <div class="dropdown_toggle" @click="toggleDropdown('orgType')">
+            <span class="dropdown_label">{{ selectedOrgType || '--Organization Type--' }}</span>
+            <div class="dropdown_arrow"></div>
           </div>
-          <div v-if="showDropdowns.orgType" class="dropdown-menu">
-            <div class="dropdown-item" @click="selectOrgType('MFU')">MFU</div>
-            <div class="dropdown-item" @click="selectOrgType('private company')">private company</div>
-            <div class="dropdown-item" @click="selectOrgType('Government')">Government</div>
-            <div class="dropdown-item" @click="selectOrgType('Oversea')">Oversea</div>
+          <div v-if="showDropdowns.orgType" class="dropdown_menu">
+            <div class="dropdown_item" @click="selectOrgType('MFU')">MFU</div>
+            <div class="dropdown_item" @click="selectOrgType('private company')">private company</div>
+            <div class="dropdown_item" @click="selectOrgType('Government')">Government</div>
+            <div class="dropdown_item" @click="selectOrgType('Oversea')">Oversea</div>
           </div>
         </div>
         
         <!-- Industry Category Dropdown -->
-        <div class="filter-dropdown industry-dropdown">
-          <div class="dropdown-toggle" @click="toggleDropdown('industry')">
-            <span class="dropdown-label">{{ selectedIndustry || '--Industry Category--' }}</span>
-            <div class="dropdown-arrow"></div>
+        <div class="filter_dropdown industry_dropdown">
+          <div class="dropdown_toggle" @click="toggleDropdown('industry')">
+            <span class="dropdown_label">{{ selectedIndustry || '--Industry Category--' }}</span>
+            <div class="dropdown_arrow"></div>
           </div>
-          <div v-if="showDropdowns.industry" class="dropdown-menu">
-            <div class="dropdown-search">
+          <div v-if="showDropdowns.industry" class="dropdown_menu">
+            <div class="dropdown_search">
               <input 
                 type="text" 
                 v-model="dropdownSearch.industry" 
                 placeholder="Search..."
                 @click.stop
-                class="dropdown-search-input"
+                class="dropdown_search_input"
               />
             </div>
-            <div class="dropdown-item" v-for="cat in filteredIndustryCategories" :key="cat" @click="selectIndustry(cat)">
+            <div class="dropdown_item" v-for="cat in filteredIndustryCategories" :key="cat" @click="selectIndustry(cat)">
               {{ cat }}
             </div>
           </div>
         </div>
         
         <!-- Country Dropdown -->
-        <div class="filter-dropdown country-dropdown">
-          <div class="dropdown-toggle" @click="toggleDropdown('country')">
-            <span class="dropdown-label">{{ selectedCountry || '---Country---' }}</span>
-            <div class="dropdown-arrow"></div>
+        <div class="filter_dropdown country_dropdown">
+          <div class="dropdown_toggle" @click="toggleDropdown('country')">
+            <span class="dropdown_label">{{ selectedCountry || '---Country---' }}</span>
+            <div class="dropdown_arrow"></div>
           </div>
-          <div v-if="showDropdowns.country" class="dropdown-menu">
-            <div class="dropdown-search">
+          <div v-if="showDropdowns.country" class="dropdown_menu">
+            <div class="dropdown_search">
               <input 
                 type="text" 
                 v-model="dropdownSearch.country" 
                 placeholder="Search..."
                 @click.stop
-                class="dropdown-search-input"
+                class="dropdown_search_input"
               />
             </div>
-            <div class="dropdown-item" v-for="country in filteredCountries" :key="country" @click="selectCountry(country)">
+            <div class="dropdown_item" v-for="country in filteredCountries" :key="country" @click="selectCountry(country)">
               {{ country }}
             </div>
           </div>
         </div>
         
         <!-- Geography Dropdown -->
-        <div class="filter-dropdown geography-dropdown">
-          <div class="dropdown-toggle" @click="toggleDropdown('geography')">
-            <span class="dropdown-label">{{ selectedGeography || '--Geography--' }}</span>
-            <div class="dropdown-arrow"></div>
+        <div class="filter_dropdown geography_dropdown">
+          <div class="dropdown_toggle" @click="toggleDropdown('geography')">
+            <span class="dropdown_label">{{ selectedGeography || '--Geography--' }}</span>
+            <div class="dropdown_arrow"></div>
           </div>
-          <div v-if="showDropdowns.geography" class="dropdown-menu">
-            <div class="dropdown-search">
+          <div v-if="showDropdowns.geography" class="dropdown_menu">
+            <div class="dropdown_search">
               <input 
                 type="text" 
                 v-model="dropdownSearch.geography" 
                 placeholder="Search..."
                 @click.stop
-                class="dropdown-search-input"
+                class="dropdown_search_input"
               />
             </div>
-            <div class="dropdown-item" v-for="geo in filteredGeographies" :key="geo" @click="selectGeography(geo)">
+            <div class="dropdown_item" v-for="geo in filteredGeographies" :key="geo" @click="selectGeography(geo)">
               {{ geo }}
             </div>
           </div>
         </div>
         
         <!-- Province Dropdown -->
-        <div class="filter-dropdown province-dropdown">
-          <div class="dropdown-toggle" @click="toggleDropdown('province')">
-            <span class="dropdown-label">{{ selectedProvince || '--Province--' }}</span>
-            <div class="dropdown-arrow"></div>
+        <div class="filter_dropdown province_dropdown">
+          <div class="dropdown_toggle" @click="toggleDropdown('province')">
+            <span class="dropdown_label">{{ selectedProvince || '--Province--' }}</span>
+            <div class="dropdown_arrow"></div>
           </div>
-          <div v-if="showDropdowns.province" class="dropdown-menu">
-            <div class="dropdown-search">
+          <div v-if="showDropdowns.province" class="dropdown_menu">
+            <div class="dropdown_search">
               <input 
                 type="text" 
                 v-model="dropdownSearch.province" 
                 placeholder="Search..."
                 @click.stop
-                class="dropdown-search-input"
+                class="dropdown_search_input"
               />
             </div>
-            <div class="dropdown-item" v-for="province in filteredProvinces" :key="province" @click="selectProvince(province)">
+            <div class="dropdown_item" v-for="province in filteredProvinces" :key="province" @click="selectProvince(province)">
               {{ province }}
             </div>
           </div>
         </div>
         
         <!-- Action Buttons -->
-        <div class="filter-actions">
-          <button class="reset-btn" @click="resetFilters">Reset</button>
-          <button class="search-btn" @click="applyFilters">search</button>
+        <div class="filter_actions">
+          <button class="reset_btn" @click="resetFilters">Reset</button>
+          <button class="search_btn" @click="applyFilters">search</button>
         </div>
       </div>
       
       <!-- Organization Cards Grid -->
-      <div class="org-cards-grid">
+      <div class="org_cards_grid">
         <div 
           v-for="org in paginatedOrganizations" 
           :key="org._id" 
-          class="org-card"
+          class="org_card"
           @click="viewOrgDetails(org)"
         >
           <!-- Organization Name -->
-          <div class="org-card-name">{{ org.name_en || org.name_th || 'N/A' }}</div>
+          <div class="org_card_name">{{ org.name_en || org.name_th || 'N/A' }}</div>
           
           <!-- Organization Address -->
-          <div class="org-card-address">{{ getShortAddress(org) }}</div>
+          <div class="org_card_address">{{ getShortAddress(org) }}</div>
           
           <!-- Business Type and Location Container -->
-          <div class="tags-row">
+          <div class="tags_row">
             <!-- Business Type Tags -->
-            <div class="tags-column">
-              <div class="section-label">Business Type</div>
-              <div class="tags-container business-tags">
+            <div class="tags_column">
+              <div class="section_label">Business Type</div>
+              <div class="tags_container business_tags">
                 <div class="tag" v-for="(type, index) in getBusinessTypes(org)" :key="index">{{ type }}</div>
               </div>
             </div>
             
             <!-- Location Tags -->
-            <div class="tags-column">
-              <div class="section-label location-section">Location</div>
-              <div class="tags-container location-tags">
+            <div class="tags_column">
+              <div class="section_label location_section">Location</div>
+              <div class="tags_container location_tags">
                 <div class="tag">{{ getCountry(org) }}</div>
                 <div class="tag">{{ getGeography(org) }}</div>
                 <div class="tag">{{ getProvince(org) }}</div>
@@ -166,37 +166,32 @@
           </div>
           
           <!-- Contact Row -->
-          <div class="contact-row">
+          <div class="contact_row">
             <!-- Email -->
-            <div class="contact-item email-contact">
-              <div class="icon email-icon"></div>
-              <span class="contact-text">{{ org.email || 'N/A' }}</span>
+            <div class="contact_item email_contact">
+              <div class="icon email_icon"></div>
+              <span class="contact_text">{{ org.email || 'N/A' }}</span>
             </div>
             
             <!-- Phone -->
-            <div class="contact-item phone-contact">
-              <div class="icon phone-icon"></div>
-              <span class="contact-text">{{ org.phone_number || 'N/A' }}</span>
+            <div class="contact_item phone_contact">
+              <div class="icon phone_icon"></div>
+              <span class="contact_text">{{ org.phone_number || 'N/A' }}</span>
             </div>
           </div>
           
-          <!-- Rating and Reviews -->
-          <div class="rating-section">
-            <div class="stars">
-              <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= getAverageRating(org) }">
-                ★
-              </span>
-            </div>
-            <span class="review-count">({{ getReviewCount(org) }} reviews)</span>
+          <!-- Review Count -->
+          <div class="review_count_section">
+            <span class="review_count">({{ getReviewCount(org) }} reviews)</span>
           </div>
           
           <!-- Divider Line -->
-          <div class="card-divider"></div>
+          <div class="card_divider"></div>
         </div>
       </div>
       
       <!-- Pagination -->
-      <div class="pagination-container">
+      <div class="pagination_container">
         <Pagination 
           :current-page="currentPage"
           :total-pages="totalPages"
@@ -452,16 +447,6 @@ const getProvince = (org: any) => {
   return org.province_id?.name || org.province_id || 'Bangkok'
 }
 
-const getAverageRating = (org: any) => {
-  const orgReviews = reviews.value.filter(r => 
-    String(r.organization_id?._id || r.organization_id) === String(org._id)
-  )
-  if (orgReviews.length === 0) return 5
-  
-  const total = orgReviews.reduce((sum, r) => sum + (r.rating || 0), 0)
-  return Math.round(total / orgReviews.length)
-}
-
 const getReviewCount = (org: any) => {
   return reviews.value.filter(r => 
     String(r.organization_id?._id || r.organization_id) === String(org._id)
@@ -477,7 +462,7 @@ const fetchOrganizations = async () => {
     organizations.value = response.data.data
     console.log('Public organizations loaded:', organizations.value.length)
   } catch (error: any) {
-    console.error('Error loading organizations:', error)
+    console.debug('Organizations loading failed:', error?.response?.status)
   } finally {
     loading.value = false
   }
@@ -489,7 +474,9 @@ const fetchReviews = async () => {
     reviews.value = response.data.data || []
     console.log('Reviews loaded:', reviews.value.length)
   } catch (error: any) {
-    console.error('Error loading reviews:', error)
+    // Reviews are optional - silently fail if not available
+    console.debug('Reviews not available:', error?.response?.status)
+    reviews.value = []
   }
 }
 
@@ -503,20 +490,20 @@ onMounted(async () => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
-.user-organization {
+.user_organization {
   position: relative;
   width: 100vw;
   min-height: 100vh;
   background: #F6F7F8;
 }
 
-.main-content {
+.main_content {
   margin-left: 232px;
   padding: 40px 20px 20px 20px;
   min-height: 100vh;
 }
 
-.page-title {
+.page_title {
   margin: 0 0 30px 0;
   font-family: 'Outfit', sans-serif;
   font-weight: 600;
@@ -526,7 +513,7 @@ onMounted(async () => {
 }
 
 /* Filter Section */
-.filter-section {
+.filter_section {
   position: relative;
   width: 1154px;
   height: 265px;
@@ -537,7 +524,7 @@ onMounted(async () => {
   padding: 15px 30px;
 }
 
-.filter-title {
+.filter_title {
   font-family: 'Outfit', sans-serif;
   font-weight: 600;
   font-size: 20px;
@@ -546,14 +533,14 @@ onMounted(async () => {
   margin-bottom: 20px;
 }
 
-.search-input-wrapper {
+.search_input_wrapper {
   position: absolute;
   left: 30px;
   top: 59px;
   width: 1045px;
 }
 
-.search-input {
+.search_input {
   box-sizing: border-box;
   width: 100%;
   height: 31px;
@@ -567,45 +554,45 @@ onMounted(async () => {
   color: #000000;
 }
 
-.search-input::placeholder {
+.search_input::placeholder {
   color: #B1B1B1;
 }
 
-.filter-dropdown {
+.filter_dropdown {
   position: absolute;
 }
 
-.org-type-dropdown {
+.org_type_dropdown {
   left: 29px;
   top: 110px;
   width: 491px;
 }
 
-.industry-dropdown {
+.industry_dropdown {
   left: 536px;
   top: 110px;
   width: 539px;
 }
 
-.country-dropdown {
+.country_dropdown {
   left: 29px;
   top: 157px;
   width: 368px;
 }
 
-.geography-dropdown {
+.geography_dropdown {
   left: 410px;
   top: 157px;
   width: 342px;
 }
 
-.province-dropdown {
+.province_dropdown {
   left: 763px;
   top: 157px;
   width: 312px;
 }
 
-.dropdown-toggle {
+.dropdown_toggle {
   box-sizing: border-box;
   display: flex;
   justify-content: space-between;
@@ -618,7 +605,7 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-.dropdown-label {
+.dropdown_label {
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   font-size: 14px;
@@ -626,14 +613,14 @@ onMounted(async () => {
   color: #545454;
 }
 
-.dropdown-arrow {
+.dropdown_arrow {
   width: 5.83px;
   height: 4.38px;
   background: #000000;
   clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
-.dropdown-menu {
+.dropdown_menu {
   position: absolute;
   top: 36px;
   left: 0;
@@ -647,7 +634,7 @@ onMounted(async () => {
   z-index: 10;
 }
 
-.dropdown-search {
+.dropdown_search {
   position: sticky;
   top: 0;
   background: #FFFFFF;
@@ -656,7 +643,7 @@ onMounted(async () => {
   z-index: 11;
 }
 
-.dropdown-search-input {
+.dropdown_search_input {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #D0D0D0;
@@ -666,16 +653,16 @@ onMounted(async () => {
   color: #333333;
 }
 
-.dropdown-search-input:focus {
+.dropdown_search_input:focus {
   outline: none;
   border-color: #AB1C03;
 }
 
-.dropdown-search-input::placeholder {
+.dropdown_search_input::placeholder {
   color: #999999;
 }
 
-.dropdown-item {
+.dropdown_item {
   padding: 10px;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
@@ -685,11 +672,11 @@ onMounted(async () => {
   border-bottom: 1px solid #f0f0f0;
 }
 
-.dropdown-item:hover {
+.dropdown_item:hover {
   background: #F5F5F5;
 }
 
-.filter-actions {
+.filter_actions {
   position: absolute;
   right: 30px;
   bottom: 30px;
@@ -697,7 +684,7 @@ onMounted(async () => {
   gap: 10px;
 }
 
-.reset-btn {
+.reset_btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -712,7 +699,7 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-.search-btn {
+.search_btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -728,14 +715,14 @@ onMounted(async () => {
 }
 
 /* Organization Cards Grid */
-.org-cards-grid {
+.org_cards_grid {
   display: grid;
   grid-template-columns: repeat(2, 575px);
   gap: 30px 60px;
   margin-bottom: 50px;
 }
 
-.org-card {
+.org_card {
   box-sizing: border-box;
   position: relative;
   width: 575px;
@@ -748,12 +735,12 @@ onMounted(async () => {
   transition: transform 0.2s ease;
 }
 
-.org-card:hover {
+.org_card:hover {
   transform: translateY(-2px);
   box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-.org-card-name {
+.org_card_name {
   font-family: 'Outfit', sans-serif;
   font-weight: 600;
   font-size: 24px;
@@ -762,7 +749,7 @@ onMounted(async () => {
   margin-bottom: 8px;
 }
 
-.org-card-address {
+.org_card_address {
   font-family: 'Outfit', sans-serif;
   font-weight: 400;
   font-size: 15px;
@@ -771,26 +758,26 @@ onMounted(async () => {
   margin-bottom: 15px;
 }
 
-.tags-row {
+.tags_row {
   display: flex;
   gap: 10px;
   margin-top: 15px;
   margin-bottom: 12px;
 }
 
-.tags-column {
+.tags_column {
   min-width: 0;
 }
 
-.tags-column:first-child {
+.tags_column:first-child {
   flex: 0 0 180px;
 }
 
-.tags-column:last-child {
+.tags_column:last-child {
   flex: 1;
 }
 
-.section-label {
+.section_label {
   font-family: 'Outfit', sans-serif;
   font-weight: 400;
   font-size: 16px;
@@ -799,11 +786,11 @@ onMounted(async () => {
   margin-bottom: 8px;
 }
 
-.location-section {
+.location_section {
   margin-top: 0;
 }
 
-.tags-container {
+.tags_container {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
@@ -826,19 +813,22 @@ onMounted(async () => {
   align-items: center;
 }
 
-.contact-row {
+.contact_row {
   display: flex;
   gap: 30px;
   margin-top: 15px;
+  margin-bottom: 15px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #000000;
 }
 
-.contact-item {
+.contact_item {
   display: flex;
   align-items: center;
   gap: 5px;
 }
 
-.email-contact {
+.email_contact {
   flex: 0 0 auto;
 }
 
@@ -850,15 +840,15 @@ onMounted(async () => {
   background-position: center;
 }
 
-.email-icon {
+.email_icon {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000'%3E%3Cpath d='M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'/%3E%3C/svg%3E");
 }
 
-.phone-icon {
+.phone_icon {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000'%3E%3Cpath d='M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z'/%3E%3C/svg%3E");
 }
 
-.contact-text {
+.contact_text {
   font-family: 'Outfit', sans-serif;
   font-weight: 400;
   font-size: 14px;
@@ -866,46 +856,20 @@ onMounted(async () => {
   color: #000000;
 }
 
-.card-divider {
-  position: absolute;
-  left: 22px;
-  right: 22px;
-  bottom: 61px;
-  height: 0px;
-  border: 1px solid #000000;
+.card_divider {
+  display: none;
 }
 
-.rating-section {
-  position: absolute;
-  left: 48px;
-  bottom: 14px;
+.review_count_section {
+  position: relative;
+  left: auto;
+  bottom: auto;
   display: flex;
   align-items: center;
-  gap: 26px;
+  margin-top: 10px;
 }
 
-.stars {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.star {
-  font-size: 25px;
-  line-height: 25px;
-  color: #D0D0D0;
-  width: 25.12px;
-  height: 25px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.star.filled {
-  color: #FFF200;
-}
-
-.review-count {
+.review_count {
   font-family: 'Outfit', sans-serif;
   font-weight: 400;
   font-size: 16px;
@@ -914,9 +878,11 @@ onMounted(async () => {
 }
 
 /* Pagination */
-.pagination-container {
+.pagination_container {
   display: flex;
   justify-content: center;
   margin-bottom: 50px;
 }
 </style>
+
+

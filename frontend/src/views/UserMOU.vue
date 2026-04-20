@@ -1,61 +1,61 @@
 <template>
-  <div class="user-mou">
+  <div class="user_mou">
     <UserNavbar />
     
     <!-- Main Content Area -->
-    <div class="main-content">
+    <div class="main_content">
       <!-- Page Title -->
-      <h1 class="page-title">MOU</h1>
+      <h1 class="page_title">MOU</h1>
       
       <!-- Search Section -->
-      <div class="search-filter-section">
-        <div class="search-controls">
+      <div class="search_filter_section">
+        <div class="search_controls">
           <!-- Text Search -->
-          <div class="search-input-wrapper">
+          <div class="search_input_wrapper">
             <input 
               type="text" 
-              class="search-input" 
+              class="search_input" 
               placeholder="Text Search (Name)"
               v-model="searchText"
             />
           </div>
           
           <!-- Action Buttons -->
-          <div class="action-buttons">
-            <button class="reset-btn" @click="resetSearch">Reset</button>
-            <button class="search-btn" @click="applySearch">Search</button>
+          <div class="action_buttons">
+            <button class="reset_btn" @click="resetSearch">Reset</button>
+            <button class="search_btn" @click="applySearch">Search</button>
           </div>
         </div>
       </div>
       
       <!-- MOU Cards Grid -->
-      <div class="mou-cards-grid">
+      <div class="mou_cards_grid">
         <div 
           v-for="mou in paginatedMous" 
           :key="mou.id" 
-          class="mou-card"
+          class="mou_card"
           @click="viewMouDetails(mou)"
         >
           <!-- Organization Logo -->
-          <div class="org-logo">
+          <div class="org_logo">
             <img :src="mou.logo" :alt="mou.name" />
           </div>
           
           <!-- Organization Info -->
-          <div class="org-name">{{ mou.name }}</div>
-          <div class="org-status active">Active</div>
-          <div class="org-duration">{{ mou.duration }}</div>
+          <div class="org_name">{{ mou.name }}</div>
+          <div class="org_status active">Active</div>
+          <div class="org_duration">{{ mou.duration }}</div>
           
           <!-- Details Button -->
-          <div class="details-section">
-            <span class="details-text">Details</span>
-            <div class="details-arrow"></div>
+          <div class="details_section">
+            <span class="details_text">Details</span>
+            <div class="details_arrow"></div>
           </div>
         </div>
       </div>
       
       <!-- Pagination Component -->
-      <div class="mou-pagination-container">
+      <div class="mou_pagination_container">
         <Pagination 
           :current-page="state.currentPage"
           :total-pages="totalPages"
@@ -233,20 +233,20 @@ onMounted(async () => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
-.user-mou {
+.user_mou {
   position: relative;
   width: 100vw;
   min-height: 100vh;
   background: #F6F7F8;
 }
 
-.main-content {
+.main_content {
   margin-left: 232px;
   padding: 40px 20px 20px 20px;
   min-height: 100vh;
 }
 
-.page-title {
+.page_title {
   margin: 0 0 30px 0;
   font-family: 'Outfit', sans-serif;
   font-weight: 600;
@@ -256,22 +256,22 @@ onMounted(async () => {
 }
 
 /* Search Section */
-.search-filter-section {
+.search_filter_section {
   margin-bottom: 40px;
 }
 
-.search-controls {
+.search_controls {
   display: flex;
   align-items: center;
   gap: 20px;
 }
 
-.search-input-wrapper {
+.search_input_wrapper {
   flex: 1;
   max-width: 800px;
 }
 
-.search-input {
+.search_input {
   box-sizing: border-box;
   width: 100%;
   height: 40px;
@@ -285,16 +285,16 @@ onMounted(async () => {
   color: #000000;
 }
 
-.search-input::placeholder {
+.search_input::placeholder {
   color: #B1B1B1;
 }
 
-.action-buttons {
+.action_buttons {
   display: flex;
   gap: 10px;
 }
 
-.reset-btn {
+.reset_btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -310,11 +310,11 @@ onMounted(async () => {
   transition: background 0.2s;
 }
 
-.reset-btn:hover {
+.reset_btn:hover {
   background: #F5F5F5;
 }
 
-.search-btn {
+.search_btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -330,12 +330,12 @@ onMounted(async () => {
   transition: background 0.2s;
 }
 
-.search-btn:hover {
+.search_btn:hover {
   background: #8B1502;
 }
 
 /* MOU Cards Grid */
-.mou-cards-grid {
+.mou_cards_grid {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
@@ -345,7 +345,7 @@ onMounted(async () => {
   margin-bottom: 30px;
 }
 
-.mou-card {
+.mou_card {
   position: relative;
   width: 250px;
   height: 248px;
@@ -353,11 +353,11 @@ onMounted(async () => {
   transition: transform 0.2s ease;
 }
 
-.mou-card:hover {
+.mou_card:hover {
   transform: translateY(-2px);
 }
 
-.mou-card::before {
+.mou_card::before {
   content: '';
   position: absolute;
   width: 250px;
@@ -371,7 +371,7 @@ onMounted(async () => {
   z-index: 1;
 }
 
-.org-logo {
+.org_logo {
   position: absolute;
   width: 95px;
   height: 95px;
@@ -380,7 +380,7 @@ onMounted(async () => {
   z-index: 2;
 }
 
-.org-logo img {
+.org_logo img {
   width: 100%;
   height: 100%;
   border-radius: 47.5px;
@@ -388,7 +388,7 @@ onMounted(async () => {
   background: #e0e0e0;
 }
 
-.org-name {
+.org_name {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -409,7 +409,7 @@ onMounted(async () => {
   text-overflow: ellipsis;
 }
 
-.org-status {
+.org_status {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -424,15 +424,15 @@ onMounted(async () => {
   color: #767676;
 }
 
-.org-status.active {
+.org_status.active {
   color: #00FF5E;
 }
 
-.org-status.inactive {
+.org_status.inactive {
   color: #FF0000;
 }
 
-.org-duration {
+.org_duration {
   position: absolute;
   width: 100px;
   left: 75px;
@@ -448,7 +448,7 @@ onMounted(async () => {
   color: #767676;
 }
 
-.details-section {
+.details_section {
   position: absolute;
   left: 94px;
   top: 200px;
@@ -458,7 +458,7 @@ onMounted(async () => {
   gap: 8px;
 }
 
-.details-text {
+.details_text {
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -467,7 +467,7 @@ onMounted(async () => {
   color: #000000;
 }
 
-.details-arrow {
+.details_arrow {
   width: 10px;
   height: 4.84px;
   border: 1px solid #000000;
@@ -476,10 +476,12 @@ onMounted(async () => {
 }
 
 /* Pagination */
-.mou-pagination-container {
+.mou_pagination_container {
   display: flex;
   justify-content: center;
   margin-top: 40px;
   margin-bottom: 50px;
 }
 </style>
+
+

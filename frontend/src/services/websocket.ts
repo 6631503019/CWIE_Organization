@@ -36,11 +36,11 @@ class WebSocketService {
             console.log('WebSocket connected:', this.socket?.id)
         })
 
-        this.socket.on('disconnect', (reason) => {
+        this.socket.on('disconnect', (reason: string) => {
             console.log('WebSocket disconnected:', reason)
         })
 
-        this.socket.on('error', (error) => {
+        this.socket.on('error', (error: Error) => {
             console.error('WebSocket error:', error)
         })
     }

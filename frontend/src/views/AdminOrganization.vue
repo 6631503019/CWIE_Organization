@@ -1,145 +1,145 @@
 <template>
-  <div class="admin-organization">
+  <div class="admin_organization">
     <!-- AdminNavbar component -->
     <AdminNavbar />
     
     <!-- Main content -->
-    <div class="main-content">
+    <div class="main_content">
       <!-- Header Section -->
-      <div class="header-section">
+      <div class="header_section">
         <!-- Organization Title -->
-        <div class="organization-title">Organization</div>
+        <div class="organization_title">Organization</div>
         
         <!-- Buttons Group -->
-        <div class="buttons-group">
+        <div class="buttons_group">
           <!-- Import Button -->
-          <div class="import-btn" @click="showImportModal = true">
-            <div class="upload-icon"></div>
-            <span class="button-text">Import CSV/Excel</span>
+          <div class="import_btn" @click="showImportModal = true">
+            <div class="upload_icon"></div>
+            <span class="button_text">Import Organization</span>
           </div>
           
           <!-- Add Organization Button -->
-          <div class="add-org-btn" @click="addOrganization">
-            <div class="plus-icon"></div>
-            <span class="button-text">Add Organization</span>
+          <div class="add_org_btn" @click="addOrganization">
+            <div class="plus_icon"></div>
+            <span class="button_text">Add Organization</span>
           </div>
         </div>
       </div>
       
       
       <!-- Filter Section -->
-      <div class="filter-section">
+      <div class="filter_section">
         <!-- Filter Organization title -->
-        <div class="filter-title">Filter Organization</div>
+        <div class="filter_title">Filter Organization</div>
         
         <!-- Search bar -->
-        <div class="search-container">
+        <div class="search_container">
           <input 
             type="text" 
             placeholder="Text Search (Name, Tags)"
-            class="search-input"
+            class="search_input"
             v-model="searchText"
           />
         </div>
         
         <!-- Dropdowns grid -->
-        <div class="dropdowns-grid">
+        <div class="dropdowns_grid">
           <!-- Organization Type dropdown -->
-          <div class="dropdown-container org-type" :class="{ active: dropdowns.orgType }">
-            <div class="dropdown-header" @click="toggleDropdown('orgType')">
-              <span class="dropdown-text">--Organization Type--</span>
-              <div class="dropdown-arrow"></div>
+          <div class="dropdown_container org_type" :class="{ active: dropdowns.orgType }">
+            <div class="dropdown_header" @click="toggleDropdown('orgType')">
+              <span class="dropdown_text">{{ selectedFilters.orgType === 'All' ? '--Organization Type--' : orgTypeOptions.find(o => o.value === selectedFilters.orgType)?.label }}</span>
+              <div class="dropdown_arrow"></div>
             </div>
-            <div v-if="dropdowns.orgType" class="dropdown-options">
-              <div class="dropdown-option" v-for="option in orgTypeOptions" :key="option.value" @click="selectOption('orgType', option.value)">
+            <div v-if="dropdowns.orgType" class="dropdown_options">
+              <div class="dropdown_option" v-for="option in orgTypeOptions" :key="option.value" @click="selectOption('orgType', option.value)">
                 {{ option.label }}
               </div>
             </div>
           </div>
           
           <!-- Industry Category dropdown -->
-          <div class="dropdown-container industry-cat" :class="{ active: dropdowns.industryCat }">
-            <div class="dropdown-header" @click="toggleDropdown('industryCat')">
-              <span class="dropdown-text">--Industry Category--</span>
-              <div class="dropdown-arrow"></div>
+          <div class="dropdown_container industry_cat" :class="{ active: dropdowns.industryCat }">
+            <div class="dropdown_header" @click="toggleDropdown('industryCat')">
+              <span class="dropdown_text">{{ selectedFilters.industryCat === 'All' ? '--Industry Category--' : selectedFilters.industryCat }}</span>
+              <div class="dropdown_arrow"></div>
             </div>
-            <div v-if="dropdowns.industryCat" class="dropdown-options">
-              <div class="dropdown-search">
+            <div v-if="dropdowns.industryCat" class="dropdown_options">
+              <div class="dropdown_search">
                 <input 
                   type="text" 
                   v-model="dropdownSearch.industryCat" 
                   placeholder="Search..."
                   @click.stop
-                  class="dropdown-search-input"
+                  class="dropdown_search_input"
                 />
               </div>
-              <div class="dropdown-option" v-for="option in filteredIndustryCat" :key="option" @click="selectOption('industryCat', option)">
+              <div class="dropdown_option" v-for="option in filteredIndustryCat" :key="option" @click="selectOption('industryCat', option)">
                 {{ option }}
               </div>
             </div>
           </div>
           
           <!-- Country dropdown -->
-          <div class="dropdown-container country" :class="{ active: dropdowns.country }">
-            <div class="dropdown-header" @click="toggleDropdown('country')">
-              <span class="dropdown-text">---Country---</span>
-              <div class="dropdown-arrow"></div>
+          <div class="dropdown_container country" :class="{ active: dropdowns.country }">
+            <div class="dropdown_header" @click="toggleDropdown('country')">
+              <span class="dropdown_text">{{ selectedFilters.country === 'All' ? '---Country---' : selectedFilters.country }}</span>
+              <div class="dropdown_arrow"></div>
             </div>
-            <div v-if="dropdowns.country" class="dropdown-options">
-              <div class="dropdown-search">
+            <div v-if="dropdowns.country" class="dropdown_options">
+              <div class="dropdown_search">
                 <input 
                   type="text" 
                   v-model="dropdownSearch.country" 
                   placeholder="Search..."
                   @click.stop
-                  class="dropdown-search-input"
+                  class="dropdown_search_input"
                 />
               </div>
-              <div class="dropdown-option" v-for="option in filteredCountry" :key="option" @click="selectOption('country', option)">
+              <div class="dropdown_option" v-for="option in filteredCountry" :key="option" @click="selectOption('country', option)">
                 {{ option }}
               </div>
             </div>
           </div>
           
           <!-- Geography dropdown -->
-          <div class="dropdown-container geography" :class="{ active: dropdowns.geography }">
-            <div class="dropdown-header" @click="toggleDropdown('geography')">
-              <span class="dropdown-text">--Geography--</span>
-              <div class="dropdown-arrow"></div>
+          <div class="dropdown_container geography" :class="{ active: dropdowns.geography }">
+            <div class="dropdown_header" @click="toggleDropdown('geography')">
+              <span class="dropdown_text">{{ selectedFilters.geography === 'All' ? '--Geography--' : selectedFilters.geography }}</span>
+              <div class="dropdown_arrow"></div>
             </div>
-            <div v-if="dropdowns.geography" class="dropdown-options">
-              <div class="dropdown-search">
+            <div v-if="dropdowns.geography" class="dropdown_options">
+              <div class="dropdown_search">
                 <input 
                   type="text" 
                   v-model="dropdownSearch.geography" 
                   placeholder="Search..."
                   @click.stop
-                  class="dropdown-search-input"
+                  class="dropdown_search_input"
                 />
               </div>
-              <div class="dropdown-option" v-for="option in filteredGeography" :key="option" @click="selectOption('geography', option)">
+              <div class="dropdown_option" v-for="option in filteredGeography" :key="option" @click="selectOption('geography', option)">
                 {{ option }}
               </div>
             </div>
           </div>
           
           <!-- Province dropdown -->
-          <div class="dropdown-container province" :class="{ active: dropdowns.province }">
-            <div class="dropdown-header" @click="toggleDropdown('province')">
-              <span class="dropdown-text">--Province--</span>
-              <div class="dropdown-arrow"></div>
+          <div class="dropdown_container province" :class="{ active: dropdowns.province }">
+            <div class="dropdown_header" @click="toggleDropdown('province')">
+              <span class="dropdown_text">{{ selectedFilters.province === 'All' ? '--Province--' : selectedFilters.province }}</span>
+              <div class="dropdown_arrow"></div>
             </div>
-            <div v-if="dropdowns.province" class="dropdown-options">
-              <div class="dropdown-search">
+            <div v-if="dropdowns.province" class="dropdown_options">
+              <div class="dropdown_search">
                 <input 
                   type="text" 
                   v-model="dropdownSearch.province" 
                   placeholder="Search..."
                   @click.stop
-                  class="dropdown-search-input"
+                  class="dropdown_search_input"
                 />
               </div>
-              <div class="dropdown-option" v-for="option in filteredProvince" :key="option" @click="selectOption('province', option)">
+              <div class="dropdown_option" v-for="option in filteredProvince" :key="option" @click="selectOption('province', option)">
                 {{ option }}
               </div>
             </div>
@@ -147,49 +147,49 @@
         </div>
         
         <!-- Filter buttons -->
-        <div class="filter-buttons">
-          <button class="reset-btn" @click="resetFilters">Reset</button>
-          <button class="search-btn" @click="searchOrganizations">search</button>
+        <div class="filter_buttons">
+          <button class="reset_btn" @click="resetFilters">Reset</button>
+          <button class="search_btn" @click="searchOrganizations">search</button>
         </div>
       </div>
       
       <!-- Organizations Table -->
-      <div class="table-container">
+      <div class="table_container">
         <!-- Table header -->
-        <div class="table-header">
-          <div class="header-status">status</div>
-          <div class="header-organization">Organization</div>
-          <div class="header-category">Category</div>
-          <div class="header-province">Province</div>
-          <div class="header-created">Created when</div>
-          <div class="header-edited">Edited on</div>
+        <div class="table_header">
+          <div class="header_status">status</div>
+          <div class="header_organization">Organization</div>
+          <div class="header_category">Category</div>
+          <div class="header_province">Province</div>
+          <div class="header_created">Created when</div>
+          <div class="header_edited">Edited on</div>
         </div>
         
         <!-- Table rows -->
-        <div v-for="org in paginatedOrganizations" :key="org.id" class="table-row">
+        <div v-for="org in paginatedOrganizations" :key="org.id" class="table_row">
           <!-- Status indicator - Always visible -->
-          <div class="status-indicator" :class="{ 'active': org.status === 'active', 'inactive': org.status === 'inactive' }"></div>
+          <div class="status_indicator" :class="{ 'active': org.status === 'active', 'inactive': org.status === 'inactive' }"></div>
           
           <!-- Organization name -->
-          <div class="org-name">{{ org.name }}</div>
+          <div class="org_name" @click="viewOrganizationDetail(org.id)">{{ org.name }}</div>
           
           <!-- Category -->
-          <div class="org-category">{{ org.category }}</div>
+          <div class="org_category">{{ org.category }}</div>
           
           <!-- Province -->
-          <div class="org-province">{{ org.province }}</div>
+          <div class="org_province">{{ org.province }}</div>
           
           <!-- Created date -->
-          <div class="org-created">{{ org.createdDate }}</div>
+          <div class="org_created">{{ org.createdDate }}</div>
           
           <!-- Edited date -->
-          <div class="org-edited">{{ org.editedDate }}</div>
+          <div class="org_edited">{{ org.editedDate }}</div>
           
           <!-- Action buttons -->
-          <div class="action-buttons">
-            <div class="edit-btn" @click="editOrganization(org.id)" :disabled="state.loading"></div>
-            <div class="delete-btn" @click="deleteOrganization(org.id)" :disabled="state.loading"></div>
-            <div v-if="org.hasMOU" class="document-btn" @click="viewDocument(org.id)"></div>
+          <div class="action_buttons">
+            <div class="edit_btn" @click="!state.loading && editOrganization(org.id)" :disabled="state.loading"></div>
+            <div class="delete_btn" @click="!state.loading && deleteOrganization(org.id)" :disabled="state.loading"></div>
+            <div v-if="org.hasMOU" class="document_btn" @click="!state.loading && viewDocument(org.id)"></div>
           </div>
         </div>
       </div>
@@ -206,26 +206,26 @@
     </div>
 
     <!-- Add Organization Modal -->
-    <div v-if="state.showAddModal" class="modal-overlay" @mousedown.self="handleOverlayMouseDown" @mouseup.self="handleOverlayMouseUp">
-      <div class="add-org-modal" :class="`${state.activeTab}-active`">
+    <div v-if="state.showAddModal" class="modal_overlay" @mousedown.self="handleOverlayMouseDown" @mouseup.self="handleOverlayMouseUp">
+      <div class="add_org_modal" :class="`${state.activeTab}_active`">
         <!-- Right side tabs -->
-        <div class="modal-tabs">
+        <div class="modal_tabs">
           <div 
-            class="tab-item"
+            class="tab_item"
             :class="{ active: state.activeTab === 'organization' }"
             @click="switchTab('organization')"
           >
             <span>Organization</span>
           </div>
           <div 
-            class="tab-item"
+            class="tab_item"
             :class="{ active: state.activeTab === 'review' }"
             @click="switchTab('review')"
           >
             <span>Review</span>
           </div>
           <div 
-            class="tab-item"
+            class="tab_item"
             :class="{ active: state.activeTab === 'mou' }"
             @click="switchTab('mou')"
           >
@@ -234,105 +234,111 @@
         </div>
 
         <!-- Modal Content -->
-        <div class="modal-content">
+        <div class="modal_content">
           <!-- Organization Tab -->
-          <div v-if="state.activeTab === 'organization'" class="organization-tab">
-            <h2 class="modal-title">Add Organization</h2>
-            <div class="form-divider"></div>
+          <div v-if="state.activeTab === 'organization'" class="organization_tab">
+            <h2 class="modal_title">Add Organization</h2>
+            <div class="form_divider"></div>
             
             <!-- Logo Upload -->
-            <div class="logo-upload-section">
+            <div class="logo_upload_section">
               <!-- Logo Preview -->
-              <div v-if="logoPreviewUrl" class="logo-preview">
+              <div v-if="logoPreviewUrl" class="logo_preview">
                 <img :src="logoPreviewUrl" alt="Logo Preview" />
               </div>
               
-              <div class="upload-area">
-                <div class="upload-icon"></div>
-                <input type="file" @change="handleLogoUpload" accept="image/*" class="file-input" />
+              <div class="upload_area">
+                <div class="upload_icon"></div>
+                <input type="file" @change="handleLogoUpload" accept="image/*" class="file_input" />
               </div>
-              <span class="upload-text">Upload logo here</span>
+              <span class="upload_text">Upload logo here</span>
             </div>
             
             <!-- Form Fields -->
-            <div class="form-row">
-              <div class="form-group">
+            <div class="form_row">
+              <div class="form_group">
                 <label>Organization Name(TH)*</label>
                 <input type="text" v-model="formData.organizationNameTH" />
               </div>
-              <div class="form-group">
+              <div class="form_group">
                 <label>Organization Name(EN)*</label>
                 <input type="text" v-model="formData.organizationNameEN" />
               </div>
             </div>
             
-            <div class="form-row">
-              <div class="form-group">
+            <div class="form_row">
+              <div class="form_group">
                 <label>Address(TH)*</label>
-                <textarea class="textarea-md" v-model="formData.addressTH"></textarea>
+                <textarea class="textarea_md" v-model="formData.addressTH"></textarea>
               </div>
-              <div class="form-group">
+              <div class="form_group">
                 <label>Address(EN)*</label>
-                <textarea class="textarea-md" v-model="formData.addressEN"></textarea>
+                <textarea class="textarea_md" v-model="formData.addressEN"></textarea>
               </div>
             </div>
             
-            <div class="form-row">
-              <div class="form-group full-width">
+            <div class="form_row">
+              <div class="form_group full_width">
                 <label>Organization Type*</label>
-                <div class="org-type-row-box">
-                  <div class="org-type-col" v-for="type in orgTypeOptions" :key="type.value" @click="formData.organizationType = type.value" :class="{ active: formData.organizationType === type.value }">
-                    <div class="org-type-name">{{ type.label }}</div>
+                <div class="org_type_row_box">
+                  <div class="org_type_col" v-for="type in orgTypeOptions" :key="type.value" @click="formData.organizationType = type.value" :class="{ active: formData.organizationType === type.value }">
+                    <div class="org_type_name">{{ type.label }}</div>
                   </div>
                 </div>
               </div>
             </div>
             
-            <div class="form-row">
-              <div class="form-group full-width">
+            <div class="form_row">
+              <div class="form_group full_width">
                 <label>Industry Category*</label>
-                <select v-model="formData.industryCategory">
-                  <option value="">--Select Category--</option>
-                  <option value="School of Applied Digital Technology">School of Applied Digital Technology</option>
-                  <option value="Agriculture and Food Products">Agriculture and Food Products</option>
-                  <option value="Automotive and Transportation Equipment">Automotive and Transportation Equipment</option>
-                  <option value="Banking, Finance and Insurance">Banking, Finance and Insurance</option>
-                  <option value="Business Services">Business Services</option>
-                  <option value="Energy">Energy</option>
-                  <option value="Healthcare">Healthcare</option>
-                  <option value="Information and Communication Technology">Information and Communication Technology</option>
-                  <option value="Manufacturing and Industrial Products">Manufacturing and Industrial Products</option>
-                  <option value="Mining and Metal Products">Mining and Metal Products</option>
-                  <option value="Petrochemicals and Chemicals">Petrochemicals and Chemicals</option>
-                  <option value="Textile and Garments">Textile and Garments</option>
-                  <option value="Tourism and Hospitality">Tourism and Hospitality</option>
-                  <option value="Trading and Distribution">Trading and Distribution</option>
-                  <option value="Transportation and Logistics">Transportation and Logistics</option>
-                  <option value="Utilities">Utilities</option>
-                </select>
+                <div class="modal_dropdown_wrapper full_width">
+                  <div class="modal_dropdown_header" @click="modalDropdownOpen.industryCategory = !modalDropdownOpen.industryCategory">
+                    <span class="modal_dropdown_text">{{ displayLocationValue(formData.industryCategory, '--Select Category--') }}</span>
+                    <div class="modal_dropdown_arrow" :class="{ open: modalDropdownOpen.industryCategory }"></div>
+                  </div>
+                  <div v-if="modalDropdownOpen.industryCategory" class="modal_dropdown_options">
+                    <div class="modal_dropdown_search">
+                      <input 
+                        type="text" 
+                        v-model="modalDropdownSearch.industryCategory" 
+                        placeholder="Search..."
+                        @click.stop
+                        class="modal_dropdown_search_input"
+                      />
+                    </div>
+                    <div 
+                      class="modal_dropdown_option" 
+                      v-for="option in modalFilteredIndustryCategory" 
+                      :key="option" 
+                      @click="formData.industryCategory = option; modalDropdownOpen.industryCategory = false"
+                    >
+                      {{ option }}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div class="form-row">
-              <div class="form-group">
+            <div class="form_row">
+              <div class="form_group">
                 <label>Country*</label>
-                <div class="modal-dropdown-wrapper">
-                  <div class="modal-dropdown-header" @click="modalDropdownOpen.country = !modalDropdownOpen.country">
-                    <span class="modal-dropdown-text">{{ formData.country || '---Country---' }}</span>
-                    <div class="modal-dropdown-arrow" :class="{ open: modalDropdownOpen.country }"></div>
+                <div class="modal_dropdown_wrapper">
+                  <div class="modal_dropdown_header" @click="modalDropdownOpen.country = !modalDropdownOpen.country">
+                    <span class="modal_dropdown_text">{{ displayLocationValue(formData.country, '---Country---') }}</span>
+                    <div class="modal_dropdown_arrow" :class="{ open: modalDropdownOpen.country }"></div>
                   </div>
-                  <div v-if="modalDropdownOpen.country" class="modal-dropdown-options">
-                    <div class="modal-dropdown-search">
+                  <div v-if="modalDropdownOpen.country" class="modal_dropdown_options">
+                    <div class="modal_dropdown_search">
                       <input 
                         type="text" 
                         v-model="modalDropdownSearch.country" 
                         placeholder="Search..."
                         @click.stop
-                        class="modal-dropdown-search-input"
+                        class="modal_dropdown_search_input"
                       />
                     </div>
                     <div 
-                      class="modal-dropdown-option" 
+                      class="modal_dropdown_option" 
                       v-for="option in modalFilteredCountry" 
                       :key="option" 
                       @click="formData.country = option; modalDropdownOpen.country = false"
@@ -342,25 +348,25 @@
                   </div>
                 </div>
               </div>
-              <div class="form-group">
+              <div class="form_group">
                 <label>Geography*</label>
-                <div class="modal-dropdown-wrapper">
-                  <div class="modal-dropdown-header" @click="modalDropdownOpen.geography = !modalDropdownOpen.geography">
-                    <span class="modal-dropdown-text">{{ formData.geography || '--Geography--' }}</span>
-                    <div class="modal-dropdown-arrow" :class="{ open: modalDropdownOpen.geography }"></div>
+                <div class="modal_dropdown_wrapper">
+                  <div class="modal_dropdown_header" @click="modalDropdownOpen.geography = !modalDropdownOpen.geography">
+                    <span class="modal_dropdown_text">{{ displayLocationValue(formData.geography, '--Geography--') }}</span>
+                    <div class="modal_dropdown_arrow" :class="{ open: modalDropdownOpen.geography }"></div>
                   </div>
-                  <div v-if="modalDropdownOpen.geography" class="modal-dropdown-options">
-                    <div class="modal-dropdown-search">
+                  <div v-if="modalDropdownOpen.geography" class="modal_dropdown_options">
+                    <div class="modal_dropdown_search">
                       <input 
                         type="text" 
                         v-model="modalDropdownSearch.geography" 
                         placeholder="Search..."
                         @click.stop
-                        class="modal-dropdown-search-input"
+                        class="modal_dropdown_search_input"
                       />
                     </div>
                     <div 
-                      class="modal-dropdown-option" 
+                      class="modal_dropdown_option" 
                       v-for="option in modalFilteredGeography" 
                       :key="option" 
                       @click="formData.geography = option; modalDropdownOpen.geography = false"
@@ -370,25 +376,25 @@
                   </div>
                 </div>
               </div>
-              <div class="form-group">
+              <div class="form_group">
                 <label>Province*</label>
-                <div class="modal-dropdown-wrapper">
-                  <div class="modal-dropdown-header" @click="modalDropdownOpen.province = !modalDropdownOpen.province">
-                    <span class="modal-dropdown-text">{{ formData.province || '--Province--' }}</span>
-                    <div class="modal-dropdown-arrow" :class="{ open: modalDropdownOpen.province }"></div>
+                <div class="modal_dropdown_wrapper">
+                  <div class="modal_dropdown_header" @click="modalDropdownOpen.province = !modalDropdownOpen.province">
+                    <span class="modal_dropdown_text">{{ displayLocationValue(formData.province, '--Province--') }}</span>
+                    <div class="modal_dropdown_arrow" :class="{ open: modalDropdownOpen.province }"></div>
                   </div>
-                  <div v-if="modalDropdownOpen.province" class="modal-dropdown-options">
-                    <div class="modal-dropdown-search">
+                  <div v-if="modalDropdownOpen.province" class="modal_dropdown_options">
+                    <div class="modal_dropdown_search">
                       <input 
                         type="text" 
                         v-model="modalDropdownSearch.province" 
                         placeholder="Search..."
                         @click.stop
-                        class="modal-dropdown-search-input"
+                        class="modal_dropdown_search_input"
                       />
                     </div>
                     <div 
-                      class="modal-dropdown-option" 
+                      class="modal_dropdown_option" 
                       v-for="option in modalFilteredProvince" 
                       :key="option" 
                       @click="formData.province = option; modalDropdownOpen.province = false"
@@ -400,44 +406,44 @@
               </div>
             </div>
             
-            <div class="form-group">
+            <div class="form_group">
               <label>Email</label>
               <input type="email" v-model="formData.email" />
             </div>
             
-            <div class="form-group">
+            <div class="form_group">
               <label>Phone Number</label>
               <input type="tel" v-model="formData.phoneNumber" />
             </div>
             
-            <div class="form-group">
+            <div class="form_group">
               <label>Details</label>
-              <textarea class="textarea-lg" v-model="formData.details" rows="4"></textarea>
+              <textarea class="textarea_lg" v-model="formData.details" rows="4"></textarea>
             </div>
             
             <!-- Public Toggle -->
-            <div class="public-toggle">
+            <div class="public_toggle">
               <label>Public</label>
-              <div class="toggle-switch" :class="{ active: formData.isPublic }" @click="formData.isPublic = !formData.isPublic">
-                <div class="toggle-slider"></div>
+              <div class="toggle_switch" :class="{ active: formData.isPublic }" @click="formData.isPublic = !formData.isPublic">
+                <div class="toggle_slider"></div>
               </div>
             </div>
             
             <!-- Action Buttons -->
-            <div class="modal-actions">
-              <button class="btn-cancel" @click="closeModal">Cancel</button>
-              <button class="btn-save" @click="saveOrganization">Save</button>
+            <div class="modal_actions">
+              <button class="btn_cancel" @click="closeModal">Cancel</button>
+              <button class="btn_save" @click="saveOrganization">Save</button>
             </div>
           </div>
           
           <!-- Review Tab -->
-          <div v-if="state.activeTab === 'review'" class="review-tab">
-            <h2 class="modal-title">Add Review</h2>
-            <div class="form-divider"></div>
+          <div v-if="state.activeTab === 'review'" class="review_tab">
+            <h2 class="modal_title">Add Review</h2>
+            <div class="form_divider"></div>
             
             <!-- Review Form -->
-            <div class="form-row">
-              <div class="form-group">
+            <div class="form_row">
+              <div class="form_group">
                 <label>Organization Name *</label>
                 <input 
                   type="text" 
@@ -445,7 +451,7 @@
                   placeholder="Enter organization name"
                 />
               </div>
-              <div class="form-group">
+              <div class="form_group">
                 <label>Job Position *</label>
                 <input 
                   type="text" 
@@ -456,10 +462,10 @@
             </div>
             
             <!-- Review Text -->
-            <div class="form-group full-width">
+            <div class="form_group full_width">
               <label>Review *</label>
               <textarea 
-                class="textarea-lg"
+                class="textarea_lg"
                 v-model="reviewData.review" 
                 placeholder="Write your review here..."
                 rows="6"
@@ -467,8 +473,8 @@
             </div>
             
             <!-- Star Rating -->
-            <div class="rating-section">
-              <div class="star-rating">
+            <div class="rating_section">
+              <div class="star_rating">
                 <span 
                   v-for="star in 5" 
                   :key="star"
@@ -482,62 +488,62 @@
             </div>
             
             <!-- Action Buttons -->
-            <div class="modal-actions">
-              <button class="btn-cancel" @click="closeModal">Cancel</button>
-              <button class="btn-save" @click="saveReview">Save</button>
+            <div class="modal_actions">
+              <button class="btn_cancel" @click="closeModal">Cancel</button>
+              <button class="btn_save" @click="saveReview">Save</button>
             </div>
           </div>
           
           <!-- MOU Tab -->
-          <div v-if="state.activeTab === 'mou'" class="mou-tab">
-            <div class="mou-header">
-              <h2 class="modal-title">Add MOU</h2>
-              <div class="form-divider"></div>
+          <div v-if="state.activeTab === 'mou'" class="mou_tab">
+            <div class="mou_header">
+              <h2 class="modal_title">Add MOU</h2>
+              <div class="form_divider"></div>
             </div>
 
-            <div class="mou-top-row">
-              <label class="mou-upload" aria-label="Upload MOU">
-                <div class="mou-icon"></div>
+            <div class="mou_top_row">
+              <label class="mou_upload" aria-label="Upload MOU">
+                <div class="mou_icon"></div>
                 <input
                   type="file"
-                  class="file-input"
+                  class="file_input"
                   accept=".pdf,.doc,.docx,image/*"
                   @change="handleMOUUpload"
                 />
               </label>
-              <span class="mou-label">MOU</span>
+              <span class="mou_label">MOU</span>
             </div>
 
             <!-- MOU Document Preview -->
-            <div v-if="mouPreviewUrl" class="mou-document-preview">
+            <div v-if="mouPreviewUrl" class="mou_document_preview">
               <img v-if="mouData.mouFile?.type?.startsWith('image/')" :src="mouPreviewUrl" alt="MOU Preview" />
-              <div v-else class="document-placeholder">
-                <div class="doc-icon"></div>
+              <div v-else class="document_placeholder">
+                <div class="doc_icon"></div>
                 <span>{{ mouData.mouFile?.name }}</span>
               </div>
             </div>
 
-            <div class="mou-date-row">
-              <div class="form-group date-group">
+            <div class="mou_date_row">
+              <div class="form_group date_group">
                 <label>Start Date *</label>
-                <input type="date" v-model="mouData.startDate" class="date-input" />
+                <input type="date" v-model="mouData.startDate" class="date_input" />
               </div>
-              <div class="form-group date-group">
+              <div class="form_group date_group">
                 <label>End Date *</label>
-                <input type="date" v-model="mouData.endDate" class="date-input" />
+                <input type="date" v-model="mouData.endDate" class="date_input" />
               </div>
             </div>
 
-            <div class="publish-toggle mou-publish">
+            <div class="publish_toggle mou_publish">
               <label>Publish MOU</label>
-              <div class="toggle-switch" :class="{ active: mouData.publishMOU }" @click="mouData.publishMOU = !mouData.publishMOU">
-                <div class="toggle-slider"></div>
+              <div class="toggle_switch" :class="{ active: mouData.publishMOU }" @click="mouData.publishMOU = !mouData.publishMOU">
+                <div class="toggle_slider"></div>
               </div>
             </div>
 
-            <div class="modal-actions mou-actions">
-              <button class="btn-cancel" @click="closeModal">Cancel</button>
-              <button class="btn-save" @click="saveMOU">Save</button>
+            <div class="modal_actions mou_actions">
+              <button class="btn_cancel" @click="closeModal">Cancel</button>
+              <button class="btn_save" @click="saveMOU">Save</button>
             </div>
           </div>
         </div>
@@ -545,54 +551,54 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteModal" class="delete-modal-overlay" @mousedown.self="handleDeleteOverlayMouseDown" @mouseup.self="handleDeleteOverlayMouseUp">
-      <div class="delete-modal-container">
-        <div class="modal-header">
+    <div v-if="showDeleteModal" class="delete_modal_overlay" @mousedown.self="handleDeleteOverlayMouseDown" @mouseup.self="handleDeleteOverlayMouseUp">
+      <div class="delete_modal_container">
+        <div class="modal_header">
           <h3>Confirm Delete</h3>
         </div>
         
-        <div class="modal-body">
+        <div class="modal_body">
           <p>Are you sure you want to delete this organization?</p>
-          <div class="organization-info">
+          <div class="organization_info">
             <strong>{{ selectedOrganization?.name }}</strong>
           </div>
         </div>
         
-        <div class="modal-actions">
-          <button class="cancel-btn" @click="cancelDelete">Cancel</button>
-          <button class="confirm-delete-btn" @click="confirmDelete">Delete</button>
+        <div class="modal_actions">
+          <button class="cancel_btn" @click="cancelDelete">Cancel</button>
+          <button class="confirm_delete_btn" @click="confirmDelete">Delete</button>
         </div>
       </div>
     </div>
     
     <!-- Import CSV/Excel Modal -->
-    <div v-if="showImportModal" class="modal-overlay" @mousedown.self="handleImportOverlayMouseDown" @mouseup.self="handleImportOverlayMouseUp">
-      <div class="import-modal">
-        <h2 class="modal-title">Import Organizations</h2>
-        <div class="form-divider"></div>
+    <div v-if="showImportModal" class="modal_overlay" @mousedown.self="handleImportOverlayMouseDown" @mouseup.self="handleImportOverlayMouseUp">
+      <div class="import_modal">
+        <h2 class="modal_title">Import Organizations</h2>
+        <div class="form_divider"></div>
         
-        <div class="file-upload-section">
+        <div class="file_upload_section">
           <input 
             type="file" 
-            accept=".csv,.xlsx,.xls" 
+            accept=".csv,.xlsx,.xls,.xlxs" 
             @change="handleImportFile"
             ref="importFileInput"
             style="display: none;"
           />
-          <button class="btn-choose-file" @click="($refs.importFileInput as HTMLInputElement).click()">
+          <button class="btn_choose_file" @click="($refs.importFileInput as HTMLInputElement).click()">
             Choose File
           </button>
-          <span class="file-name" v-if="importFile">{{ importFile.name }}</span>
-          <span class="file-name" v-else>No file selected</span>
+          <span class="file_name" v-if="importFile">{{ importFile.name }}</span>
+          <span class="file_name" v-else>No file selected</span>
         </div>
         
-        <div v-if="importResults" class="import-results">
-          <p class="results-summary">
+        <div v-if="importResults" class="import_results">
+          <p class="results_summary">
             <strong>Import Results:</strong> 
             {{ importResults.success.length }} succeeded, 
             {{ importResults.failed.length }} failed
           </p>
-          <div v-if="importResults.failed.length > 0" class="failed-items">
+          <div v-if="importResults.failed.length > 0" class="failed_items">
             <p><strong>Failed rows:</strong></p>
             <div style="max-height: 300px; overflow-y: auto;">
               <ul>
@@ -605,7 +611,7 @@
               </ul>
             </div>
           </div>
-          <div v-if="importResults.success.length > 0" class="success-items" style="margin-top: 10px;">
+          <div v-if="importResults.success.length > 0" class="success_items" style="margin-top: 10px;">
             <p><strong>Successfully imported:</strong></p>
             <ul>
               <li v-for="success in importResults.success.slice(0, 5)" :key="success.row">
@@ -618,9 +624,9 @@
           </div>
         </div>
         
-        <div class="modal-actions">
-          <button class="btn-cancel" @click="showImportModal = false; importFile = null; importResults = null">Cancel</button>
-          <button class="btn-save" @click="submitImport" :disabled="!importFile">Import</button>
+        <div class="modal_actions">
+          <button class="btn_cancel" @click="showImportModal = false; importFile = null; importResults = null">Cancel</button>
+          <button class="btn_save" @click="submitImport" :disabled="!importFile">Import</button>
         </div>
       </div>
     </div>
@@ -637,10 +643,17 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
 import { organizationAPI, mouAPI, checkTokenValidity, BACKEND_URL } from '../services/api'
+
+// ===========================
+// REACTIVE STATE MANAGEMENT
+// ===========================
+// Router instance
+const router = useRouter()
 
 // Reactive state management
 const state = reactive({
@@ -738,6 +751,195 @@ const provinceOptions = [
   'Yala', 'Yasothon'
 ]
 
+// Thai to English mapping
+const thaiToEnglishMap: Record<string, string> = {
+  // Countries
+  'ไทย': 'Thailand',
+  'จีน': 'China',
+  'ไต้หวัน': 'Taiwan',
+  'สหรัฐอเมริกา': 'USA',
+  'ญี่ปุ่น': 'Japan',
+  
+  // Geography/Regions
+  'ภาคเหนือ': 'Northern Region',
+  'ภาคกลาง': 'Central Region',
+  'ภาคใต้': 'Southern Region',
+  'ภาคตะวันออกเฉียงเหนือ': 'Northeastern Region',
+  'ภาคตะวันออก': 'Eastern Region',
+  'ภาคตะวันตก': 'Western Region',
+  
+  // Business Categories / Industry
+  'เทคโนโลยีดิจิทัลประยุกต์': 'School of Applied Digital Technology',
+  'การเกษตรและผลิตภัณฑ์อาหาร': 'Agriculture and Food Products',
+  'ยานยนต์และอุปกรณ์การขนส่ง': 'Automotive and Transportation Equipment',
+  'ธนาคาร การเงิน และการประกันภัย': 'Banking, Finance and Insurance',
+  'บริการธุรกิจ': 'Business Services',
+  'พลังงาน': 'Energy',
+  'การดูแลสุขภาพ': 'Healthcare',
+  'เทคโนโลยีสารสนเทศและการสื่อสาร': 'Information and Communication Technology',
+  'การผลิตและผลิตภัณฑ์อุตสาหกรรม': 'Manufacturing and Industrial Products',
+  'การทำเ광และผลิตภัณฑ์โลหะ': 'Mining and Metal Products',
+  'ปิโตรเคมีและเคมีภัณฑ์': 'Petrochemicals and Chemicals',
+  'สิ่งทอและเครื่องนุ่งห่ม': 'Textile and Garments',
+  'การท่องเที่ยวและการบริการ': 'Tourism and Hospitality',
+  'การค้าและการจัดจำหน่าย': 'Trading and Distribution',
+  'การขนส่งและโลจิสติกส์': 'Transportation and Logistics',
+  'สาธารณูปโภค': 'Utilities',
+  // Government and organizations
+  'หน่วยงานราชการ': 'Government',
+  'ราชการ': 'Government',
+  'รัฐวิสาหกิจ': 'Government',
+  'องค์การมหาชน': 'Government',
+  'องค์กรปกครองส่วนท้องถิ่น': 'Government',
+  // Short forms and variations
+  'เทคโนโลยีสารสนเทศ': 'Information and Communication Technology',
+  'การท่องเที่ยว': 'Tourism and Hospitality',
+  'การเกษตร': 'Agriculture and Food Products',
+  'การผลิต': 'Manufacturing and Industrial Products',
+  'การศึกษา': 'School of Applied Digital Technology',
+  'การค้า': 'Trading and Distribution',
+  'ธนาคาร': 'Banking, Finance and Insurance',
+  'การเงิน': 'Banking, Finance and Insurance',
+  'โรงแรม': 'Tourism and Hospitality',
+  'ร้านอาหาร': 'Tourism and Hospitality',
+  'โรงพยาบาล': 'Healthcare',
+  'คลินิก': 'Healthcare',
+  'ขนส่ง': 'Transportation and Logistics',
+  'โลจิสติกส์': 'Transportation and Logistics',
+  'อุตสาหกรรม': 'Manufacturing and Industrial Products',
+  'เทคโนโลยี': 'Information and Communication Technology',
+  'ไอที': 'Information and Communication Technology',
+  'คอมพิวเตอร์': 'Information and Communication Technology',
+  'ซอฟต์แวร์': 'Information and Communication Technology',
+  'ก่อสร้าง': 'Manufacturing and Industrial Products',
+  'อสังหาริมทรัพย์': 'Business Services',
+  'สื่อสารมวลชน': 'Information and Communication Technology',
+  'โฆษณา': 'Business Services',
+  'การตลาด': 'Business Services',
+  'ประกันภัย': 'Banking, Finance and Insurance',
+  'หลักทรัพย์': 'Banking, Finance and Insurance',
+  'บัญชี': 'Business Services',
+  'กฎหมาย': 'Business Services',
+  'ที่ปรึกษา': 'Business Services',
+  'วิศวกรรม': 'Manufacturing and Industrial Products',
+  'สถาปัตยกรรม': 'Manufacturing and Industrial Products',
+  'การพิมพ์': 'Manufacturing and Industrial Products',
+  'บรรจุภัณฑ์': 'Manufacturing and Industrial Products',
+  'เภสัชกรรม': 'Healthcare',
+  'การแพทย์': 'Healthcare',
+  'สปา': 'Tourism and Hospitality',
+  'ความงาม': 'Business Services',
+  'แฟชั่น': 'Textile and Garments',
+  'เสื้อผ้า': 'Textile and Garments',
+  'อาหาร': 'Agriculture and Food Products',
+  'เครื่องดื่ม': 'Agriculture and Food Products',
+  'ภัตตาคาร': 'Tourism and Hospitality',
+  'โรงงาน': 'Manufacturing and Industrial Products',
+  'ซูเปอร์มาร์เก็ต': 'Trading and Distribution',
+  'ค้าปลีก': 'Trading and Distribution',
+  'ค้าส่ง': 'Trading and Distribution',
+  'จำหน่าย': 'Trading and Distribution',
+  'ขายส่ง': 'Trading and Distribution',
+  'ขายปลีก': 'Trading and Distribution',
+  'ไฟฟ้า': 'Energy',
+  'น้ำประปา': 'Utilities',
+  'ก๊าซ': 'Energy',
+  'พลังงานทดแทน': 'Energy',
+  'โซล่าร์เซลล์': 'Energy',
+  
+  // Provinces
+  'เชียงราย': 'Chiang Rai',
+  'เชียงใหม่': 'Chiang Mai',
+  'กรุงเทพมหานคร': 'Bangkok',
+  'นนทบุรี': 'Nonthaburi',
+  'ปทุมธานี': 'Pathum Thani',
+  'สมุทรปราการ': 'Samut Prakan',
+  'ภูเก็ต': 'Phuket',
+  'ชลบุรี': 'Chon Buri',
+  'ระยอง': 'Rayong',
+  'ขอนแก่น': 'Khon Kaen',
+  'นครราชสีมา': 'Nakhon Ratchasima',
+  'อุบลราชธานี': 'Ubon Ratchathani',
+  'สงขลา': 'Songkhla',
+  'ลำปาง': 'Lampang',
+  'ลำพูน': 'Lamphun',
+  'แม่ฮ่องสอน': 'Mae Hong Son',
+  'น่าน': 'Nan',
+  'พะเยา': 'Phayao',
+  'แพร่': 'Phrae',
+  'อุตรดิตถ์': 'Uttaradit',
+  'กำแพงเพชร': 'Kamphaeng Phet',
+  'พิษณุโลก': 'Phitsanulok',
+  'เพชรบูรณ์': 'Phetchabun',
+  'พิจิตร': 'Phichit',
+  'สุโขทัย': 'Sukhothai',
+  'ตาก': 'Tak',
+  'อุทัยธานี': 'Uthai Thani',
+  'นครสวรรค์': 'Nakhon Sawan',
+  'ชัยนาท': 'Chai Nat',
+  'ลพบุรี': 'Lop Buri',
+  'สระบุรี': 'Saraburi',
+  'สิงห์บุรี': 'Sing Buri',
+  'อ่างทอง': 'Ang Thong',
+  'พระนครศรีอยุธยา': 'Phra Nakhon Si Ayutthaya',
+  'สุพรรณบุรี': 'Suphan Buri',
+  'กาญจนบุรี': 'Kanchanaburi',
+  'นครปฐม': 'Nakhon Pathom',
+  'ราชบุรี': 'Ratchaburi',
+  'สมุทรสาคร': 'Samut Sakhon',
+  'สมุทรสงคราม': 'Samut Songkhram',
+  'เพชรบุรี': 'Phetchaburi',
+  'ประจวบคีรีขันธ์': 'Prachuap Khiri Khan',
+  'ฉะเชิงเทรา': 'Chachoengsao',
+  'จันทบุรี': 'Chanthaburi',
+  'ตราด': 'Trat',
+  'ปราจีนบุรี': 'Prachin Buri',
+  'นครนายก': 'Nakhon Nayok',
+  'สระแก้ว': 'Sa Kaeo',
+  'กาฬสินธุ์': 'Kalasin',
+  'มหาสารคาม': 'Maha Sarakham',
+  'ร้อยเอ็ด': 'Roi Et',
+  'สกลนคร': 'Sakon Nakhon',
+  'หนองคาย': 'Nong Khai',
+  'หนองบัวลำภู': 'Nong Bua Lam Phu',
+  'เลย': 'Loei',
+  'อุดรธานี': 'Udon Thani',
+  'บึงกาฬ': 'Bueng Kan',
+  'มุกดาหาร': 'Mukdahan',
+  'นครพนม': 'Nakhon Phanom',
+  'ยโสธร': 'Yasothon',
+  'ศรีสะเกษ': 'Si Sa Ket',
+  'สุรินทร์': 'Surin',
+  'ชัยภูมิ': 'Chaiyaphum',
+  'บุรีรัมย์': 'Buri Ram',
+  'อำนาจเจริญ': 'Amnat Charoen',
+  'กระบี่': 'Krabi',
+  'ชุมพร': 'Chumphon',
+  'นครศรีธรรมราช': 'Nakhon Si Thammarat',
+  'พังงา': 'Phang Nga',
+  'พัทลุง': 'Phatthalung',
+  'ระนอง': 'Ranong',
+  'สตูล': 'Satun',
+  'สุราษฎร์ธานี': 'Surat Thani',
+  'ตรัง': 'Trang',
+  'ปัตตานี': 'Pattani',
+  'ยะลา': 'Yala',
+  'นราธิวาส': 'Narathiwat'
+}
+
+// Function to normalize value (handle both Thai and English)
+const normalizeLocationValue = (value: string): string => {
+  if (!value) return ''
+  // If it's Thai, convert to English
+  return thaiToEnglishMap[value] || value
+}
+
+// Function to display value (show English but accept Thai)
+const displayLocationValue = (value: string, placeholder: string): string => {
+  if (!value) return placeholder
+  return normalizeLocationValue(value)
+}
+
 // Filtered options based on search
 const filteredIndustryCat = computed(() => {
   if (!dropdownSearch.value.industryCat) return industryCatOptions
@@ -792,6 +994,17 @@ const organizationTypeCounts = computed(() => {
 // Computed properties for reactive filtering
 const filteredOrganizations = computed(() => {
   let filtered = allOrganizations.value
+  
+  // กรองเอาเฉพาะข้อมูลที่มีครบ (มี province และไม่เป็น 'N/A')
+  filtered = filtered.filter(org => {
+    const hasProvince = org.province && org.province !== 'N/A'
+    const hasName = org.name && 
+                    org.name !== 'Unknown' && 
+                    org.name !== 'หน่วยงานราชการ' &&
+                    org.name !== 'บริษัท' &&
+                    org.name.trim() !== ''
+    return hasProvince && hasName
+  })
   
   // Search filter
   if (searchText.value.trim()) {
@@ -926,7 +1139,7 @@ const searchOrganizations = () => {
 }
 
 // Modal form data
-const formData = reactive({
+const formData = reactive<Record<string, any>>({
   logo: null as File | null,
   organizationNameTH: '',
   organizationNameEN: '',
@@ -947,25 +1160,34 @@ const formData = reactive({
 const modalDropdownSearch = ref({
   country: '',
   geography: '',
-  province: ''
+  province: '',
+  industryCategory: ''
 })
 
 const modalDropdownOpen = ref({
   country: false,
   geography: false,
-  province: false
+  province: false,
+  industryCategory: false
 })
 
 // Filtered options for modal dropdowns
 const modalFilteredCountry = computed(() => {
-  if (!modalDropdownSearch.value.country) return countryOptions
-  return countryOptions.filter(option => 
+  const allCountryOptions = [
+    ...countryOptions,
+    'ไทย', 'จีน', 'ไต้หวัน', 'สหรัฐอเมริกา', 'ญี่ปุ่น'
+  ]
+  if (!modalDropdownSearch.value.country) return allCountryOptions
+  return allCountryOptions.filter(option => 
     option.toLowerCase().includes(modalDropdownSearch.value.country.toLowerCase())
   )
 })
 
 const modalFilteredGeography = computed(() => {
-  const geoOptions = ['Northern Thailand', 'Central Thailand', 'Southern Thailand', 'Northeastern Thailand']
+  const geoOptions = [
+    ...geographyOptions,
+    'ภาคเหนือ', 'ภาคกลาง', 'ภาคใต้', 'ภาคตะวันออกเฉียงเหนือ', 'ภาคตะวันออก', 'ภาคตะวันตก'
+  ]
   if (!modalDropdownSearch.value.geography) return geoOptions
   return geoOptions.filter(option => 
     option.toLowerCase().includes(modalDropdownSearch.value.geography.toLowerCase())
@@ -973,9 +1195,63 @@ const modalFilteredGeography = computed(() => {
 })
 
 const modalFilteredProvince = computed(() => {
-  if (!modalDropdownSearch.value.province) return provinceOptions
-  return provinceOptions.filter(option => 
+  const allProvinceOptions = [
+    ...provinceOptions,
+    'เชียงราย', 'เชียงใหม่', 'กรุงเทพมหานคร', 'นนทบุรี', 'ปทุมธานี', 'สมุทรปราการ',
+    'ภูเก็ต', 'ชลบุรี', 'ระยอง', 'ขอนแก่น', 'นครราชสีมา', 'อุบลราชธานี', 'สงขลา',
+    'ลำปาง', 'ลำพูน', 'แม่ฮ่องสอน', 'น่าน', 'พะเยา', 'แพร่', 'อุตรดิตถ์'
+  ]
+  if (!modalDropdownSearch.value.province) return allProvinceOptions
+  return allProvinceOptions.filter(option => 
     option.toLowerCase().includes(modalDropdownSearch.value.province.toLowerCase())
+  )
+})
+
+const modalFilteredIndustryCategory = computed(() => {
+  const allIndustryCategoryOptions = [
+    'School of Applied Digital Technology',
+    'Agriculture and Food Products',
+    'Automotive and Transportation Equipment',
+    'Banking, Finance and Insurance',
+    'Business Services',
+    'Energy',
+    'Healthcare',
+    'Information and Communication Technology',
+    'Manufacturing and Industrial Products',
+    'Mining and Metal Products',
+    'Petrochemicals and Chemicals',
+    'Textile and Garments',
+    'Tourism and Hospitality',
+    'Trading and Distribution',
+    'Transportation and Logistics',
+    'Utilities',
+    // Thai options
+    'เทคโนโลยีดิจิทัลประยุกต์',
+    'การเกษตรและผลิตภัณฑ์อาหาร',
+    'ยานยนต์และอุปกรณ์การขนส่ง',
+    'ธนาคาร การเงิน และการประกันภัย',
+    'บริการธุรกิจ',
+    'พลังงาน',
+    'การดูแลสุขภาพ',
+    'เทคโนโลยีสารสนเทศและการสื่อสาร',
+    'การผลิตและผลิตภัณฑ์อุตสาหกรรม',
+    'การทำเ광และผลิตภัณฑ์โลหะ',
+    'ปิโตรเคมีและเคมีภัณฑ์',
+    'สิ่งทอและเครื่องนุ่งห่ม',
+    'การท่องเที่ยวและการบริการ',
+    'การค้าและการจัดจำหน่าย',
+    'การขนส่งและโลจิสติกส์',
+    'สาธารณูปโภค',
+    'เทคโนโลยีสารสนเทศ',
+    'การท่องเที่ยว',
+    'การเกษตร',
+    'การผลิต',
+    'การศึกษา',
+    'การค้า'
+  ]
+  if (!modalDropdownSearch.value.industryCategory) return allIndustryCategoryOptions
+  return allIndustryCategoryOptions.filter(option => 
+    option.toLowerCase().includes(modalDropdownSearch.value.industryCategory.toLowerCase())
   )
 })
 
@@ -1225,12 +1501,22 @@ const fetchOrganizations = async () => {
     
     allOrganizations.value = response.data.data.map((item: any) => {
       const hasMOU = !!mouMap[item._id]
+      
+      // Normalize all Thai values to English
+      const normalizedProvince = normalizeLocationValue(item.province_id || 'N/A')
+      const normalizedCountry = normalizeLocationValue(item.country_id || '')
+      const normalizedGeography = normalizeLocationValue(item.geography_id || '')
+      const normalizedCategory = normalizeLocationValue(item.industry_category_id || '')
+      
       const org = {
         id: item._id,
         status: item.is_public ? 'active' : 'inactive',
         name: item.name_en || item.name_th || 'Unknown',
         category: item.organization_type || 'individual',
-        province: item.province_id || 'N/A',
+        province: normalizedProvince,
+        country: normalizedCountry,
+        geography: normalizedGeography,
+        industryCategory: normalizedCategory,
         createdDate: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : 'N/A',
         editedDate: item.updatedAt ? new Date(item.updatedAt).toISOString().split('T')[0] : 'N/A',
         hasMOU: hasMOU,
@@ -1288,6 +1574,10 @@ const saveReview = async () => {
 
 // Helper function to save MOU data
 const saveMOUData = async (orgId: string) => {
+  if (!mouData.mouFile) {
+    throw new Error('No MOU file selected')
+  }
+  
   const formDataToSend = new FormData()
   
   // Get organization details for MOU
@@ -1299,10 +1589,7 @@ const saveMOUData = async (orgId: string) => {
   formDataToSend.append('start_date', mouData.startDate)
   formDataToSend.append('end_date', mouData.endDate)
   formDataToSend.append('status', mouData.publishMOU ? 'active' : 'inactive')
-  
-  if (mouData.mouFile) {
-    formDataToSend.append('mou', mouData.mouFile)
-  }
+  formDataToSend.append('mou', mouData.mouFile)
 
   await mouAPI.create(formDataToSend)
   
@@ -1321,6 +1608,10 @@ const saveMOUData = async (orgId: string) => {
 
 const saveMOU = async () => {
   await saveAllData()
+}
+
+const viewOrganizationDetail = (id: string | number) => {
+  router.push(`/admin/mou/${id}/more`)
 }
 
 const addOrganization = async () => {
@@ -1342,9 +1633,10 @@ const editOrganization = async (id: string | number) => {
     formData.addressTH = orgData.address_th || ''
     formData.organizationType = orgData.organization_type || ''
     formData.industryCategory = orgData.industry_category_id || ''
-    formData.country = orgData.country_id || ''
-    formData.geography = orgData.geography_id || ''
-    formData.province = orgData.province_id || ''
+    // Handle both ObjectId (old) and String (new) formats
+    formData.country = typeof orgData.country_id === 'string' ? orgData.country_id : (orgData.country_id?.name_en || orgData.country_id?.name_th || '')
+    formData.geography = typeof orgData.geography_id === 'string' ? orgData.geography_id : (orgData.geography_id?.name_en || orgData.geography_id?.name_th || '')
+    formData.province = typeof orgData.province_id === 'string' ? orgData.province_id : (orgData.province_id?.name_en || orgData.province_id?.name_th || '')
     formData.email = orgData.email || ''
     formData.phoneNumber = orgData.phone_number || ''
     formData.details = orgData.details || ''
@@ -1356,6 +1648,48 @@ const editOrganization = async (id: string | number) => {
       logoPreviewUrl.value = `${BACKEND_URL}${orgData.logo_path}`
     } else {
       logoPreviewUrl.value = null
+    }
+
+    // Load MOU data if exists
+    const mouId = mouDataMap.value[id as string]
+    if (mouId) {
+      try {
+        const mouResponse = await mouAPI.getById(mouId._id)
+        const mouRecord = mouResponse.data.data
+        
+        // Extract YYYY-MM-DD from ISO datetime
+        const extractDatePart = (dateString: string): string => {
+          if (!dateString) return ''
+          // Handle ISO format with time: "2026-04-19T00:00:00.000Z" -> "2026-04-19"
+          if (dateString.includes('T')) {
+            return dateString.split('T')[0]
+          }
+          // Already in YYYY-MM-DD format
+          return dateString
+        }
+        
+        mouData.startDate = extractDatePart(mouRecord.start_date)
+        mouData.endDate = extractDatePart(mouRecord.end_date)
+        mouData.publishMOU = mouRecord.is_published || false
+        
+        // Load MOU file preview if available
+        if (mouRecord.mou_path) {
+          if (mouRecord.mou_path.endsWith('.pdf')) {
+            mouPreviewUrl.value = 'document' // Placeholder for PDF
+          } else if (mouRecord.mou_path.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+            mouPreviewUrl.value = `${BACKEND_URL}${mouRecord.mou_path}`
+          }
+        }
+      } catch (mouError) {
+        console.warn('Error loading MOU data:', mouError)
+        // Continue even if MOU fails to load
+      }
+    } else {
+      // No MOU for this organization, reset MOU form
+      mouData.startDate = ''
+      mouData.endDate = ''
+      mouData.publishMOU = false
+      mouPreviewUrl.value = null
     }
     
     state.editingOrgId = id as string
@@ -1473,12 +1807,12 @@ const handleImportFile = (event: Event) => {
     const file = target.files[0]
     
     // Validate file type
-    const validTypes = ['.csv', '.xlsx', '.xls']
+    const validTypes = ['.csv', '.xlsx', '.xls', '.xlxs']
     const fileName = file.name.toLowerCase()
     const isValid = validTypes.some(type => fileName.endsWith(type))
     
     if (!isValid) {
-      notificationMessage.value = 'Invalid file type. Please upload CSV or Excel file (.csv, .xlsx, .xls)'
+      notificationMessage.value = 'Invalid file type. Please upload CSV or Excel file (.csv, .xlsx, .xls, .xlxs)'
       notificationType.value = 'error'
       showNotificationModal.value = true
       target.value = ''
@@ -1621,7 +1955,7 @@ onBeforeUnmount(() => {
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500&display=swap');
 
 /* Main container */
-.admin-organization {
+.admin_organization {
   position: relative;
   width: 100vw;
   height: 100vh;
@@ -1631,7 +1965,7 @@ onBeforeUnmount(() => {
 }
 
 /* Main content area */
-.main-content {
+.main_content {
   position: relative;
   width: calc(100vw - 232px);
   min-width: 1200px;
@@ -1646,7 +1980,7 @@ onBeforeUnmount(() => {
 }
 
 /* Header Section */
-.header-section {
+.header_section {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1658,7 +1992,7 @@ onBeforeUnmount(() => {
 }
 
 /* Organization title */
-.organization-title {
+.organization_title {
   font-family: 'Outfit';
   font-style: normal;
   font-weight: 600;
@@ -1669,19 +2003,19 @@ onBeforeUnmount(() => {
 }
 
 /* Buttons Group */
-.buttons-group {
+.buttons_group {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
 /* Line separator */
-.line-21 {
+.line_21 {
   display: none;
 }
 
 /* Filter section container */
-.filter-section {
+.filter_section {
   position: relative;
   width: 100%;
   max-width: 1080px;
@@ -1696,7 +2030,7 @@ onBeforeUnmount(() => {
 }
 
 /* Filter title */
-.filter-title {
+.filter_title {
   font-family: 'Outfit';
   font-style: normal;
   font-weight: 600;
@@ -1707,12 +2041,12 @@ onBeforeUnmount(() => {
 }
 
 /* Search input container */
-.search-container {
+.search_container {
   width: 100%;
   margin-bottom: 20px;
 }
 
-.search-input {
+.search_input {
   box-sizing: border-box;
   width: 100%;
   height: 35px;
@@ -1728,40 +2062,40 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.search-input::placeholder {
+.search_input::placeholder {
   color: #B1B1B1;
 }
 
 /* Dropdown containers */
-.dropdown-container {
+.dropdown_container {
   position: relative;
   z-index: 1;
   margin-bottom: 15px;
 }
 
-.dropdown-container.active {
+.dropdown_container.active {
   z-index: 9999;
 }
 
-.dropdowns-grid {
+.dropdowns_grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
   margin-bottom: 20px;
 }
 
-.dropdown-container.org-type,
-.dropdown-container.industry-cat {
+.dropdown_container.org_type,
+.dropdown_container.industry_cat {
   grid-column: span 1;
 }
 
-.dropdown-container.country,
-.dropdown-container.geography,
-.dropdown-container.province {
+.dropdown_container.country,
+.dropdown_container.geography,
+.dropdown_container.province {
   grid-column: span 1;
 }
 
-.dropdown-header {
+.dropdown_header {
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
@@ -1776,7 +2110,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.dropdown-text {
+.dropdown_text {
   font-family: 'Inter';
   font-style: normal;
   font-weight: 600;
@@ -1785,14 +2119,14 @@ onBeforeUnmount(() => {
   color: #545454;
 }
 
-.dropdown-arrow {
+.dropdown_arrow {
   width: 5.83px;
   height: 4.38px;
   background: #000000;
   clip-path: polygon(50% 100%, 0 0, 100% 0);
 }
 
-.dropdown-options {
+.dropdown_options {
   position: absolute;
   top: 100%;
   left: 0;
@@ -1807,7 +2141,7 @@ onBeforeUnmount(() => {
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-.dropdown-search {
+.dropdown_search {
   position: sticky;
   top: 0;
   background: #FFFFFF;
@@ -1816,7 +2150,7 @@ onBeforeUnmount(() => {
   z-index: 10000;
 }
 
-.dropdown-search-input {
+.dropdown_search_input {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #D0D0D0;
@@ -1826,16 +2160,16 @@ onBeforeUnmount(() => {
   color: #333333;
 }
 
-.dropdown-search-input:focus {
+.dropdown_search_input:focus {
   outline: none;
   border-color: #AB1C03;
 }
 
-.dropdown-search-input::placeholder {
+.dropdown_search_input::placeholder {
   color: #999999;
 }
 
-.dropdown-option {
+.dropdown_option {
   display: flex;
   align-items: center;
   padding: 8px 12px;
@@ -1853,23 +2187,23 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 
-.dropdown-option:hover {
+.dropdown_option:hover {
   background: #F3F4F6;
 }
 
-.dropdown-option:last-child {
+.dropdown_option:last-child {
   border-radius: 0 0 8px 8px;
 }
 
 /* Filter buttons */
-.filter-buttons {
+.filter_buttons {
   display: flex;
   gap: 10px;
   justify-content: flex-end;
   align-items: center;
 }
 
-.reset-btn {
+.reset_btn {
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
@@ -1888,7 +2222,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.search-btn {
+.search_btn {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -1907,7 +2241,7 @@ onBeforeUnmount(() => {
 }
 
 /* Add Organization Button */
-.add-org-btn {
+.add_org_btn {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -1922,7 +2256,7 @@ onBeforeUnmount(() => {
 }
 
 /* Import Button */
-.import-btn {
+.import_btn {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -1936,11 +2270,11 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-.import-btn:hover {
+.import_btn:hover {
   background: #15803D;
 }
 
-.upload-icon {
+.upload_icon {
   width: 20px;
   height: 20px;
   background: #FFFFFF;
@@ -1948,35 +2282,35 @@ onBeforeUnmount(() => {
   mask-size: contain;
 }
 
-.plus-icon {
+.plus_icon {
   width: 20px;
   height: 20px;
   position: relative;
 }
 
-.plus-icon::before,
-.plus-icon::after {
+.plus_icon::before,
+.plus_icon::after {
   content: '';
   position: absolute;
   background: #FFFFFF;
   border-radius: 1px;
 }
 
-.plus-icon::before {
+.plus_icon::before {
   width: 12px;
   height: 2px;
   left: 4px;
   top: 9px;
 }
 
-.plus-icon::after {
+.plus_icon::after {
   width: 2px;
   height: 12px;
   left: 9px;
   top: 4px;
 }
 
-.button-text {
+.button_text {
   height: 20px;
   font-family: 'DM Sans';
   font-style: normal;
@@ -1988,7 +2322,7 @@ onBeforeUnmount(() => {
 }
 
 /* Table container */
-.table-container {
+.table_container {
   position: relative;
   width: 100%;
   max-width: 1113px;
@@ -2002,7 +2336,7 @@ onBeforeUnmount(() => {
 }
 
 /* Table header */
-.table-header {
+.table_header {
   position: relative;
   width: 100%;
   height: 67px;
@@ -2010,7 +2344,7 @@ onBeforeUnmount(() => {
   border-bottom: 1px solid #000000;
 }
 
-.header-status {
+.header_status {
   position: absolute;
   width: 64px;
   height: 39.73px;
@@ -2024,7 +2358,7 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.header-organization {
+.header_organization {
   position: absolute;
   width: 102px;
   height: 39.73px;
@@ -2038,7 +2372,7 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.header-category {
+.header_category {
   position: absolute;
   width: 76px;
   height: 39.73px;
@@ -2052,7 +2386,7 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.header-province {
+.header_province {
   position: absolute;
   width: 69px;
   height: 39.73px;
@@ -2066,7 +2400,7 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.header-created {
+.header_created {
   position: absolute;
   width: 111px;
   height: 39.73px;
@@ -2080,7 +2414,7 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.header-edited {
+.header_edited {
   position: absolute;
   width: 78px;
   height: 16.14px;
@@ -2095,7 +2429,7 @@ onBeforeUnmount(() => {
 }
 
 /* Table rows */
-.table-row {
+.table_row {
   position: relative;
   width: 100%;
   height: 70px;
@@ -2106,7 +2440,7 @@ onBeforeUnmount(() => {
 
 
 /* Status indicators */
-.status-indicator {
+.status_indicator {
   position: absolute;
   width: 17.12px;
   height: 21.26px;
@@ -2115,16 +2449,16 @@ onBeforeUnmount(() => {
   border-radius: 50%;
 }
 
-.status-indicator.active {
+.status_indicator.active {
   background: #00FF5E;
 }
 
-.status-indicator.inactive {
+.status_indicator.inactive {
   background: #FF0000;
 }
 
 /* Organization name */
-.org-name {
+.org_name {
   position: absolute;
   width: 214.04px;
   height: 32.95px;
@@ -2139,10 +2473,17 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.org_name:hover {
+  color: #0066cc;
+  text-decoration: underline;
 }
 
 /* Category */
-.org-category {
+.org_category {
   position: absolute;
   width: 171.23px;
   height: 39.33px;
@@ -2157,7 +2498,7 @@ onBeforeUnmount(() => {
 }
 
 /* Province */
-.org-province {
+.org_province {
   position: absolute;
   width: 78px;
   height: 19.87px;
@@ -2172,7 +2513,7 @@ onBeforeUnmount(() => {
 }
 
 /* Created date */
-.org-created {
+.org_created {
   position: absolute;
   width: 85.62px;
   height: 22.32px;
@@ -2187,7 +2528,7 @@ onBeforeUnmount(() => {
 }
 
 /* Edited date */
-.org-edited {
+.org_edited {
   position: absolute;
   width: 85.62px;
   height: 22.32px;
@@ -2202,7 +2543,7 @@ onBeforeUnmount(() => {
 }
 
 /* Action buttons */
-.action-buttons {
+.action_buttons {
   position: absolute;
   right: 20px;
   top: 20px;
@@ -2211,7 +2552,7 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 
-.edit-btn, .delete-btn, .document-btn {
+.edit_btn, .delete_btn, .document_btn {
   width: 20px;
   height: 20px;
   cursor: pointer;
@@ -2220,26 +2561,40 @@ onBeforeUnmount(() => {
   background-position: center;
 }
 
-.edit-btn {
-  background-color: #666;
+.edit_btn {
+  background-color: #000000;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") no-repeat center;
   mask-size: contain;
 }
 
-.delete-btn {
+.delete_btn {
   background-color: #ff4444;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'/%3E%3C/svg%3E") no-repeat center;
   mask-size: contain;
 }
 
-.document-btn {
+.document_btn {
   background-color: #4CAF50;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z'/%3E%3C/svg%3E") no-repeat center;
   mask-size: contain;
 }
 
+/* Button hover and disabled states */
+.edit_btn:hover,
+.delete_btn:hover,
+.document_btn:hover {
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+.edit_btn[disabled],
+.delete_btn[disabled],
+.document_btn[disabled] {
+  opacity: 0.5;
+}
+
 /* Additional responsive styles */
-.org-type {
+.org_type {
   padding: 4px 8px;
   border-radius: 4px;
   font-family: 'Inter';
@@ -2248,22 +2603,22 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
 }
 
-.org-type.government {
+.org_type.government {
   background: #E3F2FD;
   color: #1976D2;
 }
 
-.org-type.private {
+.org_type.private {
   background: #F3E5F5;
   color: #7B1FA2;
 }
 
-.org-type.ngo {
+.org_type.ngo {
   background: #E8F5E8;
   color: #388E3C;
 }
 
-.org-type.educational {
+.org_type.educational {
   background: #FFF3E0;
   color: #F57C00;
 }
@@ -2297,7 +2652,7 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 
-.btn-action {
+.btn_action {
   width: 32px;
   height: 32px;
   border: none;
@@ -2324,19 +2679,19 @@ onBeforeUnmount(() => {
   color: #C62828;
 }
 
-.btn-action:hover {
+.btn_action:hover {
   opacity: 0.8;
 }
 
 /* Responsive */
 @media (max-width: 1200px) {
-  .main-content {
+  .main_content {
     margin-left: 200px;
   }
 }
 
 /* Delete Modal Styles - Following Figma Design */
-.delete-modal-overlay {
+.delete_modal_overlay {
   position: fixed;
   width: 100vw;
   height: 100vh;
@@ -2349,7 +2704,7 @@ onBeforeUnmount(() => {
   align-items: center;
 }
 
-.delete-modal-container {
+.delete_modal_container {
   position: relative;
   width: 450px;
   min-height: 300px;
@@ -2360,7 +2715,7 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
 }
 
-.modal-header {
+.modal_header {
   margin-bottom: 25px;
 }
 
@@ -2374,7 +2729,7 @@ onBeforeUnmount(() => {
   margin: 0;
 }
 
-.modal-body {
+.modal_body {
   margin-bottom: 35px;
 }
 
@@ -2388,7 +2743,7 @@ onBeforeUnmount(() => {
   margin: 0 0 15px 0;
 }
 
-.organization-info {
+.organization_info {
   padding: 15px;
   background: #F8F9FA;
   border-radius: 8px;
@@ -2404,13 +2759,13 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.modal-actions {
+.modal_actions {
   display: flex;
   justify-content: flex-end;
   gap: 15px;
 }
 
-.cancel-btn {
+.cancel_btn {
   background: #FFFFFF;
   color: #545454;
   border: 1px solid #B1B1B1;
@@ -2425,12 +2780,12 @@ onBeforeUnmount(() => {
   transition: all 0.3s;
 }
 
-.cancel-btn:hover {
+.cancel_btn:hover {
   background: #F8F9FA;
   border-color: #999999;
 }
 
-.confirm-delete-btn {
+.confirm_delete_btn {
   background: #C70000;
   color: #FFFFFF;
   border: none;
@@ -2445,16 +2800,16 @@ onBeforeUnmount(() => {
   transition: background-color 0.3s;
 }
 
-.confirm-delete-btn:hover {
+.confirm_delete_btn:hover {
   background: #AB1C03;
 }
 
 /* Modal Animation */
-.delete-modal-overlay {
+.delete_modal_overlay {
   animation: fadeIn 0.3s ease-out;
 }
 
-.delete-modal-container {
+.delete_modal_container {
   animation: slideIn 0.3s ease-out;
 }
 
@@ -2475,32 +2830,32 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 768px) {
-  .main-content {
+  .main_content {
     margin-left: 180px;
     padding: 20px;
   }
   
-  .organization-controls {
+  .organization_controls {
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
   }
   
-  .search-box {
+  .search_box {
     width: 100%;
   }
   
-  .organizations-table {
+  .organizations_table {
     font-size: 12px;
   }
   
-  .form-row {
+  .form_row {
     grid-template-columns: 1fr;
   }
 }
 
 /* Add Organization Modal Styles */
-.modal-overlay {
+.modal_overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -2513,7 +2868,7 @@ onBeforeUnmount(() => {
   z-index: 10000;
 }
 
-.add-org-modal {
+.add_org_modal {
   position: relative;
   width: 657px;
   min-height: 400px;
@@ -2523,20 +2878,20 @@ onBeforeUnmount(() => {
   display: flex;
 }
 
-.add-org-modal.organization-active {
+.add_org_modal.organization_active {
   height: 657px;
   min-height: 657px;
   max-height: 657px;
 }
 
-.add-org-modal.review-active,
-.add-org-modal.mou-active {
+.add_org_modal.review_active,
+.add_org_modal.mou_active {
   min-height: 400px;
   max-height: 657px;
   height: auto;
 }
 
-.modal-tabs {
+.modal_tabs {
   position: absolute;
   width: 42px;
   height: 280px;
@@ -2548,7 +2903,7 @@ onBeforeUnmount(() => {
   background: transparent;
 }
 
-.tab-item {
+.tab_item {
   position: relative;
   width: 42px;
   height: 75px;
@@ -2569,9 +2924,9 @@ onBeforeUnmount(() => {
 }
 
 /* Remove individual positioning for tabs */
-.tab-item:nth-child(1),
-.tab-item:nth-child(2),
-.tab-item:nth-child(3) {
+.tab_item:nth-child(1),
+.tab_item:nth-child(2),
+.tab_item:nth-child(3) {
   position: relative;
   left: auto;
   right: auto;
@@ -2579,7 +2934,7 @@ onBeforeUnmount(() => {
   bottom: auto;
 }
 
-.tab-item span {
+.tab_item span {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -2594,16 +2949,16 @@ onBeforeUnmount(() => {
   line-height: 13px;
 }
 
-.tab-item.active {
+.tab_item.active {
   background: #AB1C03;
   color: #FFFFFF;
 }
 
-.tab-item:hover:not(.active) {
+.tab_item:hover:not(.active) {
   background: #E0E0E0;
 }
 
-.modal-content {
+.modal_content {
   position: absolute;
   left: 0.8%;
   right: 6.5%;
@@ -2616,7 +2971,7 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
 }
 
-.modal-title {
+.modal_title {
   margin: 0 0 10px 0;
   font-family: 'Inter', sans-serif;
   font-style: normal;
@@ -2626,21 +2981,21 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.form-divider {
+.form_divider {
   width: 100%;
   height: 1px;
   background: #767676;
   margin: 10px 0 20px 0;
 }
 
-.logo-upload-section {
+.logo_upload_section {
   display: flex;
   align-items: center;
   gap: 15px;
   margin-bottom: 30px;
 }
 
-.logo-preview {
+.logo_preview {
   width: 95px;
   height: 95px;
   border-radius: 47.5px;
@@ -2658,7 +3013,7 @@ onBeforeUnmount(() => {
   object-fit: cover;
 }
 
-.upload-area {
+.upload_area {
   width: 58px;
   height: 58px;
   background: #D9D9D9;
@@ -2670,7 +3025,7 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 
-.upload-icon {
+.upload_icon {
   width: 20px;
   height: 20px;
   background: #000;
@@ -2678,7 +3033,7 @@ onBeforeUnmount(() => {
   mask-size: contain;
 }
 
-.file-input {
+.file_input {
   position: absolute;
   top: 0;
   left: 0;
@@ -2688,7 +3043,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.upload-text {
+.upload_text {
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -2697,24 +3052,24 @@ onBeforeUnmount(() => {
   color: #545454;
 }
 
-.form-row {
+.form_row {
   display: flex;
   gap: 20px;
   margin-bottom: 20px;
 }
 
-.form-group {
+.form_group {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.form-group.full-width {
+.form_group.full_width {
   width: 100%;
 }
 
-.form-group label {
+.form_group label {
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -2724,12 +3079,12 @@ onBeforeUnmount(() => {
 }
 
 /* Modal Dropdown Styles */
-.modal-dropdown-wrapper {
+.modal_dropdown_wrapper {
   position: relative;
   width: 100%;
 }
 
-.modal-dropdown-header {
+.modal_dropdown_header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2743,17 +3098,17 @@ onBeforeUnmount(() => {
   transition: border-color 0.2s;
 }
 
-.modal-dropdown-header:hover {
+.modal_dropdown_header:hover {
   border-color: #AB1C03;
 }
 
-.modal-dropdown-text {
+.modal_dropdown_text {
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: #333333;
 }
 
-.modal-dropdown-arrow {
+.modal_dropdown_arrow {
   width: 0;
   height: 0;
   border-left: 5px solid transparent;
@@ -2762,11 +3117,11 @@ onBeforeUnmount(() => {
   transition: transform 0.2s;
 }
 
-.modal-dropdown-arrow.open {
+.modal_dropdown_arrow.open {
   transform: rotate(180deg);
 }
 
-.modal-dropdown-options {
+.modal_dropdown_options {
   position: absolute;
   top: 100%;
   left: 0;
@@ -2781,7 +3136,7 @@ onBeforeUnmount(() => {
   z-index: 1000;
 }
 
-.modal-dropdown-search {
+.modal_dropdown_search {
   position: sticky;
   top: 0;
   background: #FFFFFF;
@@ -2790,7 +3145,7 @@ onBeforeUnmount(() => {
   z-index: 1001;
 }
 
-.modal-dropdown-search-input {
+.modal_dropdown_search_input {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #D0D0D0;
@@ -2800,16 +3155,16 @@ onBeforeUnmount(() => {
   color: #333333;
 }
 
-.modal-dropdown-search-input:focus {
+.modal_dropdown_search_input:focus {
   outline: none;
   border-color: #AB1C03;
 }
 
-.modal-dropdown-search-input::placeholder {
+.modal_dropdown_search_input::placeholder {
   color: #999999;
 }
 
-.modal-dropdown-option {
+.modal_dropdown_option {
   padding: 10px 12px;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
@@ -2818,13 +3173,13 @@ onBeforeUnmount(() => {
   transition: background-color 0.2s;
 }
 
-.modal-dropdown-option:hover {
+.modal_dropdown_option:hover {
   background-color: #F5F5F5;
 }
 
-.form-group input,
-.form-group textarea,
-.form-group select {
+.form_group input,
+.form_group textarea,
+.form_group select {
   padding: 8px 12px;
   background: #FFFFFF;
   border: 1px solid #767676;
@@ -2834,40 +3189,40 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.form-group input,
-.form-group select {
+.form_group input,
+.form_group select {
   height: 36px;
   line-height: 20px;
 }
 
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
+.form_group input:focus,
+.form_group textarea:focus,
+.form_group select:focus {
   outline: none;
   border-color: #AB1C03;
 }
 
-.form-group textarea {
+.form_group textarea {
   resize: vertical;
   min-height: 60px;
 }
 
-.textarea-md {
+.textarea_md {
   min-height: 96px;
 }
 
-.textarea-lg {
+.textarea_lg {
   min-height: 128px;
 }
 
-.public-toggle {
+.public_toggle {
   display: flex;
   align-items: center;
   gap: 15px;
   margin: 20px 0;
 }
 
-.public-toggle label {
+.public_toggle label {
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -2876,7 +3231,7 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.toggle-switch {
+.toggle_switch {
   width: 36px;
   height: 18px;
   background: #A1A1A1;
@@ -2886,11 +3241,11 @@ onBeforeUnmount(() => {
   transition: background 0.2s ease;
 }
 
-.toggle-switch.active {
+.toggle_switch.active {
   background: #4CAF50;
 }
 
-.toggle-slider {
+.toggle_slider {
   width: 14px;
   height: 14px;
   background: #FFFFFF;
@@ -2901,19 +3256,19 @@ onBeforeUnmount(() => {
   transition: transform 0.2s ease;
 }
 
-.toggle-switch.active .toggle-slider {
+.toggle_switch.active .toggle_slider {
   transform: translateX(18px);
 }
 
-.modal-actions {
+.modal_actions {
   display: flex;
   justify-content: flex-end;
   gap: 15px;
   margin-top: 30px;
 }
 
-.btn-cancel,
-.btn-save {
+.btn_cancel,
+.btn_save {
   padding: 8px 20px;
   border-radius: 20px;
   font-family: 'Inter', sans-serif;
@@ -2925,37 +3280,37 @@ onBeforeUnmount(() => {
   transition: all 0.2s ease;
 }
 
-.btn-cancel {
+.btn_cancel {
   background: #FFFFFF;
   border: 1px solid #B1B1B1;
   color: #000000;
 }
 
-.btn-cancel:hover {
+.btn_cancel:hover {
   background: #F5F5F5;
 }
 
-.btn-save {
+.btn_save {
   background: #AB1C03;
   border: none;
   color: #FFFFFF;
 }
 
-.btn-save:hover {
+.btn_save:hover {
   background: #8A1502;
 }
 
-.review-tab,
-.mou-tab {
+.review_tab,
+.mou_tab {
   padding: 10px 8px 0 8px;
 }
 
 /* Star Rating Styles */
-.rating-section {
+.rating_section {
   margin: 20px 0;
 }
 
-.star-rating {
+.star_rating {
   display: flex;
   gap: 3px;
   align-items: center;
@@ -2976,18 +3331,18 @@ onBeforeUnmount(() => {
 
 
 /* MOU Tab Styles */
-.mou-header .form-divider {
+.mou_header .form_divider {
   margin: 6px 0 20px 0;
 }
 
-.mou-top-row {
+.mou_top_row {
   display: flex;
   align-items: center;
   gap: 14px;
   margin-bottom: 24px;
 }
 
-.mou-upload {
+.mou_upload {
   width: 60px;
   height: 60px;
   background: #F2F2F2;
@@ -3001,12 +3356,12 @@ onBeforeUnmount(() => {
   transition: all 0.2s ease;
 }
 
-.mou-upload:hover {
+.mou_upload:hover {
   background: #E9E9E9;
   border-color: #AB1C03;
 }
 
-.mou-icon {
+.mou_icon {
   width: 22px;
   height: 22px;
   background: #000;
@@ -3014,7 +3369,7 @@ onBeforeUnmount(() => {
   mask-size: contain;
 }
 
-.mou-label {
+.mou_label {
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   font-size: 16px;
@@ -3022,7 +3377,7 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.mou-document-preview {
+.mou_document_preview {
   margin: 20px 0;
   padding: 15px;
   background: #f9f9f9;
@@ -3032,14 +3387,14 @@ onBeforeUnmount(() => {
   justify-content: center;
 }
 
-.mou-document-preview img {
+.mou_document_preview img {
   max-width: 100%;
   max-height: 400px;
   border-radius: 8px;
   object-fit: contain;
 }
 
-.document-placeholder {
+.document_placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3048,7 +3403,7 @@ onBeforeUnmount(() => {
   color: #666;
 }
 
-.doc-icon {
+.doc_icon {
   width: 48px;
   height: 48px;
   background: #AB1C03;
@@ -3056,7 +3411,7 @@ onBeforeUnmount(() => {
   mask-size: contain;
 }
 
-.document-placeholder span {
+.document_placeholder span {
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 500;
@@ -3065,17 +3420,17 @@ onBeforeUnmount(() => {
   max-width: 300px;
 }
 
-.mou-date-row {
+.mou_date_row {
   display: flex;
   gap: 20px;
   margin-bottom: 24px;
 }
 
-.date-group {
+.date_group {
   flex: 1;
 }
 
-.date-group label {
+.date_group label {
   display: block;
   margin-bottom: 8px;
   font-family: 'Inter', sans-serif;
@@ -3084,7 +3439,7 @@ onBeforeUnmount(() => {
   color: #333333;
 }
 
-.date-input {
+.date_input {
   width: 90%;
   height: 40px;
   padding: 8px 12px;
@@ -3097,25 +3452,25 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.date-input:focus {
+.date_input:focus {
   outline: none;
   border-color: #AB1C03;
 }
 
-.mou-period-row {
+.mou_period_row {
   margin-bottom: 24px;
 }
 
-.period-group {
+.period_group {
   position: relative;
   max-width: 200px;
 }
 
-.period-group.wide {
+.period_group.wide {
   max-width: 260px;
 }
 
-.period-group select {
+.period_group select {
   width: 100%;
   height: 40px;
   padding: 8px 40px 8px 12px;
@@ -3129,7 +3484,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.calendar-icon {
+.calendar_icon {
   position: absolute;
   right: 12px;
   top: 50%;
@@ -3142,7 +3497,7 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
-.publish-toggle {
+.publish_toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -3150,14 +3505,14 @@ onBeforeUnmount(() => {
   padding: 10px 0;
 }
 
-.publish-toggle.mou-publish {
+.publish_toggle.mou_publish {
   margin: 10px 0 30px 0;
   padding: 8px 0;
   justify-content: flex-end;
   gap: 12px;
 }
 
-.publish-toggle label {
+.publish_toggle label {
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -3166,21 +3521,21 @@ onBeforeUnmount(() => {
   color: #767676;
 }
 
-.publish-toggle.mou-publish label {
+.publish_toggle.mou_publish label {
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   font-size: 16px;
   color: #333333;
 }
 
-.modal-actions.mou-actions {
+.modal_actions.mou_actions {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 10px;
 }
 
 /* Organization Type Row Box Design */
-.org-type-row-box {
+.org_type_row_box {
   position: relative;
   width: 100%;
   max-width: 771px;
@@ -3197,7 +3552,7 @@ onBeforeUnmount(() => {
   box-sizing: border-box;
 }
 
-.org-type-col {
+.org_type_col {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3210,12 +3565,12 @@ onBeforeUnmount(() => {
   border-radius: 6px;
 }
 
-.org-type-col.active {
+.org_type_col.active {
   background: #AB1C03;
   color: #fff;
 }
 
-.org-type-name {
+.org_type_name {
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -3225,7 +3580,7 @@ onBeforeUnmount(() => {
   margin-bottom: 2px;
 }
 
-.org-type-count {
+.org_type_count {
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -3234,17 +3589,17 @@ onBeforeUnmount(() => {
   color: inherit;
 }
 
-.org-type-col:hover {
+.org_type_col:hover {
   background: #F5F5F5;
   color: #AB1C03;
 }
 
-.org-type-col.active .org-type-count {
+.org_type_col.active .org_type_count {
   color: #fff;
 }
 
 /* Import Modal */
-.import-modal {
+.import_modal {
   background: #FFFFFF;
   border-radius: 12px;
   padding: 24px;
@@ -3255,7 +3610,7 @@ onBeforeUnmount(() => {
   box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15);
 }
 
-.import-instructions {
+.import_instructions {
   margin: 20px 0;
   padding: 16px;
   background: #F9FAFB;
@@ -3288,14 +3643,14 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
-.file-upload-section {
+.file_upload_section {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: 20px 0;
 }
 
-.btn-choose-file {
+.btn_choose_file {
   padding: 8px 16px;
   background: #3B82F6;
   border: none;
@@ -3308,18 +3663,18 @@ onBeforeUnmount(() => {
   transition: background 0.2s ease;
 }
 
-.btn-choose-file:hover {
+.btn_choose_file:hover {
   background: #2563EB;
 }
 
-.file-name {
+.file_name {
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: #6B7280;
   font-style: italic;
 }
 
-.import-results {
+.import_results {
   margin: 16px 0;
   padding: 16px;
   background: #F0FDF4;
@@ -3327,14 +3682,14 @@ onBeforeUnmount(() => {
   border-radius: 8px;
 }
 
-.results-summary {
+.results_summary {
   margin: 0 0 12px 0;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: #166534;
 }
 
-.failed-items {
+.failed_items {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #86EFAC;
@@ -3360,3 +3715,4 @@ onBeforeUnmount(() => {
   margin: 4px 0;
 }
 </style>
+

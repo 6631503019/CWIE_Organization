@@ -1,24 +1,24 @@
 <template>
-  <div v-if="modelValue" class="modal-overlay" @mousedown.self="handleOverlayMouseDown" @mouseup.self="handleOverlayMouseUp">
-    <div class="add-org-modal" :class="`${activeTab}-active`">
+  <div v-if="modelValue" class="modal_overlay" @mousedown.self="handleOverlayMouseDown" @mouseup.self="handleOverlayMouseUp">
+    <div class="add_org_modal" :class="`${activeTab}_active`">
       <!-- Right side tabs -->
-      <div class="modal-tabs">
+      <div class="modal_tabs">
         <div 
-          class="tab-item"
+          class="tab_item"
           :class="{ active: activeTab === 'organization' }"
           @click="activeTab = 'organization'"
         >
           <span>Organization</span>
         </div>
         <div 
-          class="tab-item"
+          class="tab_item"
           :class="{ active: activeTab === 'review' }"
           @click="activeTab = 'review'"
         >
           <span>Review</span>
         </div>
         <div 
-          class="tab-item"
+          class="tab_item"
           :class="{ active: activeTab === 'mou' }"
           @click="activeTab = 'mou'"
         >
@@ -27,22 +27,22 @@
       </div>
 
       <!-- Modal Content -->
-      <div class="modal-content">
+      <div class="modal_content">
         <!-- Organization Tab -->
-        <div v-if="activeTab === 'organization'" class="organization-tab">
-          <h2 class="modal-title">{{ organizationId ? 'Edit' : 'Add' }} Organization</h2>
-          <div class="form-divider"></div>
+        <div v-if="activeTab === 'organization'" class="organization_tab">
+          <h2 class="modal_title">{{ organizationId ? 'Edit' : 'Add' }} Organization</h2>
+          <div class="form_divider"></div>
           
           <!-- Logo Upload -->
-          <div class="logo-upload-section">
+          <div class="logo_upload_section">
             <!-- Logo Preview -->
-            <div class="logo-preview-circle">
-              <img v-if="logoPreview" :src="logoPreview" alt="Logo Preview" class="preview-image" />
-              <div v-else class="placeholder-icon"></div>
+            <div class="logo_preview_circle">
+              <img v-if="logoPreview" :src="logoPreview" alt="Logo Preview" class="preview_image" />
+              <div v-else class="placeholder_icon"></div>
             </div>
             
             <!-- Upload Button -->
-            <label class="upload-logo-btn">
+            <label class="upload_logo_btn">
               <input 
                 type="file" 
                 accept="image/*" 
@@ -54,30 +54,30 @@
           </div>
           
           <!-- Form Fields -->
-          <div class="form-row">
-            <div class="form-field">
+          <div class="form_row">
+            <div class="form_field">
               <label>Organization Name (TH) <span class="required">*</span></label>
               <input type="text" v-model="formData.organizationNameTH" placeholder="Organization Name (TH)" />
             </div>
-            <div class="form-field">
+            <div class="form_field">
               <label>Organization Name (EN) <span class="required">*</span></label>
               <input type="text" v-model="formData.organizationNameEN" placeholder="Organization Name (EN)" />
             </div>
           </div>
           
-          <div class="form-row">
-            <div class="form-field">
+          <div class="form_row">
+            <div class="form_field">
               <label>Address (TH)</label>
               <input type="text" v-model="formData.addressTH" placeholder="Address (TH)" />
             </div>
-            <div class="form-field">
+            <div class="form_field">
               <label>Address (EN)</label>
               <input type="text" v-model="formData.addressEN" placeholder="Address (EN)" />
             </div>
           </div>
           
-          <div class="form-row">
-            <div class="form-field">
+          <div class="form_row">
+            <div class="form_field">
               <label>Organization Type <span class="required">*</span></label>
               <select v-model="formData.organizationType">
                 <option value="">--Select Type--</option>
@@ -87,7 +87,7 @@
                 <option>MFU</option>
               </select>
             </div>
-            <div class="form-field">
+            <div class="form_field">
               <label>Industry Category</label>
               <select v-model="formData.industryCategory">
                 <option value="">--Select Category--</option>
@@ -111,26 +111,26 @@
             </div>
           </div>
           
-          <div class="form-row">
-            <div class="form-field">
+          <div class="form_row">
+            <div class="form_field">
               <label>Country</label>
-              <div class="dropdown-wrapper">
-                <div class="dropdown-header" @click="dropdownOpen.country = !dropdownOpen.country">
-                  <span class="dropdown-text">{{ formData.country || '--Select Country--' }}</span>
-                  <div class="dropdown-arrow" :class="{ open: dropdownOpen.country }"></div>
+              <div class="dropdown_wrapper">
+                <div class="dropdown_header" @click="dropdownOpen.country = !dropdownOpen.country">
+                  <span class="dropdown_text">{{ formData.country || '--Select Country--' }}</span>
+                  <div class="dropdown_arrow" :class="{ open: dropdownOpen.country }"></div>
                 </div>
-                <div v-if="dropdownOpen.country" class="dropdown-options">
-                  <div class="dropdown-search">
+                <div v-if="dropdownOpen.country" class="dropdown_options">
+                  <div class="dropdown_search">
                     <input 
                       type="text" 
                       v-model="dropdownSearch.country" 
                       placeholder="Search..."
                       @click.stop
-                      class="dropdown-search-input"
+                      class="dropdown_search_input"
                     />
                   </div>
                   <div 
-                    class="dropdown-option" 
+                    class="dropdown_option" 
                     v-for="option in filteredCountries" 
                     :key="option" 
                     @click="formData.country = option; dropdownOpen.country = false"
@@ -140,25 +140,25 @@
                 </div>
               </div>
             </div>
-            <div class="form-field">
+            <div class="form_field">
               <label>Geography</label>
-              <div class="dropdown-wrapper">
-                <div class="dropdown-header" @click="dropdownOpen.geography = !dropdownOpen.geography">
-                  <span class="dropdown-text">{{ formData.geography || '--Select Geography--' }}</span>
-                  <div class="dropdown-arrow" :class="{ open: dropdownOpen.geography }"></div>
+              <div class="dropdown_wrapper">
+                <div class="dropdown_header" @click="dropdownOpen.geography = !dropdownOpen.geography">
+                  <span class="dropdown_text">{{ formData.geography || '--Select Geography--' }}</span>
+                  <div class="dropdown_arrow" :class="{ open: dropdownOpen.geography }"></div>
                 </div>
-                <div v-if="dropdownOpen.geography" class="dropdown-options">
-                  <div class="dropdown-search">
+                <div v-if="dropdownOpen.geography" class="dropdown_options">
+                  <div class="dropdown_search">
                     <input 
                       type="text" 
                       v-model="dropdownSearch.geography" 
                       placeholder="Search..."
                       @click.stop
-                      class="dropdown-search-input"
+                      class="dropdown_search_input"
                     />
                   </div>
                   <div 
-                    class="dropdown-option" 
+                    class="dropdown_option" 
                     v-for="option in filteredGeographies" 
                     :key="option" 
                     @click="formData.geography = option; dropdownOpen.geography = false"
@@ -170,26 +170,26 @@
             </div>
           </div>
           
-          <div class="form-row">
-            <div class="form-field">
+          <div class="form_row">
+            <div class="form_field">
               <label>Province</label>
-              <div class="dropdown-wrapper">
-                <div class="dropdown-header" @click="dropdownOpen.province = !dropdownOpen.province">
-                  <span class="dropdown-text">{{ formData.province || '--Select Province--' }}</span>
-                  <div class="dropdown-arrow" :class="{ open: dropdownOpen.province }"></div>
+              <div class="dropdown_wrapper">
+                <div class="dropdown_header" @click="dropdownOpen.province = !dropdownOpen.province">
+                  <span class="dropdown_text">{{ formData.province || '--Select Province--' }}</span>
+                  <div class="dropdown_arrow" :class="{ open: dropdownOpen.province }"></div>
                 </div>
-                <div v-if="dropdownOpen.province" class="dropdown-options">
-                  <div class="dropdown-search">
+                <div v-if="dropdownOpen.province" class="dropdown_options">
+                  <div class="dropdown_search">
                     <input 
                       type="text" 
                       v-model="dropdownSearch.province" 
                       placeholder="Search..."
                       @click.stop
-                      class="dropdown-search-input"
+                      class="dropdown_search_input"
                     />
                   </div>
                   <div 
-                    class="dropdown-option" 
+                    class="dropdown_option" 
                     v-for="option in filteredProvinces" 
                     :key="option" 
                     @click="formData.province = option; dropdownOpen.province = false"
@@ -199,63 +199,63 @@
                 </div>
               </div>
             </div>
-            <div class="form-field">
+            <div class="form_field">
               <label>Email <span class="required">*</span></label>
               <input type="email" v-model="formData.email" placeholder="Email" />
             </div>
           </div>
           
-          <div class="form-row">
-            <div class="form-field">
+          <div class="form_row">
+            <div class="form_field">
               <label>Phone Number</label>
               <input type="tel" v-model="formData.phoneNumber" placeholder="Phone Number" />
             </div>
           </div>
           
-          <div class="form-field full-width">
+          <div class="form_field full_width">
             <label>Details</label>
             <textarea v-model="formData.details" placeholder="Organization Details" rows="4"></textarea>
           </div>
           
           <!-- Public Toggle -->
-          <div class="public-toggle">
+          <div class="public_toggle">
             <label>Make Organization Public</label>
-            <div class="toggle-switch" :class="{ active: formData.isPublic }" @click.stop="formData.isPublic = !formData.isPublic">
-              <div class="toggle-slider" :class="{ active: formData.isPublic }"></div>
+            <div class="toggle_switch" :class="{ active: formData.isPublic }" @click.stop="formData.isPublic = !formData.isPublic">
+              <div class="toggle_slider" :class="{ active: formData.isPublic }"></div>
             </div>
           </div>
           
           <!-- Action Buttons -->
-          <div class="modal-actions">
-            <button class="cancel-btn" @click="$emit('update:modelValue', false)">Cancel</button>
-            <button class="save-btn" @click="handleSaveOrganization" :disabled="loading">
+          <div class="modal_actions">
+            <button class="cancel_btn" @click="$emit('update:modelValue', false)">Cancel</button>
+            <button class="save_btn" @click="handleSaveOrganization" :disabled="loading">
               {{ loading ? 'Saving...' : 'Save' }}
             </button>
           </div>
         </div>
 
         <!-- Review Tab -->
-        <div v-if="activeTab === 'review'" class="review-tab">
-          <h2 class="modal-title">Add Review</h2>
-          <div class="form-divider"></div>
+        <div v-if="activeTab === 'review'" class="review_tab">
+          <h2 class="modal_title">Add Review</h2>
+          <div class="form_divider"></div>
           
-          <div class="form-field">
+          <div class="form_field">
             <label>Organization Name</label>
             <input type="text" v-model="reviewData.organizationName" placeholder="Organization Name" />
           </div>
           
-          <div class="form-field">
+          <div class="form_field">
             <label>Job Position</label>
             <input type="text" v-model="reviewData.jobPosition" placeholder="Job Position" />
           </div>
           
-          <div class="form-field">
+          <div class="form_field">
             <label>Review</label>
             <textarea v-model="reviewData.review" placeholder="Write your review..." rows="6"></textarea>
           </div>
           
           <!-- Star Rating -->
-          <div class="star-rating">
+          <div class="star_rating">
             <label>Rating</label>
             <div class="stars">
               <span 
@@ -271,56 +271,56 @@
           </div>
           
           <!-- Action Buttons -->
-          <div class="modal-actions">
-            <button class="cancel-btn" @click="$emit('update:modelValue', false)">Cancel</button>
-            <button class="save-btn" @click="handleSaveReview">Save</button>
+          <div class="modal_actions">
+            <button class="cancel_btn" @click="$emit('update:modelValue', false)">Cancel</button>
+            <button class="save_btn" @click="handleSaveReview">Save</button>
           </div>
         </div>
 
         <!-- MOU Tab -->
-        <div v-if="activeTab === 'mou'" class="mou-tab">
-          <div class="mou-header">
-            <h2 class="modal-title">Add MOU</h2>
-            <div class="form-divider"></div>
+        <div v-if="activeTab === 'mou'" class="mou_tab">
+          <div class="mou_header">
+            <h2 class="modal_title">Add MOU</h2>
+            <div class="form_divider"></div>
           </div>
 
-          <div class="mou-top-row">
-            <label class="mou-upload" aria-label="Upload MOU">
-              <div class="mou-icon"></div>
+          <div class="mou_top_row">
+            <label class="mou_upload" aria-label="Upload MOU">
+              <div class="mou_icon"></div>
               <input
                 type="file"
-                class="file-input"
+                class="file_input"
                 accept=".pdf,.doc,.docx,image/*"
                 @change="handleMOUUpload"
               />
             </label>
-            <span class="mou-label">MOU</span>
+            <span class="mou_label">MOU</span>
           </div>
 
           <!-- MOU Document Preview -->
-          <div v-if="mouPreview" class="mou-document-preview">
+          <div v-if="mouPreview" class="mou_document_preview">
             <img v-if="mouData.mouFile?.type?.startsWith('image/') || (existingMouId && mouPreview.match(/\.(jpg|jpeg|png|gif)$/i))" :src="mouPreview" alt="MOU Preview" />
-            <embed v-else-if="mouPreview.endsWith('.pdf')" :src="mouPreview" type="application/pdf" class="pdf-preview" />
-            <div v-else class="document-placeholder">
-              <div class="doc-icon"></div>
+            <embed v-else-if="mouPreview.endsWith('.pdf')" :src="mouPreview" type="application/pdf" class="pdf_preview" />
+            <div v-else class="document_placeholder">
+              <div class="doc_icon"></div>
               <span>{{ mouData.mouFile?.name || 'MOU Document' }}</span>
             </div>
           </div>
 
-          <div class="mou-date-row">
-            <div class="form-group date-group">
+          <div class="mou_date_row">
+            <div class="form_group date_group">
               <label>Start Date *</label>
-              <input type="date" v-model="mouData.startDate" class="date-input" />
+              <input type="date" v-model="mouData.startDate" class="date_input" />
             </div>
-            <div class="form-group date-group">
+            <div class="form_group date_group">
               <label>End Date *</label>
-              <input type="date" v-model="mouData.endDate" class="date-input" />
+              <input type="date" v-model="mouData.endDate" class="date_input" />
             </div>
           </div>
 
-          <div class="modal-actions mou-actions">
-            <button class="btn-cancel" @click="$emit('update:modelValue', false)">Cancel</button>
-            <button class="btn-save" @click="handleSaveMOU" :disabled="loading">
+          <div class="modal_actions mou_actions">
+            <button class="btn_cancel" @click="$emit('update:modelValue', false)">Cancel</button>
+            <button class="btn_save" @click="handleSaveMOU" :disabled="loading">
               {{ loading ? 'Saving...' : 'Save' }}
             </button>
           </div>
@@ -564,6 +564,8 @@ const saveAllData = async () => {
     if (mouData.startDate && mouData.endDate) {
       if (new Date(mouData.endDate) <= new Date(mouData.startDate)) {
         errors.push('MOU (End date must be after start date)')
+      } else if (!mouData.mouFile) {
+        errors.push('MOU (No file selected)')
       } else if (!savedOrgId) {
         errors.push('MOU (No organization ID)')
       } else {
@@ -577,10 +579,7 @@ const saveAllData = async () => {
           mouFormData.append('organization_id', savedOrgId)
           mouFormData.append('start_date', mouData.startDate)
           mouFormData.append('end_date', mouData.endDate)
-          
-          if (mouData.mouFile) {
-            mouFormData.append('mou', mouData.mouFile)
-          }
+          mouFormData.append('mou', mouData.mouFile)
 
           if (existingMouId.value) {
             await mouAPI.update(existingMouId.value, mouFormData)
@@ -591,7 +590,8 @@ const saveAllData = async () => {
           console.log('MOU saved successfully')
         } catch (mouError: any) {
           console.error('MOU save failed:', mouError)
-          errors.push('MOU')
+          console.error('MOU error details:', mouError.response?.data)
+          errors.push(`MOU (${mouError.response?.data?.message || mouError.message})`)
         }
       }
     }
@@ -703,7 +703,7 @@ watch(() => props.modelValue, (newValue) => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
-.modal-overlay {
+.modal_overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -716,7 +716,7 @@ watch(() => props.modelValue, (newValue) => {
   z-index: 10000;
 }
 
-.add-org-modal {
+.add_org_modal {
   position: relative;
   width: 657px;
   min-height: 400px;
@@ -726,20 +726,20 @@ watch(() => props.modelValue, (newValue) => {
   display: flex;
 }
 
-.add-org-modal.organization-active {
+.add_org_modal.organization_active {
   height: 657px;
   min-height: 657px;
   max-height: 657px;
 }
 
-.add-org-modal.review-active,
-.add-org-modal.mou-active {
+.add_org_modal.review_active,
+.add_org_modal.mou_active {
   min-height: 400px;
   max-height: 657px;
   height: auto;
 }
 
-.modal-tabs {
+.modal_tabs {
   position: absolute;
   width: 42px;
   height: 280px;
@@ -751,7 +751,7 @@ watch(() => props.modelValue, (newValue) => {
   background: transparent;
 }
 
-.tab-item {
+.tab_item {
   position: relative;
   width: 42px;
   height: 75px;
@@ -768,19 +768,22 @@ watch(() => props.modelValue, (newValue) => {
   transition: all 0.2s ease;
 }
 
-.tab-item.active {
+.tab_item.active {
   background: #AB1C03;
   color: #FFFFFF;
 }
 
-.tab-item span {
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transform: rotate(180deg);
+.tab_item span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center center;
   white-space: nowrap;
+  color: inherit;
 }
 
-.modal-content {
+.modal_content {
   flex: 1;
   padding: 35px 45px;
   overflow-y: auto;
@@ -788,25 +791,25 @@ watch(() => props.modelValue, (newValue) => {
   max-width: 657px;
 }
 
-.modal-content::-webkit-scrollbar {
+.modal_content::-webkit-scrollbar {
   width: 8px;
 }
 
-.modal-content::-webkit-scrollbar-track {
+.modal_content::-webkit-scrollbar-track {
   background: #f1f1f1;
   border-radius: 4px;
 }
 
-.modal-content::-webkit-scrollbar-thumb {
+.modal_content::-webkit-scrollbar-thumb {
   background: #888;
   border-radius: 4px;
 }
 
-.modal-content::-webkit-scrollbar-thumb:hover {
+.modal_content::-webkit-scrollbar-thumb:hover {
   background: #555;
 }
 
-.modal-title {
+.modal_title {
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
   font-size: 24px;
@@ -814,7 +817,7 @@ watch(() => props.modelValue, (newValue) => {
   margin-bottom: 10px;
 }
 
-.form-divider {
+.form_divider {
   width: 100%;
   height: 1px;
   background: #E0E0E0;
@@ -822,14 +825,14 @@ watch(() => props.modelValue, (newValue) => {
 }
 
 /* Logo Upload Section */
-.logo-upload-section {
+.logo_upload_section {
   display: flex;
   align-items: center;
   gap: 30px;
   margin-bottom: 30px;
 }
 
-.logo-preview-circle {
+.logo_preview_circle {
   width: 95px;
   height: 95px;
   border-radius: 50%;
@@ -840,13 +843,13 @@ watch(() => props.modelValue, (newValue) => {
   overflow: hidden;
 }
 
-.preview-image {
+.preview_image {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.placeholder-icon {
+.placeholder_icon {
   width: 40px;
   height: 40px;
   background: #D0D0D0;
@@ -854,7 +857,7 @@ watch(() => props.modelValue, (newValue) => {
   mask-size: contain;
 }
 
-.upload-logo-btn {
+.upload_logo_btn {
   padding: 10px 24px;
   background: #AB1C03;
   border-radius: 20px;
@@ -866,27 +869,27 @@ watch(() => props.modelValue, (newValue) => {
   transition: background 0.2s;
 }
 
-.upload-logo-btn:hover {
+.upload_logo_btn:hover {
   background: #8A1602;
 }
 
 /* Form Fields */
-.form-row {
+.form_row {
   display: flex;
   gap: 20px;
   margin-bottom: 20px;
 }
 
-.form-field {
+.form_field {
   flex: 1;
 }
 
-.form-field.full-width {
+.form_field.full_width {
   width: 100%;
   margin-bottom: 20px;
 }
 
-.form-field label {
+.form_field label {
   display: block;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
@@ -899,9 +902,9 @@ watch(() => props.modelValue, (newValue) => {
   color: #AB1C03;
 }
 
-.form-field input,
-.form-field select,
-.form-field textarea {
+.form_field input,
+.form_field select,
+.form_field textarea {
   width: 90%;
   padding: 10px;
   border: 1px solid #B1B1B1;
@@ -912,12 +915,12 @@ watch(() => props.modelValue, (newValue) => {
 }
 
 /* Custom Dropdown Styles */
-.dropdown-wrapper {
+.dropdown_wrapper {
   position: relative;
   width: 100%;
 }
 
-.dropdown-header {
+.dropdown_header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -930,17 +933,17 @@ watch(() => props.modelValue, (newValue) => {
   transition: border-color 0.2s;
 }
 
-.dropdown-header:hover {
+.dropdown_header:hover {
   border-color: #AB1C03;
 }
 
-.dropdown-text {
+.dropdown_text {
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   color: #333333;
 }
 
-.dropdown-arrow {
+.dropdown_arrow {
   width: 0;
   height: 0;
   border-left: 5px solid transparent;
@@ -949,11 +952,11 @@ watch(() => props.modelValue, (newValue) => {
   transition: transform 0.2s;
 }
 
-.dropdown-arrow.open {
+.dropdown_arrow.open {
   transform: rotate(180deg);
 }
 
-.dropdown-options {
+.dropdown_options {
   position: absolute;
   top: 100%;
   left: 0;
@@ -968,7 +971,7 @@ watch(() => props.modelValue, (newValue) => {
   z-index: 1000;
 }
 
-.dropdown-search {
+.dropdown_search {
   position: sticky;
   top: 0;
   background: #FFFFFF;
@@ -977,7 +980,7 @@ watch(() => props.modelValue, (newValue) => {
   z-index: 1001;
 }
 
-.dropdown-search-input {
+.dropdown_search_input {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #D0D0D0;
@@ -987,16 +990,16 @@ watch(() => props.modelValue, (newValue) => {
   color: #333333;
 }
 
-.dropdown-search-input:focus {
+.dropdown_search_input:focus {
   outline: none;
   border-color: #AB1C03;
 }
 
-.dropdown-search-input::placeholder {
+.dropdown_search_input::placeholder {
   color: #999999;
 }
 
-.dropdown-option {
+.dropdown_option {
   padding: 10px 12px;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
@@ -1005,35 +1008,35 @@ watch(() => props.modelValue, (newValue) => {
   transition: background-color 0.2s;
 }
 
-.dropdown-option:hover {
+.dropdown_option:hover {
   background-color: #F5F5F5;
 }
 
-.form-field input:focus,
-.form-field select:focus,
-.form-field textarea:focus {
+.form_field input:focus,
+.form_field select:focus,
+.form_field textarea:focus {
   outline: none;
   border-color: #AB1C03;
 }
 
 /* Toggle Switch */
-.public-toggle,
-.publish-toggle {
+.public_toggle,
+.publish_toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin: 30px 0;
 }
 
-.public-toggle label,
-.publish-toggle label {
+.public_toggle label,
+.publish_toggle label {
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   font-size: 14px;
   color: #000000;
 }
 
-.toggle-switch {
+.toggle_switch {
   width: 50px;
   height: 26px;
   background: #D0D0D0;
@@ -1043,11 +1046,11 @@ watch(() => props.modelValue, (newValue) => {
   transition: background 0.3s;
 }
 
-.toggle-switch.active {
+.toggle_switch.active {
   background: #AB1C03;
 }
 
-.toggle-slider {
+.toggle_slider {
   width: 22px;
   height: 22px;
   background: #FFFFFF;
@@ -1058,24 +1061,24 @@ watch(() => props.modelValue, (newValue) => {
   transition: transform 0.3s, background 0.3s;
 }
 
-.toggle-slider.active {
+.toggle_slider.active {
   transform: translateX(24px);
   background: #FFFFFF;
 }
 
 /* MOU Tab Styles */
-.mou-header .form-divider {
+.mou_header .form_divider {
   margin: 6px 0 20px 0;
 }
 
-.mou-top-row {
+.mou_top_row {
   display: flex;
   align-items: center;
   gap: 14px;
   margin-bottom: 24px;
 }
 
-.mou-upload {
+.mou_upload {
   width: 60px;
   height: 60px;
   background: #F2F2F2;
@@ -1089,12 +1092,12 @@ watch(() => props.modelValue, (newValue) => {
   transition: all 0.2s ease;
 }
 
-.mou-upload:hover {
+.mou_upload:hover {
   background: #E9E9E9;
   border-color: #AB1C03;
 }
 
-.mou-icon {
+.mou_icon {
   width: 22px;
   height: 22px;
   background: #000;
@@ -1102,7 +1105,7 @@ watch(() => props.modelValue, (newValue) => {
   mask-size: contain;
 }
 
-.mou-label {
+.mou_label {
   font-family: 'Inter', sans-serif;
   font-weight: 600;
   font-size: 16px;
@@ -1110,7 +1113,7 @@ watch(() => props.modelValue, (newValue) => {
   color: #000000;
 }
 
-.mou-document-preview {
+.mou_document_preview {
   margin: 20px 0;
   padding: 15px;
   background: #f9f9f9;
@@ -1120,14 +1123,14 @@ watch(() => props.modelValue, (newValue) => {
   justify-content: center;
 }
 
-.mou-document-preview img {
+.mou_document_preview img {
   max-width: 100%;
   max-height: 400px;
   border-radius: 8px;
   object-fit: contain;
 }
 
-.document-placeholder {
+.document_placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1136,7 +1139,7 @@ watch(() => props.modelValue, (newValue) => {
   color: #666;
 }
 
-.doc-icon {
+.doc_icon {
   width: 48px;
   height: 48px;
   background: #AB1C03;
@@ -1144,7 +1147,7 @@ watch(() => props.modelValue, (newValue) => {
   mask-size: contain;
 }
 
-.document-placeholder span {
+.document_placeholder span {
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 500;
@@ -1153,17 +1156,17 @@ watch(() => props.modelValue, (newValue) => {
   max-width: 300px;
 }
 
-.mou-date-row {
+.mou_date_row {
   display: flex;
   gap: 20px;
   margin-bottom: 24px;
 }
 
-.date-group {
+.date_group {
   flex: 1;
 }
 
-.date-group label {
+.date_group label {
   display: block;
   margin-bottom: 8px;
   font-family: 'Inter', sans-serif;
@@ -1172,7 +1175,7 @@ watch(() => props.modelValue, (newValue) => {
   color: #333333;
 }
 
-.date-input {
+.date_input {
   width: 90%;
   height: 40px;
   padding: 8px 12px;
@@ -1185,12 +1188,12 @@ watch(() => props.modelValue, (newValue) => {
   cursor: pointer;
 }
 
-.date-input:focus {
+.date_input:focus {
   outline: none;
   border-color: #AB1C03;
 }
 
-.publish-toggle.mou-publish {
+.publish_toggle.mou_publish {
   margin: 10px 0 30px 0;
   padding: 8px 0;
   justify-content: flex-end;
@@ -1206,19 +1209,19 @@ watch(() => props.modelValue, (newValue) => {
   color: #333333;
 }
 
-.modal-actions.mou-actions {
+.modal-actions.mou_actions {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 10px;
   display: flex;
 }
 
-.file-input {
+.file_input {
   display: none;
 }
 
 /* Star Rating */
-.star-rating {
+.star_rating {
   margin: 20px 0;
 }
 
@@ -1248,7 +1251,7 @@ watch(() => props.modelValue, (newValue) => {
 }
 
 /* MOU Upload Section */
-.mou-upload-section {
+.mou_upload_section {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1256,7 +1259,7 @@ watch(() => props.modelValue, (newValue) => {
   margin-bottom: 30px;
 }
 
-.mou-preview-area {
+.mou_preview_area {
   width: 291px;
   height: 408px;
   border: 2px dashed #D0D0D0;
@@ -1267,7 +1270,7 @@ watch(() => props.modelValue, (newValue) => {
   background: #F9F9F9;
 }
 
-.mou-preview-image {
+.mou_preview_image {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -1275,7 +1278,7 @@ watch(() => props.modelValue, (newValue) => {
 }
 
 .document-placeholder,
-.empty-preview {
+.empty_preview {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1286,7 +1289,7 @@ watch(() => props.modelValue, (newValue) => {
 }
 
 .doc-icon,
-.empty-icon {
+.empty_icon {
   width: 60px;
   height: 60px;
   background: #D0D0D0;
@@ -1294,7 +1297,7 @@ watch(() => props.modelValue, (newValue) => {
   mask-size: contain;
 }
 
-.upload-mou-btn {
+.upload_mou_btn {
   padding: 10px 24px;
   background: #AB1C03;
   border-radius: 20px;
@@ -1306,12 +1309,12 @@ watch(() => props.modelValue, (newValue) => {
   transition: background 0.2s;
 }
 
-.upload-mou-btn:hover {
+.upload_mou_btn:hover {
   background: #8A1602;
 }
 
 /* Modal Actions */
-.modal-actions {
+.modal_actions {
   display: flex;
   gap: 20px;
   justify-content: flex-end;
@@ -1321,7 +1324,7 @@ watch(() => props.modelValue, (newValue) => {
 .btn-cancel,
 .cancel-btn,
 .save-btn,
-.btn-save {
+.btn_save {
   padding: 10px 30px;
   border-radius: 20px;
   font-family: 'Inter', sans-serif;
@@ -1333,31 +1336,33 @@ watch(() => props.modelValue, (newValue) => {
 }
 
 .btn-cancel,
-.cancel-btn {
+.cancel_btn {
   background: #FFFFFF;
   border: 1px solid #B1B1B1;
   color: #000000;
 }
 
-.btn-cancel:hover,
-.cancel-btn:hover {
+.btn_cancel:hover,
+.cancel_btn:hover {
   background: #F5F5F5;
 }
 
 .btn-save,
-.save-btn {
+.save_btn {
   background: #AB1C03;
   color: #FFFFFF;
 }
 
-.btn-save:hover,
-.save-btn:hover {
+.btn_save:hover,
+.save_btn:hover {
   background: #8A1602;
 }
 
-.btn-save:disabled,
-.save-btn:disabled {
+.btn_save:disabled,
+.save_btn:disabled {
   background: #D0D0D0;
   cursor: not-allowed;
 }
 </style>
+
+

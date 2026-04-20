@@ -1,26 +1,26 @@
 <template>
-  <div class="user-roadshow">
+  <div class="user_roadshow">
     <UserNavbar />
     
     <!-- Roadshow Title -->
-    <h1 class="roadshow-title">Roadshow</h1>
+    <h1 class="roadshow_title">Roadshow</h1>
 
     <!-- Roadshow Cards Container -->
-    <div class="roadshow-cards-container">
-      <div v-if="state.error" class="error-message">
+    <div class="roadshow_cards_container">
+      <div v-if="state.error" class="error_message">
         {{ state.error }}
       </div>
-      <div v-if="state.loading && roadshows.length === 0" class="loading-message">
+      <div v-if="state.loading && roadshows.length === 0" class="loading_message">
         Loading roadshows...
       </div>
       <div 
         v-for="roadshow in paginatedRoadshows" 
         :key="roadshow.id" 
-        class="roadshow-large-card"
+        class="roadshow_large_card"
         @click="$router.push(`/user/roadshow/${roadshow.id}`)"
       >
         <!-- Roadshow Image -->
-        <div class="roadshow-image-large">
+        <div class="roadshow_image_large">
           <img 
             :src="roadshow.image" 
             :alt="roadshow.title"
@@ -29,15 +29,20 @@
         </div>
         
         <!-- Roadshow Content -->
-        <div class="roadshow-content">
-          <h2 class="roadshow-title-large">{{ roadshow.title }}</h2>
-          <p class="roadshow-description">{{ roadshow.description }}</p>
+        <div class="roadshow_content">
+          <h2 class="roadshow_title_large">{{ roadshow.title }}</h2>
+          <p class="roadshow_description">{{ roadshow.description }}</p>
+        </div>
+
+        <!-- Countdown Timer Badge -->
+        <div v-if="roadshow.deleted_date" class="countdown_badge" :class="Get_Countdown_Status(roadshow.deleted_date)">
+          <span class="countdown_number">{{ Get_Days_Until_Deletion(roadshow.deleted_date) }}</span>
         </div>
       </div>
     </div>
 
     <!-- Pagination -->
-    <div class="roadshow-pagination-container">
+    <div class="roadshow_pagination_container">
       <Pagination 
         :current-page="state.currentPage"
         :total-pages="totalPages"
@@ -90,6 +95,53 @@ const handlePageChange = async (page: number) => {
   }
 }
 
+/**
+ * Calculate days until deletion for countdown timer
+ * Purpose: Returns number of days remaining until deletion date
+ * Input: str_Deleted_Date - date string in YYYY-MM-DD format
+ * Output: Number of days remaining (returns 0 if date is in past)
+ * Side effects: None
+ */
+const Get_Days_Until_Deletion = (str_Deleted_Date: string): number => {
+  try {
+    if (!str_Deleted_Date) return 0
+    
+    const obj_Today = new Date()
+    obj_Today.setHours(0, 0, 0, 0)
+    
+    const obj_Deleted_Date = new Date(str_Deleted_Date)
+    obj_Deleted_Date.setHours(0, 0, 0, 0)
+    
+    const i_Days_Remaining = Math.ceil((obj_Deleted_Date.getTime() - obj_Today.getTime()) / (1000 * 60 * 60 * 24))
+    
+    return Math.max(0, i_Days_Remaining)
+  } catch (error) {
+    console.error('Error calculating days until deletion:', error)
+    return 0
+  }
+}
+
+/**
+ * Get countdown status class for styling
+ * Purpose: Return CSS class based on urgency level
+ * Input: str_Deleted_Date - date string in YYYY-MM-DD format
+ * Output: CSS class name (status_safe, status_warning, status_critical, or status_expired)
+ * Side effects: None
+ */
+const Get_Countdown_Status = (str_Deleted_Date: string): string => {
+  try {
+    const i_Days = Get_Days_Until_Deletion(str_Deleted_Date)
+    
+    if (i_Days <= 0) return 'status_expired'
+    if (i_Days <= 3) return 'status_critical'
+    if (i_Days <= 7) return 'status_warning'
+    return 'status_safe'
+  } catch (error) {
+    console.error('Error determining countdown status:', error)
+    return 'status_safe'
+  }
+}
+
 const fetchPublicRoadshows = async () => {
   try {
     const response = await roadshowAPI.getAll({ limit: 100 })
@@ -114,7 +166,8 @@ const fetchPublicRoadshows = async () => {
           title: item.topic || 'No Title',
           description: item.details || 'No description available',
           image: imageUrl,
-          date: item.event_date
+          date: item.event_date,
+          deleted_date: item.deleted_date || null
         }
       })
     
@@ -143,7 +196,7 @@ onMounted(async () => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
-.user-roadshow {
+.user_roadshow {
   position: relative;
   width: 100vw;
   height: 918px;
@@ -151,7 +204,7 @@ onMounted(async () => {
   overflow-x: auto;
 }
 
-.roadshow-title {
+.roadshow_title {
   position: absolute;
   width: 188px;
   height: 50px;
@@ -166,14 +219,14 @@ onMounted(async () => {
   color: #000000;
 }
 
-.roadshow-cards-container {
+.roadshow_cards_container {
   position: absolute;
   left: 273px;
   top: 152px;
   width: 1035px;
 }
 
-.error-message {
+.error_message {
   background: #FEE2E2;
   border: 1px solid #FECACA;
   border-radius: 8px;
@@ -184,7 +237,7 @@ onMounted(async () => {
   font-size: 14px;
 }
 
-.loading-message {
+.loading_message {
   text-align: center;
   padding: 20px;
   color: #6B7280;
@@ -192,7 +245,7 @@ onMounted(async () => {
   font-size: 16px;
 }
 
-.roadshow-large-card {
+.roadshow_large_card {
   position: relative;
   width: 1035px;
   height: 287px;
@@ -207,12 +260,12 @@ onMounted(async () => {
   transition: all 0.3s ease;
 }
 
-.roadshow-large-card:hover {
+.roadshow_large_card:hover {
   transform: translateY(-2px);
   box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.15);
 }
 
-.roadshow-image-large {
+.roadshow_image_large {
   width: 270.72px;
   height: 271.7px;
   margin: 8px 0 0 37px;
@@ -221,20 +274,20 @@ onMounted(async () => {
   background: #f5f5f5;
 }
 
-.roadshow-image-large img {
+.roadshow_image_large img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.roadshow-content {
+.roadshow_content {
   flex: 1;
   padding: 17px 20px 20px 40px;
   display: flex;
   flex-direction: column;
 }
 
-.roadshow-title-large {
+.roadshow_title_large {
   margin: 0 0 15px 0;
   font-family: 'Outfit', sans-serif;
   font-style: normal;
@@ -244,7 +297,7 @@ onMounted(async () => {
   color: #000000;
 }
 
-.roadshow-description {
+.roadshow_description {
   margin: 0;
   font-family: 'Outfit', sans-serif;
   font-style: normal;
@@ -255,11 +308,51 @@ onMounted(async () => {
   flex: 1;
 }
 
-.roadshow-pagination-container {
+.roadshow_pagination_container {
   position: absolute;
   left: 1090px;
   top: 780px;
   width: 218px;
   height: 28px;
 }
+
+/* Countdown Timer Badge */
+.countdown_badge {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 18px;
+  color: #FFFFFF;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.countdown_badge.status_safe {
+  background: #10B981;
+}
+
+.countdown_badge.status_warning {
+  background: #F59E0B;
+}
+
+.countdown_badge.status_critical {
+  background: #EF4444;
+}
+
+.countdown_badge.status_expired {
+  background: #6B7280;
+}
+
+.countdown_number {
+  display: block;
+  line-height: 1;
+}
 </style>
+

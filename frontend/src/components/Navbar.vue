@@ -1,41 +1,41 @@
 <template>
   <nav class="navbar">
-    <div class="nav-container">
+    <div class="nav_container">
       <!-- Logo and Brand -->
-      <div class="nav-brand">
-        <a href="/home" class="brand-link">
-          <div class="brand-logo">🎓</div>
-          <span class="brand-text">CWIE Organization</span>
+      <div class="nav_brand">
+        <a href="/home" class="brand_link">
+          <div class="brand_logo">🎓</div>
+          <span class="brand_text">CWIE Organization</span>
         </a>
       </div>
 
       <!-- Navigation Menu -->
-      <div :class="['nav-menu', { 'nav-menu-active': isMenuOpen }]">
-        <a href="/home" class="nav-link" @click="closeMenu">Home</a>
-        <a href="/organizations" class="nav-link" @click="closeMenu">Organizations</a>
-        <a href="/roadshows" class="nav-link" @click="closeMenu">Roadshows</a>
-        <a href="/mou" class="nav-link" @click="closeMenu">MOU</a>
+      <div :class="['nav_menu', { 'nav_menu_active': isMenuOpen }]">
+        <a href="/home" class="nav_link" @click="closeMenu">Home</a>
+        <a href="/organizations" class="nav_link" @click="closeMenu">Organizations</a>
+        <a href="/roadshows" class="nav_link" @click="closeMenu">Roadshows</a>
+        <a href="/mou" class="nav_link" @click="closeMenu">MOU</a>
         
         <!-- Admin Links -->
         <template v-if="isAuthenticated && userRole === 'admin'">
-          <a href="/admin/dashboard" class="nav-link" @click="closeMenu">Dashboard</a>
+          <a href="/admin/dashboard" class="nav_link" @click="closeMenu">Dashboard</a>
         </template>
       </div>
 
       <!-- Auth Actions -->
-      <div class="nav-actions">
+      <div class="nav_actions">
         <template v-if="isAuthenticated">
-          <div class="user-menu">
-            <button @click="toggleUserMenu" class="user-button">
+          <div class="user_menu">
+            <button @click="toggleUserMenu" class="user_button">
               <span>{{ userName }}</span>
-              <span class="user-arrow">▼</span>
+              <span class="user_arrow">▼</span>
             </button>
             
-            <div v-if="isUserMenuOpen" class="user-dropdown">
-              <a href="/profile" class="dropdown-link" @click="closeUserMenu">
+            <div v-if="isUserMenuOpen" class="user_dropdown">
+              <a href="/profile" class="dropdown_link" @click="closeUserMenu">
                 Profile
               </a>
-              <button @click="handleLogout" class="dropdown-link">
+              <button @click="handleLogout" class="dropdown_link">
                 Logout
               </button>
             </div>
@@ -43,21 +43,21 @@
         </template>
         
         <template v-else>
-          <a href="/login" class="btn btn-primary">Login</a>
-          <a href="/register" class="btn btn-secondary">Register</a>
+          <a href="/login" class="btn btn_primary">Login</a>
+          <a href="/register" class="btn btn_secondary">Register</a>
         </template>
       </div>
 
       <!-- Mobile Menu Toggle -->
-      <button @click="toggleMenu" class="mobile-menu-btn">
-        <span class="hamburger-line" :class="{ active: isMenuOpen }"></span>
-        <span class="hamburger-line" :class="{ active: isMenuOpen }"></span>
-        <span class="hamburger-line" :class="{ active: isMenuOpen }"></span>
+      <button @click="toggleMenu" class="mobile_menu_btn">
+        <span class="hamburger_line" :class="{ active: isMenuOpen }"></span>
+        <span class="hamburger_line" :class="{ active: isMenuOpen }"></span>
+        <span class="hamburger_line" :class="{ active: isMenuOpen }"></span>
       </button>
     </div>
 
     <!-- WebSocket Connection Status -->
-    <div v-if="showConnectionStatus" :class="['connection-status', connectionStatusClass]">
+    <div v-if="showConnectionStatus" :class="['connection_status', connectionStatusClass]">
       {{ connectionStatusText }}
     </div>
   </nav>
@@ -154,7 +154,7 @@ onUnmounted(() => {
   z-index: 100;
 }
 
-.nav-container {
+.nav_container {
   max-width: 1400px;
   margin: 0 auto;
   display: flex;
@@ -165,11 +165,11 @@ onUnmounted(() => {
 }
 
 /* Brand */
-.nav-brand {
+.nav_brand {
   flex-shrink: 0;
 }
 
-.brand-link {
+.brand_link {
   display: flex;
   align-items: center;
   text-decoration: none;
@@ -178,7 +178,7 @@ onUnmounted(() => {
   font-size: 1.2rem;
 }
 
-.brand-logo {
+.brand_logo {
   width: 40px;
   height: 40px;
   display: flex;
@@ -191,19 +191,19 @@ onUnmounted(() => {
   color: white;
 }
 
-.brand-text {
+.brand_text {
   color: #007bff;
 }
 
 /* Navigation Menu */
-.nav-menu {
+.nav_menu {
   display: flex;
   align-items: center;
   gap: 2rem;
   margin: 0 2rem;
 }
 
-.nav-link {
+.nav_link {
   text-decoration: none;
   color: #555;
   font-weight: 500;
@@ -211,8 +211,8 @@ onUnmounted(() => {
   position: relative;
 }
 
-.nav-link:hover,
-.nav-link.router-link-active {
+.nav_link:hover,
+.nav-link.router_link_active {
   color: #007bff;
 }
 
@@ -227,7 +227,7 @@ onUnmounted(() => {
 }
 
 /* Auth Actions */
-.nav-actions {
+.nav_actions {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -235,11 +235,11 @@ onUnmounted(() => {
 }
 
 /* User Menu */
-.user-menu {
+.user_menu {
   position: relative;
 }
 
-.user-button {
+.user_button {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -251,20 +251,20 @@ onUnmounted(() => {
   transition: border-color 0.2s;
 }
 
-.user-button:hover {
+.user_button:hover {
   border-color: #007bff;
 }
 
-.user-arrow {
+.user_arrow {
   font-size: 12px;
   transition: transform 0.2s;
 }
 
-.user-button:hover .user-arrow {
+.user_button:hover .user_arrow {
   transform: rotate(180deg);
 }
 
-.user-dropdown {
+.user_dropdown {
   position: absolute;
   top: 100%;
   right: 0;
@@ -277,7 +277,7 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
-.dropdown-link {
+.dropdown_link {
   display: block;
   width: 100%;
   padding: 12px 16px;
@@ -290,12 +290,12 @@ onUnmounted(() => {
   transition: background-color 0.2s;
 }
 
-.dropdown-link:hover {
+.dropdown_link:hover {
   background-color: #f8f9fa;
 }
 
 /* Mobile Menu Button */
-.mobile-menu-btn {
+.mobile_menu_btn {
   display: none;
   flex-direction: column;
   width: 30px;
@@ -308,7 +308,7 @@ onUnmounted(() => {
   align-items: center;
 }
 
-.hamburger-line {
+.hamburger_line {
   width: 20px;
   height: 2px;
   background-color: #333;
@@ -329,7 +329,7 @@ onUnmounted(() => {
 }
 
 /* Connection Status */
-.connection-status {
+.connection_status {
   position: absolute;
   top: 100%;
   left: 50%;
@@ -364,15 +364,15 @@ onUnmounted(() => {
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
-  .nav-container {
+  .nav_container {
     padding: 0 16px;
   }
 
-  .mobile-menu-btn {
+  .mobile_menu_btn {
     display: flex;
   }
 
-  .nav-menu {
+  .nav_menu {
     position: absolute;
     top: 100%;
     left: 0;
@@ -389,22 +389,22 @@ onUnmounted(() => {
     gap: 1rem;
   }
 
-  .nav-menu-active {
+  .nav_menu_active {
     transform: translateY(0);
     opacity: 1;
     visibility: visible;
   }
 
-  .nav-link {
+  .nav_link {
     padding: 12px 0;
     border-bottom: 1px solid #eee;
   }
 
-  .nav-link:last-child {
+  .nav_link:last-child {
     border-bottom: none;
   }
 
-  .nav-actions {
+  .nav_actions {
     gap: 8px;
   }
 
@@ -413,7 +413,7 @@ onUnmounted(() => {
     font-size: 12px;
   }
 
-  .brand-text {
+  .brand_text {
     display: none;
   }
 }
@@ -427,3 +427,4 @@ onUnmounted(() => {
   }
 }
 </style>
+

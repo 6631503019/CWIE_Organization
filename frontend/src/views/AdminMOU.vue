@@ -1,103 +1,103 @@
 <template>
-  <div class="admin-mou">
+  <div class="admin_mou">
     <AdminNavbar />
     
     <!-- Main Content Area -->
-    <div class="main-content">
+    <div class="main_content">
       <!-- Page Title -->
-      <h1 class="page-title">MOU</h1>
+      <h1 class="page_title">MOU</h1>
       
       <!-- Search and Filter Section -->
-      <div class="search-filter-section">
-        <div class="search-controls">
+      <div class="search_filter_section">
+        <div class="search_controls">
           <!-- Text Search -->
-          <div class="search-input-wrapper">
+          <div class="search_input_wrapper">
             <input 
               type="text" 
-              class="search-input" 
+              class="search_input" 
               placeholder="Text Search (Name, Tags)"
-              v-model="searchText"
+              v-model="str_Search_Text"
             />
           </div>
           
           <!-- Status Filter -->
-          <div class="status-filter">
-            <div class="status-dropdown" @click="toggleStatusDropdown">
-              <span class="status-label">{{ selectedStatus || '--status--' }}</span>
-              <div class="dropdown-arrow"></div>
+          <div class="status_filter">
+            <div class="status_dropdown" @click="Toggle_Status_Dropdown">
+              <span class="status_label">{{ str_Selected_Status || '__status__' }}</span>
+              <div class="dropdown_arrow"></div>
             </div>
-            <div v-if="showStatusDropdown" class="status-options">
-              <div class="dropdown-search">
+            <div v-if="bln_Show_Status_Dropdown" class="status_options">
+              <div class="dropdown_search">
                 <input 
                   type="text" 
-                  v-model="statusDropdownSearch" 
+                  v-model="str_Status_Dropdown_Search" 
                   placeholder="Search..."
                   @click.stop
-                  class="dropdown-search-input"
+                  class="dropdown_search_input"
                 />
               </div>
-              <div class="status-option" v-for="status in filteredStatusOptions" :key="status" @click="selectStatus(status)">{{ status }}</div>
+              <div class="status_option" v-for="status in Arr_Get_Filtered_Status_Options" :key="status" @click="Select_Status(status)">{{ status }}</div>
             </div>
           </div>
           
           <!-- Action Buttons -->
-          <div class="action-buttons">
-            <button class="reset-btn">Reset</button>
-            <button class="search-btn">Search</button>
+          <div class="action_buttons">
+            <button class="reset_btn">Reset</button>
+            <button class="search_btn">Search</button>
           </div>
         </div>
       </div>
       
       <!-- MOU Cards Grid -->
-      <div class="mou-cards-grid">
+      <div class="mou_cards_grid">
         <div 
-          v-for="mou in paginatedMous" 
+          v-for="mou in Arr_Get_Paginated_MOUs" 
           :key="mou.id" 
-          class="mou-card"
-          @click="viewMouDetails(mou)"
+          class="mou_card"
+          @click="View_MOU_Details(mou)"
         >
           <!-- Organization Logo -->
-          <div class="org-logo">
+          <div class="org_logo">
             <img :src="mou.logo" :alt="mou.name" />
           </div>
           
           <!-- Organization Info -->
-          <div class="org-name">{{ mou.name }}</div>
-          <div class="org-status" :class="{ 'active': mou.status === 'Active', 'inactive': mou.status === 'Inactive' }">{{ mou.status }}</div>
-          <div class="org-duration">{{ mou.duration }}</div>
+          <div class="org_name">{{ mou.name }}</div>
+          <div class="org_status" :class="{ 'active': mou.status === 'Active', 'inactive': mou.status === 'Inactive' }">{{ mou.status }}</div>
+          <div class="org_duration">{{ mou.duration }}</div>
           
           <!-- Details Button -->
-          <div class="details-section">
-            <span class="details-text">Details</span>
-            <div class="details-arrow"></div>
+          <div class="details_section">
+            <span class="details_text">Details</span>
+            <div class="details_arrow"></div>
           </div>
           
           <!-- Edit Icon -->
-          <div class="edit-icon" @click="editMOU($event, mou)">
-            <div class="pencil-icon"></div>
+          <div class="edit_icon" @click="Edit_MOU($event, mou)">
+            <div class="pencil_icon"></div>
           </div>
         </div>
       </div>
       
       <!-- Pagination Component -->
-      <div class="mou-pagination-container">
+      <div class="mou_pagination_container">
         <Pagination 
-          :current-page="state.currentPage"
-          :total-pages="totalPages"
-          :total-items="filteredMous.length"
-          :loading="state.loading"
+          :current-page="obj_state.currentPage"
+          :total-pages="i_Get_Total_Pages"
+          :total-items="Arr_Get_Filtered_MOUs.length"
+          :loading="obj_state.loading"
           :show-info="false"
-          @page-change="handlePageChange"
+          @page-change="Handle_Page_Change"
         />
       </div>
     </div>
     
     <!-- Edit Modal -->
     <OrganizationEditModal 
-      v-model="showEditModal"
-      :organization-id="editingOrgId"
-      :initial-tab="editingTab"
-      @saved="handleModalSaved"
+      v-model="bln_Show_Edit_Modal"
+      :organization-id="str_Editing_Org_ID"
+      :initial-tab="str_Editing_Tab"
+      @saved="Handle_Modal_Saved"
     />
   </div>
 </template>
@@ -112,263 +112,400 @@ import { organizationAPI, mouAPI, BACKEND_URL } from '../services/api'
 
 const router = useRouter()
 
-// Reactive state management
-const state = reactive({
+// ===========================
+// CONSTANTS
+// ===========================
+const CONST_ITEMS_PER_PAGE = 8
+const CONST_AUTO_REFRESH_INTERVAL_MS = 30000 // 30 seconds
+const CONST_PLACEHOLDER_LOGO = '/api/placeholder/95/95'
+
+// ===========================
+// STATUS OPTIONS
+// ===========================
+const CONST_STATUS_OPTIONS = ['All', 'Active', 'Inactive']
+
+// ===========================
+// REACTIVE STATE MANAGEMENT
+// ===========================
+const obj_state = reactive({
   loading: false,
   error: null as string | null,
   currentPage: 1,
-  itemsPerPage: 8,
+  itemsPerPage: CONST_ITEMS_PER_PAGE,
   autoRefreshInterval: null as number | null
 })
 
-// Reactive filter data
-const searchText = ref('')
-const selectedStatus = ref('')
-const showStatusDropdown = ref(false)
-const statusDropdownSearch = ref('')
+// ===========================
+// FILTER STATES
+// ===========================
+const str_Search_Text = ref('')
+const str_Selected_Status = ref('')
+const bln_Show_Status_Dropdown = ref(false)
+const str_Status_Dropdown_Search = ref('')
 
-// Status options
-const statusOptions = ['All', 'Active', 'Inactive']
+// ===========================
+// MODAL STATES
+// ===========================
+const bln_Show_Edit_Modal = ref(false)
+const str_Editing_Org_ID = ref<string | null>(null)
+const str_Editing_Tab = ref<'organization' | 'review' | 'mou'>('organization')
 
-// Filtered status options
-const filteredStatusOptions = computed(() => {
-  if (!statusDropdownSearch.value) return statusOptions
-  return statusOptions.filter(option => 
-    option.toLowerCase().includes(statusDropdownSearch.value.toLowerCase())
+// ===========================
+// DATA ARRAYS
+// ===========================
+const arr_MOUs = ref<any[]>([])
+// ===========================
+// COMPUTED PROPERTIES
+// ===========================
+/**
+ * Get filtered status options based on dropdown search
+ * Purpose: Filter status options for dropdown display
+ * Input: str_Status_Dropdown_Search
+ * Output: Array of filtered status options
+ * Side effects: None
+ */
+const Arr_Get_Filtered_Status_Options = computed(() => {
+  if (!str_Status_Dropdown_Search.value) return CONST_STATUS_OPTIONS
+  return CONST_STATUS_OPTIONS.filter(option => 
+    option.toLowerCase().includes(str_Status_Dropdown_Search.value.toLowerCase())
   )
 })
 
-// Modal state
-const showEditModal = ref(false)
-const editingOrgId = ref<string | null>(null)
-const editingTab = ref<'organization' | 'review' | 'mou'>('organization')
-
-// Organization data from backend (แสดงเป็น MOU cards)
-const mous = ref<any[]>([])
-
-// Computed properties for reactive filtering
-const filteredMous = computed(() => {
-  let filtered = mous.value
+/**
+ * Get filtered MOUs array based on search and status filter
+ * Purpose: Apply all active filters to MOU list
+ * Input: str_Search_Text, str_Selected_Status
+ * Output: Filtered array of MOUs
+ * Side effects: None
+ */
+const Arr_Get_Filtered_MOUs = computed(() => {
+  let arr_Filtered = arr_MOUs.value
   
-  if (searchText.value.trim()) {
-    const search = searchText.value.toLowerCase()
-    filtered = filtered.filter(mou => 
-      mou.name.toLowerCase().includes(search) ||
-      mou.status.toLowerCase().includes(search)
+  // Step 1: Apply text search filter
+  if (str_Search_Text.value.trim()) {
+    const str_Search = str_Search_Text.value.toLowerCase()
+    arr_Filtered = arr_Filtered.filter(obj_MOU => 
+      obj_MOU.name.toLowerCase().includes(str_Search) ||
+      obj_MOU.status.toLowerCase().includes(str_Search)
     )
   }
   
-  if (selectedStatus.value && selectedStatus.value !== 'All') {
-    filtered = filtered.filter(mou => mou.status === selectedStatus.value)
+  // Step 2: Apply status filter
+  if (str_Selected_Status.value && str_Selected_Status.value !== 'All') {
+    arr_Filtered = arr_Filtered.filter(obj_MOU => obj_MOU.status === str_Selected_Status.value)
   }
   
-  return filtered
+  return arr_Filtered
 })
 
-// Paginated MOUs
-const paginatedMous = computed(() => {
-  const start = (state.currentPage - 1) * state.itemsPerPage
-  const end = start + state.itemsPerPage
-  return filteredMous.value.slice(start, end)
+/**
+ * Get paginated MOUs for current page
+ * Purpose: Slice filtered MOUs for display
+ * Input: obj_state.currentPage, obj_state.itemsPerPage
+ * Output: Array of MOUs for current page
+ * Side effects: None
+ */
+const Arr_Get_Paginated_MOUs = computed(() => {
+  const i_Start = (obj_state.currentPage - 1) * obj_state.itemsPerPage
+  const i_End = i_Start + obj_state.itemsPerPage
+  return Arr_Get_Filtered_MOUs.value.slice(i_Start, i_End)
 })
 
-// Pagination info
-const totalPages = computed(() => 
-  Math.ceil(filteredMous.value.length / state.itemsPerPage)
+/**
+ * Calculate total number of pages
+ * Purpose: Returns ceiling division for pagination
+ * Input: Arr_Get_Filtered_MOUs.value.length
+ * Output: Number of pages
+ * Side effects: None
+ */
+const i_Get_Total_Pages = computed(() => 
+  Math.ceil(Arr_Get_Filtered_MOUs.value.length / obj_state.itemsPerPage)
 )
 
-// Watchers for reactive updates
-watch(searchText, () => {
-  state.currentPage = 1 // Reset to first page when searching
+// ===========================
+// WATCHERS FOR REACTIVE UPDATES
+// ===========================
+watch(str_Search_Text, () => {
+  obj_state.currentPage = 1 // Reset to first page when searching
 })
 
-watch(selectedStatus, () => {
-  state.currentPage = 1 // Reset to first page when filtering
+watch(str_Selected_Status, () => {
+  obj_state.currentPage = 1 // Reset to first page when filtering
 })
-
-// Methods
-const handlePageChange = async (page: number) => {
-  if (page >= 1 && page <= totalPages.value && !state.loading) {
-    state.loading = true
-    try {
-      state.currentPage = page
-      await new Promise(resolve => setTimeout(resolve, 150))
-    } finally {
-      state.loading = false
-    }
-  }
-}
-
-const toggleStatusDropdown = () => {
-  const isOpening = !showStatusDropdown.value
-  showStatusDropdown.value = isOpening
-  if (!isOpening) {
-    statusDropdownSearch.value = ''
-  }
-}
-
-const selectStatus = (status: string) => {
-  selectedStatus.value = status
-  showStatusDropdown.value = false
-}
-
-const viewMouDetails = (mou: any) => {
-  // Navigate to MOU detail page
-  router.push(`/admin/mou/${mou.id}`)
-}
-
-const editMOU = (event: Event, mou: any) => {
-  event.stopPropagation() // Prevent card click
-  editingOrgId.value = mou.id
-  editingTab.value = 'organization'
-  showEditModal.value = true
-}
-
-const handleModalSaved = async () => {
-  // Refresh data after save
-  console.log('Modal saved - refreshing data...')
-  state.loading = true
-  
-  // Small delay to ensure backend has processed the update
-  await new Promise(resolve => setTimeout(resolve, 300))
-  
+/**
+ * Handle pagination page change
+ * Purpose: Update current page with validation
+ * Input: i_Page - new page number
+ * Output: None (updates obj_state.currentPage)
+ * Side effects: Sets loading state temporarily
+ */
+const Handle_Page_Change = async (i_Page: number) => {
   try {
-    await fetchOrganizations()
+    if (i_Page >= 1 && i_Page <= i_Get_Total_Pages.value && !obj_state.loading) {
+      obj_state.loading = true
+      try {
+        obj_state.currentPage = i_Page
+        await new Promise(resolve => setTimeout(resolve, 150))
+      } finally {
+        obj_state.loading = false
+      }
+    }
+  } catch (error) {
+    console.error('Error in Handle_Page_Change:', error)
+  }
+}
+
+/**
+ * Toggle status dropdown visibility
+ * Purpose: Show/hide status filter dropdown
+ * Input: None
+ * Output: None (updates bln_Show_Status_Dropdown)
+ * Side effects: Clears dropdown search when closing
+ */
+const Toggle_Status_Dropdown = () => {
+  try {
+    const bln_Is_Opening = !bln_Show_Status_Dropdown.value
+    bln_Show_Status_Dropdown.value = bln_Is_Opening
+    if (!bln_Is_Opening) {
+      str_Status_Dropdown_Search.value = ''
+    }
+  } catch (error) {
+    console.error('Error in Toggle_Status_Dropdown:', error)
+  }
+}
+
+/**
+ * Select status filter option
+ * Purpose: Set selected status and close dropdown
+ * Input: str_Status - status value to select
+ * Output: None (updates str_Selected_Status)
+ * Side effects: Closes dropdown, resets page to 1
+ */
+const Select_Status = (str_Status: string) => {
+  try {
+    str_Selected_Status.value = str_Status
+    bln_Show_Status_Dropdown.value = false
+  } catch (error) {
+    console.error('Error in Select_Status:', error)
+  }
+}
+
+/**
+ * Navigate to MOU detail page
+ * Purpose: Route to MOU details view
+ * Input: obj_MOU - MOU object with id
+ * Output: None (routes to new page)
+ * Side effects: Changes current route
+ */
+const View_MOU_Details = (obj_MOU: any) => {
+  try {
+    if (!obj_MOU || !obj_MOU.id) {
+      throw new Error('Invalid MOU object provided')
+    }
+    router.push(`/admin/mou/${obj_MOU.id}`)
+  } catch (error) {
+    console.error('Error in View_MOU_Details:', error)
+  }
+}
+
+/**
+ * Open edit modal for MOU
+ * Purpose: Show edit modal with organization data
+ * Input: event - Click event, obj_MOU - MOU to edit
+ * Output: None (opens edit modal)
+ * Side effects: Sets editing state, opens modal
+ */
+const Edit_MOU = (event: Event, obj_MOU: any) => {
+  try {
+    event.stopPropagation() // Prevent card click
+    
+    if (!obj_MOU || !obj_MOU.id) {
+      throw new Error('Invalid MOU object provided')
+    }
+    
+    str_Editing_Org_ID.value = obj_MOU.id
+    str_Editing_Tab.value = 'organization'
+    bln_Show_Edit_Modal.value = true
+  } catch (error) {
+    console.error('Error in Edit_MOU:', error)
+  }
+}
+
+/**
+ * Handle modal save event
+ * Purpose: Refresh data after modal save
+ * Input: None
+ * Output: None (refreshes data)
+ * Side effects: Fetches organizations and updates arr_MOUs
+ */
+const Handle_Modal_Saved = async () => {
+  try {
+    console.log('Modal saved - refreshing data...')
+    obj_state.loading = true
+    
+    // Step 1: Small delay to ensure backend has processed the update
+    await new Promise(resolve => setTimeout(resolve, 300))
+    
+    // Step 2: Fetch updated organizations
+    await Load_Organizations_From_API()
     console.log('Data refreshed successfully')
   } catch (error) {
-    console.error('Error refreshing data:', error)
+    console.error('Error in Handle_Modal_Saved:', error)
   } finally {
-    state.loading = false
+    obj_state.loading = false
   }
 }
 
-// Fetch organizations data
-const fetchOrganizations = async () => {
+/**
+ * Create MOU object from API response
+ * Purpose: Transform API response to UI object
+ * Input: obj_Organization - organization from API, obj_MOU_Data - MOU data
+ * Output: Formatted MOU object for display
+ * Side effects: None
+ */
+const Obj_Create_MOU_From_Response = (obj_Organization: any, obj_MOU_Data: any): any => {
   try {
-    // Get all organizations including non-public ones (for admin)
-    const response = await organizationAPI.getAll({ limit: 100, public: 'false' })
-    console.log('🔍 Organization API response:', response.data)
-    console.log('🔍 Organizations array:', response.data.data)
-    console.log('🔍 Organizations count:', response.data.data?.length)
+    // Determine status based on organization is_public flag
+    let str_Status = 'Inactive'
+    const bln_Is_Public = obj_Organization.is_public
     
-    // Get all MOUs (both published and not published)
-    const mouResponse = await mouAPI.getAll({ limit: 100 })
-    console.log('All MOUs:', mouResponse.data.data)
+    if (bln_Is_Public === true || bln_Is_Public === 'true' || bln_Is_Public === 1 || bln_Is_Public === '1') {
+      str_Status = 'Active'
+    }
     
-    // Create map of MOUs by organization_id (filter out null organization_id)
-    const mouMap = new Map()
-    mouResponse.data.data
-      .filter((mou: any) => {
-        // Filter out MOUs with null or undefined organization_id
-        const orgId = mou.organization_id?._id || mou.organization_id
-        if (!orgId || orgId === null || orgId === undefined) {
-          console.log('⚠️ Skipping MOU with null organization_id:', mou._id)
-          return false
-        }
-        return true
+    // Format duration text from MOU dates
+    let str_Duration = 'N/A'
+    if (obj_MOU_Data && obj_MOU_Data.start_date && obj_MOU_Data.end_date) {
+      const str_Start_Date = new Date(obj_MOU_Data.start_date).toLocaleDateString('en-GB', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
       })
-      .forEach((mou: any) => {
-        const orgId = mou.organization_id?._id || mou.organization_id
-        console.log(`MOU organization_id: ${orgId}, is_published: ${mou.is_published}`)
-        mouMap.set(String(orgId), mou)
+      const str_End_Date = new Date(obj_MOU_Data.end_date).toLocaleDateString('en-GB', { 
+        day: '2-digit', 
+        month: '2-digit', 
+        year: 'numeric' 
+      })
+      str_Duration = `Start: ${str_Start_Date} End: ${str_End_Date}`
+    }
+    
+    // Process logo path
+    let str_Logo_Path = obj_Organization.logo_path
+    if (str_Logo_Path) {
+      str_Logo_Path = str_Logo_Path.replace(/\\/g, '/')
+      if (!str_Logo_Path.startsWith('/')) {
+        str_Logo_Path = '/' + str_Logo_Path
+      }
+    }
+    const str_Logo_URL = str_Logo_Path ? `${BACKEND_URL}${str_Logo_Path}` : CONST_PLACEHOLDER_LOGO
+    
+    return {
+      id: obj_Organization._id,
+      name: obj_Organization.name_en || obj_Organization.name_th || 'No Name',
+      status: str_Status,
+      duration: str_Duration,
+      logo: str_Logo_URL
+    }
+  } catch (error) {
+    console.error('Error in Obj_Create_MOU_From_Response:', error)
+    throw error
+  }
+}
+/**
+ * Load organizations with MOUs from API
+ * Purpose: Fetch all organizations and MOUs, then combine them
+ * Input: None
+ * Output: None (updates arr_MOUs)
+ * Side effects: Updates arr_MOUs with combined organization+MOU data
+ */
+const Load_Organizations_From_API = async (): Promise<void> => {
+  try {
+    // Step 1: Get all organizations (including non-public ones for admin)
+    const obj_Org_Response = await organizationAPI.getAll({ limit: 100, public: 'false' })
+    const arr_Organizations = obj_Org_Response.data.data || []
+    
+    // Step 2: Get all MOUs (both published and not published)
+    const obj_MOU_Response = await mouAPI.getAll({ limit: 100 })
+    const arr_All_MOUs = obj_MOU_Response.data.data || []
+    
+    // Step 3: Create map of MOUs by organization_id for quick lookup
+    const obj_MOU_Map = new Map()
+    arr_All_MOUs
+      .filter((obj_MOU: any) => {
+        // Filter out MOUs with null organization_id
+        const str_Org_ID = obj_MOU.organization_id?._id || obj_MOU.organization_id
+        return str_Org_ID && str_Org_ID !== null && str_Org_ID !== undefined
+      })
+      .forEach((obj_MOU: any) => {
+        const str_Org_ID = obj_MOU.organization_id?._id || obj_MOU.organization_id
+        obj_MOU_Map.set(String(str_Org_ID), obj_MOU)
       })
     
-    console.log('MOU Map keys:', Array.from(mouMap.keys()))
-    console.log('Organization IDs:', response.data.data.map((o: any) => o._id))
+    // Step 4: Filter organizations that have MOUs and transform them
+    arr_MOUs.value = arr_Organizations
+      .filter((obj_Org: any) => obj_MOU_Map.has(String(obj_Org._id)))
+      .map((obj_Org: any) => {
+        const obj_MOU = obj_MOU_Map.get(String(obj_Org._id))
+        return Obj_Create_MOU_From_Response(obj_Org, obj_MOU)
+      })
     
-    // Filter and map organizations that have MOUs
-    mous.value = response.data.data
-      .filter((item: any) => {
-        const hasMOU = mouMap.has(String(item._id))
-        console.log(`Org ${item.name_en} (${item._id}): has MOU = ${hasMOU}`)
-        return hasMOU
-      })
-      .map((item: any) => {
-        const mou = mouMap.get(String(item._id))
-        let durationText = 'N/A'
-        let statusText = 'Inactive'
-        
-        // Use Organization.is_public for status instead of MOU.is_published
-        const isPublic = item.is_public
-        console.log(`Organization ${item.name_en}: is_public value =`, isPublic, `(type: ${typeof isPublic})`)
-        
-        // Check organization public status
-        if (isPublic === true || isPublic === 'true' || isPublic === 1 || isPublic === '1') {
-          statusText = 'Active'
-        } else {
-          statusText = 'Inactive'
-        }
-        
-        console.log(`Final status for ${item.name_en}: ${statusText}`)
-        
-        if (mou) {
-          console.log(`MOU for ${item.name_en}: is_published =`, mou.is_published)
-          
-          // Format dates if available
-          if (mou.start_date && mou.end_date) {
-            const startDate = new Date(mou.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
-            const endDate = new Date(mou.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
-            durationText = `Start: ${startDate} End: ${endDate}`
-          }
-        }
-        
-        console.log(`Final MOU for ${item.name_en}: is_published=${mou?.is_published}, status=${statusText}`)
-        
-        // Normalize logo path: replace backslashes with forward slashes and ensure leading slash
-        let logoPath = item.logo_path
-        if (logoPath) {
-          logoPath = logoPath.replace(/\\/g, '/')
-          if (!logoPath.startsWith('/')) {
-            logoPath = '/' + logoPath
-          }
-        }
-        const logoUrl = logoPath ? `${BACKEND_URL}${logoPath}` : '/api/placeholder/95/95'
-        console.log(`Logo URL for ${item.name_en}:`, logoUrl, 'Raw path:', item.logo_path)
-        
-        return {
-          id: item._id,
-          name: item.name_en || item.name_th || 'No Name',
-          status: statusText,
-          duration: durationText,
-          logo: logoUrl
-        }
-      })
-    console.log('Organizations loaded:', mous.value.length, 'items')
+    console.log('Organizations loaded:', arr_MOUs.value.length, 'items')
   } catch (error: any) {
-    state.error = error.response?.data?.message || 'Failed to load organizations'
-    console.error('Loading error:', error)
+    obj_state.error = error.response?.data?.message || 'Failed to load organizations'
+    console.error('Error in Load_Organizations_From_API:', error)
     throw error
   }
 }
 
-// Lifecycle hooks
+/**
+ * Component mounted lifecycle hook
+ * Purpose: Initialize component, load data, setup auto-refresh
+ * Input: None
+ * Output: None (loads organizations, sets up refresh)
+ * Side effects: Fetches MOUs, sets up auto-refresh interval
+ */
 onMounted(async () => {
-  console.log('AdminMOU mounted')
-  state.loading = true
-  
   try {
-    await fetchOrganizations()
+    console.log('AdminMOU component mounted')
+    obj_state.loading = true
     
-    // Setup auto-refresh
-    state.autoRefreshInterval = window.setInterval(async () => {
+    // Step 1: Load initial organizations/MOUs
+    await Load_Organizations_From_API()
+    
+    // Step 2: Setup auto-refresh interval
+    obj_state.autoRefreshInterval = window.setInterval(async () => {
       try {
-        await fetchOrganizations()
-      } catch (err) {
-        console.error('Auto-refresh error:', err)
+        console.log('Auto-refresh MOUs...')
+        await Load_Organizations_From_API()
+      } catch (error) {
+        console.error('Auto-refresh error:', error)
       }
-    }, 30000) // Every 30 seconds
+    }, CONST_AUTO_REFRESH_INTERVAL_MS)
     
   } catch (error) {
-    // Error already handled in fetchOrganizations
+    // Error already handled in Load_Organizations_From_API
+    console.error('Error in onMounted:', error)
   } finally {
-    state.loading = false
+    obj_state.loading = false
   }
 })
 
+/**
+ * Component unmount lifecycle hook
+ * Purpose: Cleanup resources before component is destroyed
+ * Input: None
+ * Output: None (cleans up intervals)
+ * Side effects: Clears auto-refresh interval
+ */
 onBeforeUnmount(() => {
-  console.log('AdminMOU unmounting - cleaning up')
-  if (state.autoRefreshInterval) {
-    clearInterval(state.autoRefreshInterval)
+  try {
+    console.log('AdminMOU component unmounting - cleaning up resources')
+    if (obj_state.autoRefreshInterval) {
+      clearInterval(obj_state.autoRefreshInterval)
+      obj_state.autoRefreshInterval = null
+    }
+  } catch (error) {
+    console.error('Error in onBeforeUnmount:', error)
   }
 })
 </script>
@@ -376,7 +513,7 @@ onBeforeUnmount(() => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
-.admin-mou {
+.admin_mou {
   position: relative;
   width: 100vw;
   height: 100vh;
@@ -384,7 +521,7 @@ onBeforeUnmount(() => {
   overflow-x: auto;
 }
 
-.main-content {
+.main_content {
   margin-left: 232px;
   padding: 20px;
   height: calc(100vh - 40px);
@@ -394,7 +531,7 @@ onBeforeUnmount(() => {
   gap: 20px;
 }
 
-.page-title {
+.page_title {
   margin: 0 0 20px 0;
   
   font-family: 'Outfit', sans-serif;
@@ -405,7 +542,7 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.search-filter-section {
+.search_filter_section {
   width: 100%;
   max-width: 1135px;
   background: #FFFFFF;
@@ -414,19 +551,19 @@ onBeforeUnmount(() => {
   margin-bottom: 20px;
 }
 
-.search-controls {
+.search_controls {
   display: flex;
   align-items: center;
   gap: 53px;
   padding: 24px 35px;
 }
 
-.search-input-wrapper {
+.search_input_wrapper {
   flex: 1;
   max-width: 510px;
 }
 
-.search-input {
+.search_input {
   box-sizing: border-box;
   width: 100%;
   height: 34px;
@@ -444,16 +581,16 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.search-input::placeholder {
+.search_input::placeholder {
   color: #B1B1B1;
 }
 
-.status-filter {
+.status_filter {
   position: relative;
   width: 276px;
 }
 
-.status-dropdown {
+.status_dropdown {
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
@@ -471,7 +608,7 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.status-label {
+.status_label {
   font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -480,14 +617,14 @@ onBeforeUnmount(() => {
   color: #545454;
 }
 
-.dropdown-arrow {
+.dropdown_arrow {
   width: 5.83px;
   height: 4.38px;
   background: #000000;
   clip-path: polygon(0 0, 100% 0, 50% 100%);
 }
 
-.status-options {
+.status_options {
   position: absolute;
   top: 38px;
   left: 0;
@@ -501,7 +638,7 @@ onBeforeUnmount(() => {
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
 }
 
-.dropdown-search {
+.dropdown_search {
   position: sticky;
   top: 0;
   background: #FFFFFF;
@@ -510,7 +647,7 @@ onBeforeUnmount(() => {
   z-index: 11;
 }
 
-.dropdown-search-input {
+.dropdown_search_input {
   width: 100%;
   padding: 8px 12px;
   border: 1px solid #D0D0D0;
@@ -520,16 +657,16 @@ onBeforeUnmount(() => {
   color: #333333;
 }
 
-.dropdown-search-input:focus {
+.dropdown_search_input:focus {
   outline: none;
   border-color: #AB1C03;
 }
 
-.dropdown-search-input::placeholder {
+.dropdown_search_input::placeholder {
   color: #999999;
 }
 
-.status-option {
+.status_option {
   padding: 10px;
   font-family: 'Inter', sans-serif;
   font-weight: 600;
@@ -538,16 +675,16 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.status-option:hover {
+.status_option:hover {
   background: #F0F0F0;
 }
 
-.action-buttons {
+.action_buttons {
   display: flex;
   gap: 20px;
 }
 
-.reset-btn {
+.reset_btn {
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
@@ -572,7 +709,7 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.search-btn {
+.search_btn {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -596,7 +733,7 @@ onBeforeUnmount(() => {
   color: #FFFFFF;
 }
 
-.mou-cards-grid {
+.mou_cards_grid {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
@@ -606,7 +743,7 @@ onBeforeUnmount(() => {
   margin-bottom: 30px;
 }
 
-.mou-card {
+.mou_card {
   position: relative;
   width: 250px;
   height: 248px;
@@ -614,11 +751,11 @@ onBeforeUnmount(() => {
   transition: transform 0.2s ease;
 }
 
-.mou-card:hover {
+.mou_card:hover {
   transform: translateY(-2px);
 }
 
-.mou-card::before {
+.mou_card::before {
   content: '';
   position: absolute;
   width: 250px;
@@ -632,7 +769,7 @@ onBeforeUnmount(() => {
   z-index: 1;
 }
 
-.org-logo {
+.org_logo {
   position: absolute;
   width: 95px;
   height: 95px;
@@ -641,7 +778,7 @@ onBeforeUnmount(() => {
   z-index: 2;
 }
 
-.org-logo img {
+.org_logo img {
   width: 100%;
   height: 100%;
   border-radius: 47.5px;
@@ -649,7 +786,7 @@ onBeforeUnmount(() => {
   background: #e0e0e0;
 }
 
-.org-name {
+.org_name {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -670,7 +807,7 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 
-.org-status {
+.org_status {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -685,15 +822,15 @@ onBeforeUnmount(() => {
   color: #767676;
 }
 
-.org-status.active {
+.org_status.active {
   color: #00FF5E;
 }
 
-.org-status.inactive {
+.org_status.inactive {
   color: #FF0000;
 }
 
-.org-duration {
+.org_duration {
   position: absolute;
   width: 100px;
   left: 75px;
@@ -709,7 +846,7 @@ onBeforeUnmount(() => {
   color: #767676;
 }
 
-.details-section {
+.details_section {
   position: absolute;
   left: 94px;
   top: 200px;
@@ -719,7 +856,7 @@ onBeforeUnmount(() => {
   gap: 8px;
 }
 
-.details-text {
+.details_text {
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -728,7 +865,7 @@ onBeforeUnmount(() => {
   color: #000000;
 }
 
-.details-arrow {
+.details_arrow {
   width: 10px;
   height: 4.84px;
   border: 1px solid #000000;
@@ -736,7 +873,7 @@ onBeforeUnmount(() => {
   clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 
-.edit-icon {
+.edit_icon {
   position: absolute;
   width: 21px;
   height: 21px;
@@ -745,7 +882,7 @@ onBeforeUnmount(() => {
   z-index: 2;
 }
 
-.pencil-icon {
+.pencil_icon {
   width: 100%;
   height: 100%;
   background: #666;
@@ -754,10 +891,11 @@ onBeforeUnmount(() => {
 }
 
 /* MOU Pagination Container */
-.mou-pagination-container {
+.mou_pagination_container {
   display: flex;
   justify-content: center;
   margin-top: 40px;
   margin-bottom: 50px;
 }
 </style>
+

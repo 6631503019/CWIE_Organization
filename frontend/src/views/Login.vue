@@ -1,38 +1,38 @@
 <template>
-  <div class="login-page">
-    <div class="login-container">
+  <div class="login_page">
+    <div class="login_container">
       <!-- MFU Logo -->
-      <div class="logo-section">
+      <div class="logo_section">
         <img 
           src="https://archives.mfu.ac.th/wp-content/uploads/2019/06/Mae-Fah-Luang-University-2.png" 
           alt="Mae Fah Luang University Logo"
-          class="logo-image"
+          class="logo_image"
         />
       </div>
       
       <!-- Form Section -->
-      <div class="form-section">
-        <div class="form-header">
+      <div class="form_section">
+        <div class="form_header">
           <!-- Title -->
-          <h1 class="form-title">MFU CWIE Organization Database</h1>
+          <h1 class="form_title">MFU CWIE Organization Database</h1>
           
           <!-- Input Fields Container -->
-          <div class="input-fields-container">
+          <div class="input_fields_container">
             <!-- Email Input -->
-            <div class="input-basic">
-              <div class="input-label-frame">
-                <span class="input-label">ID</span>
-                <span class="input-required">*</span>
+            <div class="input_basic">
+              <div class="input_label_frame">
+                <span class="input_label">ID</span>
+                <span class="input_required">*</span>
               </div>
-              <div class="input-frame" :class="{ focused: emailFocused }">
-                <div class="input-cursor" v-if="emailFocused"></div>
-                <div class="input-content-frame">
+              <div class="input_frame" :class="{ focused: emailFocused }">
+                <div class="input_cursor" v-if="emailFocused"></div>
+                <div class="input_content_frame">
                   <input 
                     v-model="email"
                     @focus="emailFocused = true"
                     @blur="emailFocused = false"
                     type="email"
-                    class="input-value"
+                    class="input_value"
                     required
                   />
                 </div>
@@ -40,20 +40,20 @@
             </div>
 
             <!-- Password Input -->
-            <div class="input-password">
-              <div class="password-label-frame">
-                <span class="password-label">Password</span>
-                <div class="password-asterix">
-                  <span class="password-required">*</span>
+            <div class="input_password">
+              <div class="password_label_frame">
+                <span class="password_label">Password</span>
+                <div class="password_asterix">
+                  <span class="password_required">*</span>
                 </div>
               </div>
-              <div class="password-frame" :class="{ focused: passwordFocused }">
-                <div class="password-cursor" v-if="passwordFocused"></div>
-                <div class="password-content-frame">
+              <div class="password_frame" :class="{ focused: passwordFocused }">
+                <div class="password_cursor" v-if="passwordFocused"></div>
+                <div class="password_content_frame">
                   <input 
                     v-model="password"
                     :type="showPassword ? 'text' : 'password'"
-                    class="password-value"
+                    class="password_value"
                     @focus="passwordFocused = true"
                     @blur="passwordFocused = false"
                     @keydown.enter="handleLogin"
@@ -63,7 +63,7 @@
                 <i 
                   v-if="password.length > 0"
                   :class="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"
-                  class="password-toggle-icon"
+                  class="password_toggle_icon"
                   @click="showPassword = !showPassword"
                 ></i>
               </div>
@@ -75,10 +75,10 @@
         <button 
           type="button" 
           @click="handleLogin"
-          class="login-button"
+          class="login_button"
           :disabled="isLoading"
         >
-          <span class="button-text">
+          <span class="button_text">
             {{ isLoading ? 'Logging in...' : 'Log In' }}
           </span>
         </button>
@@ -86,12 +86,12 @@
     </div>
     
     <!-- Error Message -->
-    <div v-if="error" class="error-toast">
+    <div v-if="error" class="error_toast">
       {{ error }}
     </div>
     
     <!-- User Icon Right -->
-    <div class="user-icon-right">
+    <div class="user_icon_right">
       <i class="pi pi-user"></i>
     </div>
   </div>
@@ -132,7 +132,7 @@ const handleLogin = async () => {
     isLoading.value = true
     
     // Use auth store to handle login
-    const loginResult = await authStore.login({
+    const loginResult = await authStore.Login({
       email: email.value,
       password: password.value
     })
@@ -143,7 +143,7 @@ const handleLogin = async () => {
       password.value = ''
 
       // Redirect based on user role
-      if (authStore.isAdmin) {
+      if (authStore.bln_Is_Admin) {
         await router.push('/admin/dashboard')
       } else {
         await router.push('/user/organization')
@@ -166,7 +166,7 @@ const handleLogin = async () => {
 @import url('https://cdn.jsdelivr.net/npm/primeicons@6.0.1/primeicons.css');
 
 /* Login Page - Main Container */
-.login-page {
+.login_page {
   position: relative;
   width: 100vw;
   height: 100vh;
@@ -175,7 +175,7 @@ const handleLogin = async () => {
 }
 
 /* Frame 36 - Login Container */
-.login-container {
+.login_container {
   /* Auto layout */
   display: flex;
   flex-direction: column;
@@ -192,7 +192,7 @@ const handleLogin = async () => {
 }
 
 /* Image 10 - Logo Section */
-.logo-section {
+.logo_section {
   width: 141px;
   height: 199px;
   
@@ -202,14 +202,14 @@ const handleLogin = async () => {
   flex-grow: 0;
 }
 
-.logo-image {
+.logo_image {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
 /* Frame 26 - Form Section */
-.form-section {
+.form_section {
   /* Auto layout */
   display: flex;
   flex-direction: column;
@@ -228,7 +228,7 @@ const handleLogin = async () => {
 }
 
 /* Frame 1 - Form Header */
-.form-header {
+.form_header {
   /* Auto layout */
   display: flex;
   flex-direction: column;
@@ -247,7 +247,7 @@ const handleLogin = async () => {
 }
 
 /* MFU CWIE Organization Database - Title */
-.form-title {
+.form_title {
   width: 373px;
   height: 55px;
 
@@ -269,7 +269,7 @@ const handleLogin = async () => {
 }
 
 /* Frame 23 - Input Fields Container */
-.input-fields-container {
+.input_fields_container {
   /* Auto layout */
   display: flex;
   flex-direction: row;
@@ -289,7 +289,7 @@ const handleLogin = async () => {
 }
 
 /* Basic Input - Email Input */
-.input-basic {
+.input_basic {
   /* Auto layout */
   display: flex;
   flex-direction: column;
@@ -307,7 +307,7 @@ const handleLogin = async () => {
 }
 
 /* Frame 1763 - Input Label Frame */
-.input-label-frame {
+.input_label_frame {
   /* Auto layout */
   display: flex;
   flex-direction: row;
@@ -325,7 +325,7 @@ const handleLogin = async () => {
 }
 
 /* Label */
-.input-label {
+.input_label {
   width: 14px;
   height: 20px;
 
@@ -350,7 +350,7 @@ const handleLogin = async () => {
 }
 
 /* * - Required Asterisk */
-.input-required {
+.input_required {
   width: 6px;
   height: 17px;
 
@@ -372,7 +372,7 @@ const handleLogin = async () => {
 }
 
 /* Frame 1 - Input Frame */
-.input-frame {
+.input_frame {
   box-sizing: border-box;
 
   /* Auto layout */
@@ -402,13 +402,13 @@ const handleLogin = async () => {
   border: 1px solid #2C71F6;
 }
 
-.input-frame:not(.focused) {
+.input_frame:not(.focused) {
   /* Light Mode/Border/Secondary */
   border: 1px solid #D8D8DA;
 }
 
 /* Frame 5 - Input Content Frame */
-.input-content-frame {
+.input_content_frame {
   /* Auto layout */
   display: flex;
   flex-direction: row;
@@ -426,7 +426,7 @@ const handleLogin = async () => {
 }
 
 /* Frame 4 - Input Cursor */
-.input-cursor {
+.input_cursor {
   width: 1px;
   height: 16px;
 
@@ -442,7 +442,7 @@ const handleLogin = async () => {
 }
 
 /* Input Value */
-.input-value {
+.input_value {
   width: 100%;
   height: 20px;
   border: none;
@@ -462,7 +462,7 @@ const handleLogin = async () => {
 }
 
 /* Password Input */
-.input-password {
+.input_password {
   /* Auto layout */
   display: flex;
   flex-direction: column;
@@ -480,7 +480,7 @@ const handleLogin = async () => {
 }
 
 /* Frame 1762 - Password Label Frame */
-.password-label-frame {
+.password_label_frame {
   /* Auto layout */
   display: flex;
   flex-direction: row;
@@ -496,21 +496,21 @@ const handleLogin = async () => {
   order: 0;
   flex-grow: 0;
 }
-.input-icon {
+.input_icon {
   color: #000000;
   font-size: 16px;
   margin-right: 8px;
 }
 
 /* Input Icon Right */
-.input-icon-right {
+.input_icon_right {
   color: #000000;
   font-size: 16px;
   margin-left: 8px;
 }
 
 /* User Icon Right */
-.user-icon-right {
+.user_icon_right {
   position: fixed;
   right: 350px;
   top: 50vh;
@@ -522,7 +522,7 @@ const handleLogin = async () => {
 }
 
 /* Password Label */
-.password-label {
+.password_label {
   width: 62px;
   height: 20px;
 
@@ -547,7 +547,7 @@ const handleLogin = async () => {
 }
 
 /* Password Asterix */
-.password-asterix {
+.password_asterix {
   /* Auto layout */
   display: flex;
   flex-direction: row;
@@ -566,7 +566,7 @@ const handleLogin = async () => {
 }
 
 /* Password Required */
-.password-required {
+.password_required {
   width: 6px;
   height: 17px;
 
@@ -588,7 +588,7 @@ const handleLogin = async () => {
 }
 
 /* Password Frame */
-.password-frame {
+.password_frame {
   box-sizing: border-box;
 
   /* Auto layout */
@@ -618,13 +618,13 @@ const handleLogin = async () => {
   border: 1px solid #2C71F6;
 }
 
-.password-frame:not(.focused) {
+.password_frame:not(.focused) {
   /* Light Mode/Border/Secondary */
   border: 1px solid #D8D8DA;
 }
 
 /* Password Cursor */
-.password-cursor {
+.password_cursor {
   width: 1px;
   height: 16px;
 
@@ -640,7 +640,7 @@ const handleLogin = async () => {
 }
 
 /* Password Content Frame */
-.password-content-frame {
+.password_content_frame {
   /* Auto layout */
   display: flex;
   flex-direction: row;
@@ -658,7 +658,7 @@ const handleLogin = async () => {
 }
 
 /* Password Value */
-.password-value {
+.password_value {
   width: 100%;
   height: 20px;
   border: none;
@@ -677,13 +677,13 @@ const handleLogin = async () => {
   color: #202020;
 }
 
-.password-value::placeholder {
+.password_value::placeholder {
   /* Light Mode/Text/Secondary */
   color: #89898A;
 }
 
 /* Password Toggle Icon */
-.password-toggle-icon {
+.password_toggle_icon {
   color: #89898A;
   font-size: 16px;
   cursor: pointer;
@@ -691,12 +691,12 @@ const handleLogin = async () => {
   order: 2;
 }
 
-.password-toggle-icon:hover {
+.password_toggle_icon:hover {
   color: #2C71F6;
 }
 
 /* Button Contained - Login Button */
-.login-button {
+.login_button {
   /* Auto layout */
   display: flex;
   flex-direction: row;
@@ -722,17 +722,17 @@ const handleLogin = async () => {
   transition: background-color 0.2s ease;
 }
 
-.login-button:hover {
+.login_button:hover {
   background: #1e5ce6;
 }
 
-.login-button:disabled {
+.login_button:disabled {
   background: #89898A;
   cursor: not-allowed;
 }
 
 /* Button Text */
-.button-text {
+.button_text {
   width: auto;
   height: 14px;
 
@@ -754,7 +754,7 @@ const handleLogin = async () => {
 }
 
 /* Error Toast */
-.error-toast {
+.error_toast {
   position: fixed;
   top: 20px;
   right: 20px;
@@ -769,7 +769,7 @@ const handleLogin = async () => {
 
 /* Responsive Design */
 @media (max-width: 1440px) {
-  .login-page {
+  .login_page {
     width: 100vw;
     height: 100vh;
     padding: 20px;
@@ -777,7 +777,7 @@ const handleLogin = async () => {
     overflow: hidden;
   }
   
-  .login-container {
+  .login_container {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
@@ -785,13 +785,13 @@ const handleLogin = async () => {
 }
 
 @media (max-width: 768px) {
-  .login-page {
+  .login_page {
     padding: 10px;
     overflow: hidden;
     height: 100vh;
   }
 
-  .login-container {
+  .login_container {
     width: 90%;
     max-width: 373px;
     position: relative;
@@ -802,51 +802,52 @@ const handleLogin = async () => {
     z-index: 10;
   }
 
-  .user-icon-right {
+  .user_icon_right {
     display: none;
   }
 
   .input-basic, 
-  .input-password {
+  .input_password {
     width: 100%;
     margin: 0;
   }
 
   .input-frame,
   .password-frame,
-  .login-button {
+  .login_button {
     width: 100%;
   }
 
-  .input-fields-container {
+  .input_fields_container {
     width: 100%;
   }
 
-  .form-header {
+  .form_header {
     width: 100%;
   }
 
-  .form-section {
+  .form_section {
     width: 100%;
   }
 
-  .form-title {
+  .form_title {
     font-size: 20px;
     width: 100%;
   }
 }
 
 @media (max-height: 600px) {
-  .login-page {
+  .login_page {
     padding: 10px;
     overflow: hidden;
     height: 100vh;
   }
   
-  .login-container {
+  .login_container {
     top: 20px;
     transform: translate(-50%, 0);
   }
 }
 
 </style>
+

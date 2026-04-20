@@ -1,76 +1,76 @@
 <template>
-  <div class="user-mou-detail">
+  <div class="user_mou_detail">
     <UserNavbar />
     
     <!-- Main Content Area -->
-    <div class="main-content">
+    <div class="main_content">
       <!-- Page Title -->
-      <h1 class="page-title">MOU</h1>
+      <h1 class="page_title">MOU</h1>
       
       <!-- Search Section -->
-      <div class="search-filter-section">
-        <div class="search-controls">
+      <div class="search_filter_section">
+        <div class="search_controls">
           <!-- Text Search -->
-          <div class="search-input-wrapper">
+          <div class="search_input_wrapper">
             <input 
               type="text" 
-              class="search-input" 
+              class="search_input" 
               placeholder="Text Search (Name)"
               v-model="searchText"
             />
           </div>
           
           <!-- Action Buttons -->
-          <div class="action-buttons">
-            <button class="reset-btn" @click="resetSearch">Reset</button>
-            <button class="search-btn" @click="applySearch">Search</button>
+          <div class="action_buttons">
+            <button class="reset_btn" @click="resetSearch">Reset</button>
+            <button class="search_btn" @click="applySearch">Search</button>
           </div>
         </div>
       </div>
       
       <!-- MOU Grid Layout -->
-      <div class="mou-grid-container">
+      <div class="mou_grid_container">
         <!-- Left Column MOUs -->
-        <div class="mou-left-column">
-          <div class="mou-card" v-for="mou in paginatedMous" :key="mou.id" @click="selectMou(mou)">
+        <div class="mou_left_column">
+          <div class="mou_card" v-for="mou in paginatedMous" :key="mou.id" @click="selectMou(mou)">
             <!-- Organization Logo -->
-            <div class="org-logo">
+            <div class="org_logo">
               <img :src="mou.logo" :alt="mou.name" />
             </div>
             
             <!-- Organization Info -->
-            <div class="org-name">{{ mou.name }}</div>
-            <div class="org-status active">Active</div>
-            <div class="org-duration">{{ mou.duration }}</div>
+            <div class="org_name">{{ mou.name }}</div>
+            <div class="org_status active">Active</div>
+            <div class="org_duration">{{ mou.duration }}</div>
             
             <!-- Details Button -->
-            <div class="details-section">
-              <span class="details-text">Details</span>
-              <div class="details-arrow"></div>
+            <div class="details_section">
+              <span class="details_text">Details</span>
+              <div class="details_arrow"></div>
             </div>
           </div>
         </div>
         
         <!-- Right Detail Panel -->
-        <div class="detail-panel">
+        <div class="detail_panel">
           <!-- Close Button -->
-          <div class="close-button" @click="closeDetail">
-            <div class="close-line-1"></div>
-            <div class="close-line-2"></div>
+          <div class="close_button" @click="closeDetail">
+            <div class="close_line_1"></div>
+            <div class="close_line_2"></div>
           </div>
           
           <!-- Organization Details -->
-          <div class="org-detail-logo">
+          <div class="org_detail_logo">
             <img :src="selectedMou?.logo" :alt="selectedMou?.name" />
           </div>
           
-          <div class="org-detail-name">{{ selectedMou?.name }}</div>
-          <div class="org-detail-duration">{{ selectedMou?.duration }}</div>
+          <div class="org_detail_name">{{ selectedMou?.name }}</div>
+          <div class="org_detail_duration">{{ selectedMou?.duration }}</div>
           
           <!-- MOU Document -->
-          <div class="mou-document">
+          <div class="mou_document">
             <!-- PDF Document -->
-            <object v-if="mouDocumentImage && isMOUDocumentPDF" :data="mouDocumentImage" type="application/pdf" class="mou-pdf-viewer">
+            <object v-if="mouDocumentImage && isMOUDocumentPDF" :data="mouDocumentImage" type="application/pdf" class="mou_pdf_viewer">
               <p>PDF cannot be displayed. <a :href="mouDocumentImage" target="_blank">Click here to view</a></p>
             </object>
             
@@ -78,21 +78,21 @@
             <img v-else-if="mouDocumentImage && !isMOUDocumentPDF" :src="mouDocumentImage" alt="MOU Document" />
             
             <!-- Placeholder -->
-            <div v-else class="mou-placeholder">
-              <div class="placeholder-icon"></div>
-              <span class="placeholder-text">No MOU Document</span>
+            <div v-else class="mou_placeholder">
+              <div class="placeholder_icon"></div>
+              <span class="placeholder_text">No MOU Document</span>
             </div>
           </div>
           
           <!-- More Details Link -->
-          <div class="more-details" @click="viewFullDetails">
+          <div class="more_details" @click="viewFullDetails">
             More details
           </div>
         </div>
       </div>
       
       <!-- Pagination Component -->
-      <div class="mou-pagination-wrapper">
+      <div class="mou_pagination_wrapper">
         <Pagination 
           :current-page="state.currentPage"
           :total-pages="totalPages"
@@ -324,20 +324,20 @@ onMounted(async () => {
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
-.user-mou-detail {
+.user_mou_detail {
   position: relative;
   width: 100vw;
   min-height: 100vh;
   background: #F6F7F8;
 }
 
-.main-content {
+.main_content {
   margin-left: 232px;
   padding: 40px 20px 20px 20px;
   min-height: 100vh;
 }
 
-.page-title {
+.page_title {
   margin: 0 0 30px 0;
   font-family: 'Outfit', sans-serif;
   font-weight: 600;
@@ -347,22 +347,22 @@ onMounted(async () => {
 }
 
 /* Search Section */
-.search-filter-section {
+.search_filter_section {
   margin-bottom: 40px;
 }
 
-.search-controls {
+.search_controls {
   display: flex;
   align-items: center;
   gap: 20px;
 }
 
-.search-input-wrapper {
+.search_input_wrapper {
   flex: 1;
   max-width: 800px;
 }
 
-.search-input {
+.search_input {
   box-sizing: border-box;
   width: 100%;
   height: 40px;
@@ -376,16 +376,16 @@ onMounted(async () => {
   color: #000000;
 }
 
-.search-input::placeholder {
+.search_input::placeholder {
   color: #B1B1B1;
 }
 
-.action-buttons {
+.action_buttons {
   display: flex;
   gap: 10px;
 }
 
-.reset-btn {
+.reset_btn {
   padding: 8px 20px;
   background: #FFFFFF;
   border: 1px solid #B1B1B1;
@@ -397,7 +397,7 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-.search-btn {
+.search_btn {
   padding: 8px 20px;
   background: #AB1C03;
   border: none;
@@ -410,7 +410,7 @@ onMounted(async () => {
 }
 
 /* MOU Grid Layout */
-.mou-grid-container {
+.mou_grid_container {
   position: absolute;
   width: 600px;
   left: 270px;
@@ -419,14 +419,14 @@ onMounted(async () => {
   gap: 50px;
 }
 
-.mou-left-column {
+.mou_left_column {
   width: 550px;
   display: grid;
   grid-template-columns: repeat(2, 250px);
   gap: 23px 50px;
 }
 
-.mou-card {
+.mou_card {
   position: relative;
   width: 250px;
   height: 248px;
@@ -434,11 +434,11 @@ onMounted(async () => {
   transition: transform 0.2s ease;
 }
 
-.mou-card:hover {
+.mou_card:hover {
   transform: translateY(-2px);
 }
 
-.mou-card::before {
+.mou_card::before {
   content: '';
   position: absolute;
   width: 250px;
@@ -452,7 +452,7 @@ onMounted(async () => {
   z-index: 1;
 }
 
-.org-logo {
+.org_logo {
   position: absolute;
   width: 95px;
   height: 95px;
@@ -461,7 +461,7 @@ onMounted(async () => {
   z-index: 2;
 }
 
-.org-logo img {
+.org_logo img {
   width: 100%;
   height: 100%;
   border-radius: 47.5px;
@@ -469,7 +469,7 @@ onMounted(async () => {
   background: #e0e0e0;
 }
 
-.org-name {
+.org_name {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -490,7 +490,7 @@ onMounted(async () => {
   text-overflow: ellipsis;
 }
 
-.org-status {
+.org_status {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -505,15 +505,15 @@ onMounted(async () => {
   color: #767676;
 }
 
-.org-status.active {
+.org_status.active {
   color: #00FF5E;
 }
 
-.org-status.inactive {
+.org_status.inactive {
   color: #FF0000;
 }
 
-.org-duration {
+.org_duration {
   position: absolute;
   width: 100px;
   left: 75px;
@@ -529,7 +529,7 @@ onMounted(async () => {
   color: #767676;
 }
 
-.details-section {
+.details_section {
   position: absolute;
   left: 94px;
   top: 200px;
@@ -539,7 +539,7 @@ onMounted(async () => {
   gap: 8px;
 }
 
-.details-text {
+.details_text {
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 600;
@@ -548,7 +548,7 @@ onMounted(async () => {
   color: #000000;
 }
 
-.details-arrow {
+.details_arrow {
   width: 10px;
   height: 4.84px;
   border: 1px solid #000000;
@@ -557,7 +557,7 @@ onMounted(async () => {
 }
 
 /* Detail Panel */
-.detail-panel {
+.detail_panel {
   position: absolute;
   width: 518px;
   height: 781.16px;
@@ -569,7 +569,7 @@ onMounted(async () => {
   border-radius: 12px;
 }
 
-.close-button {
+.close_button {
   position: absolute;
   width: 18px;
   height: 16.21px;
@@ -578,24 +578,24 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-.close-line-1, .close-line-2 {
+.close_line_1, .close_line_2 {
   position: absolute;
   width: 23px;
   height: 2px;
   background: #000000;
 }
 
-.close-line-1 {
+.close_line_1 {
   transform: rotate(45deg);
   top: 7px;
 }
 
-.close-line-2 {
+.close_line_2 {
   transform: rotate(-45deg);
   top: 7px;
 }
 
-.org-detail-logo {
+.org_detail_logo {
   position: absolute;
   width: 89.43px;
   height: 89.43px;
@@ -603,7 +603,7 @@ onMounted(async () => {
   top: 47px;
 }
 
-.org-detail-logo img {
+.org_detail_logo img {
   width: 100%;
   height: 100%;
   border-radius: 50%;
@@ -611,18 +611,18 @@ onMounted(async () => {
   background: #e0e0e0;
 }
 
-.org-detail-name {
+.org_detail_name {
   position: absolute;
   width: 400px;
-  max-height: 80px;
+  max-height: 60px;
   left: 59px;
   top: 146px;
   
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 600;
-  font-size: 24px;
-  line-height: 30px;
+  font-size: 20px;
+  line-height: 26px;
   letter-spacing: 0.08em;
   color: #000000;
   text-align: center;
@@ -632,14 +632,15 @@ onMounted(async () => {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   word-wrap: break-word;
+  word-break: break-word;
 }
 
-.org-detail-duration {
+.org_detail_duration {
   position: absolute;
   width: 110px;
   height: 36.13px;
   left: 204px;
-  top: 190px;
+  top: 215px;
   
   font-family: 'Outfit', sans-serif;
   font-style: normal;
@@ -650,7 +651,7 @@ onMounted(async () => {
   color: #000000;
 }
 
-.mou-document {
+.mou_document {
   position: absolute;
   width: 291.15px;
   height: 408.61px;
@@ -661,7 +662,7 @@ onMounted(async () => {
   background: #f0f0f0;
 }
 
-.mou-document img {
+.mou_document img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -669,14 +670,14 @@ onMounted(async () => {
   background: #f0f0f0;
 }
 
-.mou-pdf-viewer {
+.mou_pdf_viewer {
   width: 100%;
   height: 100%;
   border: none;
   border-radius: 8px;
 }
 
-.mou-placeholder {
+.mou_placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -685,21 +686,21 @@ onMounted(async () => {
   color: #999999;
 }
 
-.placeholder-icon {
+.placeholder_icon {
   width: 60px;
   height: 60px;
   background: #E0E0E0;
   border-radius: 50%;
 }
 
-.placeholder-text {
+.placeholder_text {
   font-family: 'Outfit', sans-serif;
   font-size: 14px;
   color: #999;
   text-align: center;
 }
 
-.more-details {
+.more_details {
   position: absolute;
   width: 131px;
   height: 18px;
@@ -716,12 +717,12 @@ onMounted(async () => {
   text-align: center;
 }
 
-.more-details:hover {
+.more_details:hover {
   text-decoration: underline;
 }
 
 /* Pagination */
-.mou-pagination-wrapper {
+.mou_pagination_wrapper {
   position: absolute;
   left: 453px;
   top: 1090px;
@@ -729,3 +730,5 @@ onMounted(async () => {
   height: 28px;
 }
 </style>
+
+

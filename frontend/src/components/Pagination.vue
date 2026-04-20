@@ -1,9 +1,9 @@
 <template>
-  <div class="pagination-wrapper">
+  <div class="pagination_wrapper">
     <div class="pagination">
       <!-- Double Left -->
       <button 
-        class="page-btn first-btn" 
+        class="page_btn first_btn" 
         @click="changePage(1)" 
         :disabled="currentPage <= 1 || loading"
         :class="{ disabled: currentPage <= 1 }"
@@ -14,7 +14,7 @@
       
       <!-- Back -->
       <button 
-        class="page-btn prev-btn" 
+        class="page_btn prev_btn" 
         @click="changePage(currentPage - 1)" 
         :disabled="currentPage <= 1 || loading"
         :class="{ disabled: currentPage <= 1 }"
@@ -27,21 +27,21 @@
       <template v-for="page in visiblePages" :key="page">
         <button 
           v-if="page !== '...'"
-          class="page-btn" 
-          :class="{ 'current-page': page === currentPage }"
-          @click="changePage(page)"
+          class="page_btn" 
+          :class="{ 'current_page': page === currentPage }"
+          @click="changePage(page as number)"
           :disabled="loading"
         >
           {{ page }}
         </button>
-        <button v-else class="page-btn ellipsis-btn" disabled>
+        <button v-else class="page_btn ellipsis_btn" disabled>
           <i class="pi pi-ellipsis-h"></i>
         </button>
       </template>
       
       <!-- Forward -->
       <button 
-        class="page-btn next-btn" 
+        class="page_btn next_btn" 
         @click="changePage(currentPage + 1)" 
         :disabled="currentPage >= totalPages || loading"
         :class="{ disabled: currentPage >= totalPages }"
@@ -52,7 +52,7 @@
       
       <!-- Double Right -->
       <button 
-        class="page-btn last-btn" 
+        class="page_btn last_btn" 
         @click="changePage(totalPages)" 
         :disabled="currentPage >= totalPages || loading"
         :class="{ disabled: currentPage >= totalPages }"
@@ -62,7 +62,7 @@
       </button>
     </div>
     
-    <div v-if="showInfo" class="pagination-info">
+    <div v-if="showInfo" class="pagination_info">
       Page {{ currentPage }} of {{ totalPages }} ({{ totalItems }} total items)
     </div>
   </div>
@@ -82,7 +82,7 @@ const props = defineProps<{
 
 // Emits
 const emit = defineEmits<{
-  'page-change': [page: number]
+  'pageChange': [page: number]
 }>()
 
 // Computed properties
@@ -117,7 +117,7 @@ const visiblePages = computed(() => {
 // Methods
 const changePage = (page: number) => {
   if (page >= 1 && page <= props.totalPages && !props.loading) {
-    emit('page-change', page)
+    emit('pageChange', page)
   }
 }
 </script>
@@ -125,21 +125,25 @@ const changePage = (page: number) => {
 <style scoped>
 @import url('https://cdn.jsdelivr.net/npm/primeicons@6.0.1/primeicons.css');
 
-.pagination-wrapper {
+.pagination_wrapper {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 15px;
   margin-top: 20px;
+  position: relative;
+  z-index: 100;
+  pointer-events: auto;
 }
 
 .pagination {
   display: flex;
   align-items: center;
   gap: 6px;
+  pointer-events: auto;
 }
 
-.page-btn {
+.page_btn {
   box-sizing: border-box;
   width: 21px;
   height: 21px;
@@ -157,49 +161,51 @@ const changePage = (page: number) => {
   line-height: 13px;
   color: #000000;
   transition: all 0.2s ease;
+  pointer-events: auto;
 }
 
-.page-btn:hover:not(.disabled) {
+.page_btn:hover:not(.disabled) {
   background: #f0f0f0;
 }
 
-.page-btn.current-page {
+.page_btn.current_page {
   background: #C70000;
   color: #FFFFFF;
 }
 
-.page-btn.current-page:hover {
+.page_btn.current_page:hover {
   background: #C70000;
 }
 
-.page-btn.disabled {
+.page_btn.disabled {
   opacity: 0.5;
   cursor: not-allowed;
   background: #F9F9F9;
+  pointer-events: none;
 }
 
-.ellipsis-btn {
+.ellipsis_btn {
   cursor: default !important;
   opacity: 1 !important;
   background: #FFFFFF !important;
 }
 
-.page-dots {
+.page_dots {
   color: #666666;
   font-size: 14px;
   padding: 0 4px;
 }
 
-.prev-btn, .next-btn {
+.prev_btn, .next_btn {
   font-weight: 600;
   font-size: 12px;
 }
 
-.page-btn i {
+.page_btn i {
   font-size: 10px;
 }
 
-.pagination-info {
+.pagination_info {
   font-family: 'Inter', sans-serif;
   font-size: 9px;
   color: #666666;
@@ -208,15 +214,16 @@ const changePage = (page: number) => {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .pagination-wrapper {
+  .pagination_wrapper {
     flex-direction: column;
     gap: 10px;
   }
   
-  .page-btn {
+  .page_btn {
     width: 24px;
     height: 24px;
     font-size: 12px;
   }
 }
 </style>
+
