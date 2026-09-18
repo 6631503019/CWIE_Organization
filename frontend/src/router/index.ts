@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 
-// Simplified routes - only Login and Admin Dashboard
+// Application routes
 const routes: RouteRecordRaw[] = [
     {
         path: '/',
@@ -11,12 +11,6 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/login',
         redirect: '/'
-    },
-    {
-        path: '/admin/dashboard',
-        name: 'AdminDashboard',
-        component: () => import('../views/AdminDashboard.vue'),
-        meta: { title: 'Admin Dashboard', requiresAuth: true, requiresAdmin: true }
     },
     {
         path: '/admin/organization',
@@ -163,7 +157,7 @@ router.beforeEach(async (to, from, next) => {
 
             if (authStore.bln_Is_Logged_In) {
                 if (authStore.bln_Is_Admin) {
-                    next('/admin/dashboard')
+                    next('/admin/organization')
                 } else {
                     next('/user/organization')
                 }

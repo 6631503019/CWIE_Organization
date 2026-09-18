@@ -1,126 +1,86 @@
 const User = require('../models/User');
+const firebaseAdmin = require('../config/firebase');
 const { generateToken, generateRefreshToken, verifyRefreshToken } = require('../config/jwt');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 
-// @desc    Register user
-// @route   POST /api/auth/register
+// @desc    Login with a verified Google Workspace account
+// @route   POST /api/auth/google
 // @access  Public
-const register = async (req, res, next) => {
+const loginWithGoogle = async (req, res, next) => {
     try {
-        const { name, email, password } = req.body;
+        const { idToken, loginType } = req.body;
 
-        // Validate required fields
-        if (!name || !email || !password) {
+        if (!idToken || !['admin', 'student'].includes(loginType)) {
             throw new CustomError(
                 ERROR_CODES.VALIDATION_MISSING_REQUIRED_FIELD,
-                'Name, email and password are required'
+                'Google token and login type are required'
             );
         }
 
-        // Validate email format
-        const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-        if (!emailRegex.test(email)) {
+        const decodedToken = await firebaseAdmin.verifyIdToken(idToken);
+        const email = decodedToken.email?.toLowerCase();
+        const allowedDomains = (process.env.GOOGLE_WORKSPACE_DOMAINS || process.env.GOOGLE_WORKSPACE_DOMAIN || 'mfu.ac.th,lamduan.mfu.ac.th')
+            .split(',')
+            .map(domain => domain.trim().toLowerCase().replace(/^@/, ''))
+            .filter(Boolean);
+        const adminEmail = (process.env.ADMIN_GOOGLE_EMAIL || '6631503019@lamduan.mfu.ac.th').trim().toLowerCase();
+        const emailDomain = email?.split('@').pop();
+
+        const isAdminEmail = email === adminEmail;
+        const isAllowedDomain = emailDomain && allowedDomains.includes(emailDomain);
+
+        if (!decodedToken.email_verified || !email || (!isAdminEmail && !isAllowedDomain)) {
             throw new CustomError(
-                ERROR_CODES.VALIDATION_EMAIL_INVALID,
-                'Please provide a valid email address'
+                ERROR_CODES.VALIDATION_EMAIL_DOMAIN_NOT_ALLOWED,
+                `Only the registered Admin email or university accounts are allowed`
             );
         }
 
-        // Validate password strength
-        if (password.length < 6) {
-            throw new CustomError(
-                ERROR_CODES.VALIDATION_PASSWORD_TOO_SHORT,
-                'Password must be at least 6 characters long'
-            );
-        }
+        let user = await User.findOne({ $or: [{ firebaseUid: decodedToken.uid }, { email }] });
 
-        // Check if user exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
-            throw new CustomError(
-                ERROR_CODES.VALIDATION_EMAIL_DUPLICATE,
-                'User with this email already exists'
-            );
-        }
-
-        // Create user
-        const user = await User.create({
-            name,
-            email,
-            password,
-            role: email === 'admin@mfu.ac.th' ? 'admin' : 'user'
-        });
-
-        // Generate tokens
-        const token = generateToken({ id: user._id });
-        const refreshToken = generateRefreshToken({ id: user._id });
-
-        res.status(201).json({
-            success: true,
-            message: 'User registered successfully',
-            token,
-            refreshToken,
-            data: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role
-            }
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
-const login = async (req, res, next) => {
-    try {
-        const { email, password } = req.body;
-
-        // Validate email & password
-        if (!email || !password) {
-            throw new CustomError(
-                ERROR_CODES.VALIDATION_MISSING_REQUIRED_FIELD,
-                'Please provide email and password'
-            );
-        }
-
-        // Check for user
-        const user = await User.findOne({ email }).select('+password');
-
-        if (!user) {
-            throw new CustomError(
-                ERROR_CODES.AUTH_USER_NOT_FOUND,
-                'User not found'
-            );
-        }
-
-        // Check if account is active
-        if (!user.isActive) {
+        if (user && !user.isActive) {
             throw new CustomError(
                 ERROR_CODES.FORBIDDEN_ACCOUNT_INACTIVE,
                 'Account is disabled'
             );
         }
 
-        // Validate password
-        const isPasswordValid = await user.comparePassword(password);
-        if (!isPasswordValid) {
+        if (loginType === 'admin' && !isAdminEmail) {
             throw new CustomError(
-                ERROR_CODES.AUTH_INVALID_CREDENTIALS,
-                'Invalid password'
+                ERROR_CODES.FORBIDDEN_INSUFFICIENT_PERMISSIONS,
+                'Only the registered Admin Lamduan Mail can use Admin login'
             );
         }
 
-        // Generate tokens
+        if (loginType === 'student' && user?.role === 'admin') {
+            throw new CustomError(
+                ERROR_CODES.FORBIDDEN_INSUFFICIENT_PERMISSIONS,
+                'Administrator accounts must use the admin login'
+            );
+        }
+
+        if (!user) {
+            user = await User.create({
+                firebaseUid: decodedToken.uid,
+                email,
+                name: decodedToken.name || email.split('@')[0],
+                role: isAdminEmail ? 'admin' : 'user'
+            });
+        } else if (isAdminEmail && user.role !== 'admin') {
+            user.role = 'admin';
+            user.firebaseUid = decodedToken.uid;
+            await user.save();
+        } else if (user.firebaseUid !== decodedToken.uid) {
+            user.firebaseUid = decodedToken.uid;
+            await user.save();
+        }
+
         const token = generateToken({ id: user._id });
         const refreshToken = generateRefreshToken({ id: user._id });
 
         res.status(200).json({
             success: true,
-            message: 'Login successful',
+            message: 'Google login successful',
             token,
             refreshToken,
             data: {
@@ -131,6 +91,12 @@ const login = async (req, res, next) => {
             }
         });
     } catch (error) {
+        if (error.code?.startsWith('auth/')) {
+            return next(new CustomError(
+                ERROR_CODES.AUTH_TOKEN_INVALID,
+                'Invalid Google authentication token'
+            ));
+        }
         next(error);
     }
 };
@@ -217,8 +183,7 @@ const getMe = async (req, res, next) => {
 };
 
 module.exports = {
-    register,
-    login,
+    loginWithGoogle,
     refresh,
     getMe
 };

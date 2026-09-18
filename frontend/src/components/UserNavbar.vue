@@ -1,21 +1,21 @@
 <template>
-  <div class="user_navbar">
+  <div class="user-navbar">
     <!-- Logo Image -->
     <img 
       src="https://archives.mfu.ac.th/wp-content/uploads/2019/06/Mae-Fah-Luang-University-2.png" 
       alt="MFU Logo"
-      class="logo_image"
+      class="logo-image"
     />
     
     <!-- MFU CWIE Title -->
-    <span class="brand_title">MFU CWIE</span>
+    <span class="brand-title">MFU CWIE</span>
     
     <!-- Organization Database Subtitle -->
-    <span class="brand_subtitle">Organization Database</span>
+    <span class="brand-subtitle">Organization Database</span>
 
     <!-- Organization Link -->
     <a href="/user/organization" 
-       class="nav_organization"
+       class="nav-organization"
        :class="{ active: currentRoute === 'organization' }"
        @click.prevent="navigateTo('/user/organization')">
       Organization
@@ -23,7 +23,7 @@
 
     <!-- MOU Link -->
     <a href="/user/mou" 
-       class="nav_mou"
+       class="nav-mou"
        :class="{ active: currentRoute === 'mou' }"
        @click.prevent="navigateTo('/user/mou')">
       MOU
@@ -31,25 +31,25 @@
 
     <!-- Roadshow Link -->
     <a href="/user/roadshow" 
-       class="nav_roadshow"
+       class="nav-roadshow"
        :class="{ active: currentRoute === 'roadshow' }"
        @click.prevent="navigateTo('/user/roadshow')">
       Roadshow
     </a>
 
     <!-- Profile Separator Line -->
-    <div class="profile_separator"></div>
+    <div class="profile-separator"></div>
 
     <!-- Profile Avatar -->
-    <div class="profile_avatar">
+    <div class="profile-avatar">
       <i class="pi pi-user"></i>
     </div>
 
     <!-- Profile Name -->
-    <span class="profile_name">{{ authStore.obj_Current_User?.name || 'Thiwakorn Boayair...' }}</span>
+    <span class="profile-name">{{ authStore.user?.name || 'Student User' }}</span>
 
     <!-- Logout Icon -->
-    <i class="pi pi-sign-out logout_icon" @click="handleLogout" title="Logout"></i>
+    <i class="pi pi-sign-out logout-icon" @click="handleLogout" title="Logout"></i>
   </div>
 </template>
 
@@ -114,7 +114,7 @@ const handleLogout = async () => {
 @import url('https://cdn.jsdelivr.net/npm/primeicons@6.0.1/primeicons.css');
 
 /* Main Navbar Container */
-.user_navbar {
+.user-navbar {
   position: fixed;
   width: 232px;
   height: 100vh;
@@ -126,7 +126,7 @@ const handleLogout = async () => {
 }
 
 /* Logo Image */
-.logo_image {
+.logo-image {
   position: absolute;
   height: 62px;
   left: 35px;
@@ -136,7 +136,7 @@ const handleLogout = async () => {
 }
 
 /* Brand Title - MFU CWIE */
-.brand_title {
+.brand-title {
   position: absolute;
   left: 82px;
   right: 35px;
@@ -151,7 +151,7 @@ const handleLogout = async () => {
 }
 
 /* Brand Subtitle - Organization Database */
-.brand_subtitle {
+.brand-subtitle {
   position: absolute;
   left: 87px;
   right: 45px;
@@ -166,7 +166,7 @@ const handleLogout = async () => {
 }
 
 /* Organization Navigation */
-.nav_organization {
+.nav-organization {
   position: absolute;
   left: 35px;
   right: 35px;
@@ -182,7 +182,7 @@ const handleLogout = async () => {
 }
 
 /* MOU Navigation */
-.nav_mou {
+.nav-mou {
   position: absolute;
   left: 35px;
   right: 35px;
@@ -198,7 +198,7 @@ const handleLogout = async () => {
 }
 
 /* Roadshow Navigation */
-.nav_roadshow {
+.nav-roadshow {
   position: absolute;
   left: 35px;
   right: 35px;
@@ -214,7 +214,7 @@ const handleLogout = async () => {
 }
 
 /* Profile Separator Line */
-.profile_separator {
+.profile-separator {
   position: absolute;
   left: 10px;
   right: 10px;
@@ -224,7 +224,7 @@ const handleLogout = async () => {
 }
 
 /* Profile Avatar */
-.profile_avatar {
+.profile-avatar {
   position: absolute;
   left: 13px;
   bottom: 10px;
@@ -244,7 +244,7 @@ const handleLogout = async () => {
 }
 
 /* Profile Name */
-.profile_name {
+.profile-name {
   position: absolute;
   left: 60px;
   right: 40px;
@@ -258,7 +258,7 @@ const handleLogout = async () => {
 }
 
 /* Logout Icon */
-.logout_icon {
+.logout-icon {
   position: absolute;
   right: 13px;
   bottom: 18px;
@@ -268,7 +268,7 @@ const handleLogout = async () => {
   transition: transform 0.2s;
 }
 
-.logout_icon:hover {
+.logout-icon:hover {
   transform: scale(1.2);
 }
 
@@ -280,11 +280,9 @@ const handleLogout = async () => {
 }
 
 /* Hover States */
-.nav_organization:hover,
-.nav_mou:hover,
-.nav_roadshow:hover {
+.nav-organization:hover,
+.nav-mou:hover,
+.nav-roadshow:hover {
   color: #C70000;
 }
 </style>
-
-

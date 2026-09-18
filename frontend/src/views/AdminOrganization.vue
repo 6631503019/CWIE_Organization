@@ -4,50 +4,43 @@
     <AdminNavbar />
     
     <!-- Main content -->
-    <div class="main_content">
-      <!-- Header Section -->
-      <div class="header_section">
-        <!-- Organization Title -->
-        <div class="organization_title">Organization</div>
-        
-        <!-- Buttons Group -->
-        <div class="buttons_group">
-          <!-- Import Button -->
-          <div class="import_btn" @click="showImportModal = true">
-            <div class="upload_icon"></div>
-            <span class="button_text">Import Organization</span>
+    <main class="main_content">
+      <div class="top_bar">
+        <div class="top_bar_titles">
+          <span class="top_bar_title">Organization</span>
+          <span class="top_bar_subtitle">Manage and view all organization data in the database.</span>
+        </div>
+        <div class="top_bar_actions">
+          <div class="language_switcher" aria-label="Language selector">
+            <button class="language_active" :class="{ selected: currentLanguage === 'EN' }" @click="setLanguage('EN')">EN</button>
+            <button class="language_option" :class="{ selected: currentLanguage === 'TH' }" @click="setLanguage('TH')">TH</button>
           </div>
-          
-          <!-- Add Organization Button -->
-          <div class="add_org_btn" @click="addOrganization">
-            <div class="plus_icon"></div>
-            <span class="button_text">Add Organization</span>
-          </div>
+          <div class="admin_badge"><span class="admin_avatar">A</span><span>Admin User</span></div>
         </div>
       </div>
-      
-      
-      <!-- Filter Section -->
-      <div class="filter_section">
-        <!-- Filter Organization title -->
-        <div class="filter_title">Filter Organization</div>
-        
-        <!-- Search bar -->
-        <div class="search_container">
-          <input 
-            type="text" 
-            placeholder="Text Search (Name, Tags)"
-            class="search_input"
-            v-model="searchText"
-          />
+
+      <section class="content_area">
+        <div class="page_heading">
+          <div>
+            <h1>{{ text('Organization', 'องค์กร') }}</h1>
+            <p>{{ text('Manage and view all organization data in the database.', 'จัดการและดูข้อมูลทั้งหมดขององค์กรในฐานข้อมูล') }}</p>
+          </div>
+          <div class="page_actions">
+            <button class="import_btn" @click="showImportModal = true"><span class="upload_icon"></span>{{ text('Upload Organizations', 'อัปโหลดองค์กร') }}</button>
+            <button class="add_org_btn" @click="addOrganization"><span class="plus_icon"></span>{{ text('Add Organization', 'เพิ่มองค์กร') }}</button>
+          </div>
         </div>
-        
-        <!-- Dropdowns grid -->
-        <div class="dropdowns_grid">
+
+        <section class="filter_section">
+          <input type="text" :placeholder="text('Search organisation...', 'ค้นหาองค์กร...')" class="search_input" v-model="searchText" />
+          <div class="filter_labels">
+            <span>{{ text('Business Type', 'ประเภทธุรกิจ') }}</span><span>{{ text('Business Category', 'หมวดหมู่ธุรกิจ') }}</span><span>{{ text('Region', 'ภูมิภาค') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Province', 'จังหวัด') }}</span>
+          </div>
+          <div class="dropdowns_grid">
           <!-- Organization Type dropdown -->
           <div class="dropdown_container org_type" :class="{ active: dropdowns.orgType }">
             <div class="dropdown_header" @click="toggleDropdown('orgType')">
-              <span class="dropdown_text">{{ selectedFilters.orgType === 'All' ? '--Organization Type--' : orgTypeOptions.find(o => o.value === selectedFilters.orgType)?.label }}</span>
+              <span class="dropdown_text">{{ selectedFilters.orgType === 'All' ? text('--Organization Type--', '--เลือกประเภทองค์กร--') : orgTypeOptions.find(o => o.value === selectedFilters.orgType)?.label }}</span>
               <div class="dropdown_arrow"></div>
             </div>
             <div v-if="dropdowns.orgType" class="dropdown_options">
@@ -60,7 +53,7 @@
           <!-- Industry Category dropdown -->
           <div class="dropdown_container industry_cat" :class="{ active: dropdowns.industryCat }">
             <div class="dropdown_header" @click="toggleDropdown('industryCat')">
-              <span class="dropdown_text">{{ selectedFilters.industryCat === 'All' ? '--Industry Category--' : selectedFilters.industryCat }}</span>
+              <span class="dropdown_text">{{ selectedFilters.industryCat === 'All' ? text('--Industry Category--', '--เลือกหมวดหมู่ธุรกิจ--') : selectedFilters.industryCat }}</span>
               <div class="dropdown_arrow"></div>
             </div>
             <div v-if="dropdowns.industryCat" class="dropdown_options">
@@ -82,7 +75,7 @@
           <!-- Country dropdown -->
           <div class="dropdown_container country" :class="{ active: dropdowns.country }">
             <div class="dropdown_header" @click="toggleDropdown('country')">
-              <span class="dropdown_text">{{ selectedFilters.country === 'All' ? '---Country---' : selectedFilters.country }}</span>
+              <span class="dropdown_text">{{ selectedFilters.country === 'All' ? text('---Country---', '---เลือกประเทศ---') : selectedFilters.country }}</span>
               <div class="dropdown_arrow"></div>
             </div>
             <div v-if="dropdowns.country" class="dropdown_options">
@@ -104,7 +97,7 @@
           <!-- Geography dropdown -->
           <div class="dropdown_container geography" :class="{ active: dropdowns.geography }">
             <div class="dropdown_header" @click="toggleDropdown('geography')">
-              <span class="dropdown_text">{{ selectedFilters.geography === 'All' ? '--Geography--' : selectedFilters.geography }}</span>
+              <span class="dropdown_text">{{ selectedFilters.geography === 'All' ? text('--Geography--', '--เลือกภูมิภาค--') : selectedFilters.geography }}</span>
               <div class="dropdown_arrow"></div>
             </div>
             <div v-if="dropdowns.geography" class="dropdown_options">
@@ -126,7 +119,7 @@
           <!-- Province dropdown -->
           <div class="dropdown_container province" :class="{ active: dropdowns.province }">
             <div class="dropdown_header" @click="toggleDropdown('province')">
-              <span class="dropdown_text">{{ selectedFilters.province === 'All' ? '--Province--' : selectedFilters.province }}</span>
+              <span class="dropdown_text">{{ selectedFilters.province === 'All' ? text('--Province--', '--เลือกจังหวัด--') : selectedFilters.province }}</span>
               <div class="dropdown_arrow"></div>
             </div>
             <div v-if="dropdowns.province" class="dropdown_options">
@@ -145,65 +138,26 @@
             </div>
           </div>
         </div>
-        
-        <!-- Filter buttons -->
-        <div class="filter_buttons">
-          <button class="reset_btn" @click="resetFilters">Reset</button>
-          <button class="search_btn" @click="searchOrganizations">search</button>
-        </div>
-      </div>
-      
-      <!-- Organizations Table -->
-      <div class="table_container">
-        <!-- Table header -->
-        <div class="table_header">
-          <div class="header_status">status</div>
-          <div class="header_organization">Organization</div>
-          <div class="header_category">Category</div>
-          <div class="header_province">Province</div>
-          <div class="header_created">Created when</div>
-          <div class="header_edited">Edited on</div>
-        </div>
-        
-        <!-- Table rows -->
-        <div v-for="org in paginatedOrganizations" :key="org.id" class="table_row">
-          <!-- Status indicator - Always visible -->
-          <div class="status_indicator" :class="{ 'active': org.status === 'active', 'inactive': org.status === 'inactive' }"></div>
-          
-          <!-- Organization name -->
-          <div class="org_name" @click="viewOrganizationDetail(org.id)">{{ org.name }}</div>
-          
-          <!-- Category -->
-          <div class="org_category">{{ org.category }}</div>
-          
-          <!-- Province -->
-          <div class="org_province">{{ org.province }}</div>
-          
-          <!-- Created date -->
-          <div class="org_created">{{ org.createdDate }}</div>
-          
-          <!-- Edited date -->
-          <div class="org_edited">{{ org.editedDate }}</div>
-          
-          <!-- Action buttons -->
-          <div class="action_buttons">
-            <div class="edit_btn" @click="!state.loading && editOrganization(org.id)" :disabled="state.loading"></div>
-            <div class="delete_btn" @click="!state.loading && deleteOrganization(org.id)" :disabled="state.loading"></div>
-            <div v-if="org.hasMOU" class="document_btn" @click="!state.loading && viewDocument(org.id)"></div>
+
+          <div class="filter_buttons"><button class="reset_btn" @click="resetFilters">{{ text('Reset', 'รีเซ็ต') }}</button><button class="search_btn" @click="searchOrganizations">{{ text('search', 'ค้นหา') }}</button></div>
+        </section>
+
+        <div class="table_container">
+          <div class="table_header"><span>{{ text('Organization', 'องค์กร') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Province', 'จังหวัด') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Status', 'สถานะ') }}</span><span>{{ text('Actions', 'การดำเนินการ') }}</span></div>
+          <div v-for="org in paginatedOrganizations" :key="org.id" class="table_row">
+            <div class="org_name" @click="viewOrganizationDetail(org.id)">{{ org.name }}</div>
+            <div class="org_category">{{ org.category }}</div>
+            <div class="org_school">{{ org.industryCategory || 'SIT' }}</div>
+            <div class="org_province">{{ org.province }}</div>
+            <div class="org_country">{{ org.country || 'Thailand' }}</div>
+            <div><span class="status_pill" :class="org.status">{{ org.status === 'active' ? text('Active', 'ใช้งาน') : text('Inactive', 'ไม่ใช้งาน') }}</span></div>
+            <div class="action_buttons"><button class="text_action" @click="!state.loading && editOrganization(org.id)" :disabled="state.loading">{{ text('Edit', 'แก้ไข') }}</button><button class="text_action danger" @click="!state.loading && deleteOrganization(org.id)" :disabled="state.loading">{{ text('Delete', 'ลบ') }}</button><button v-if="org.hasMOU" class="text_action" @click="!state.loading && viewDocument(org.id)">{{ text('View', 'ดู') }}</button></div>
           </div>
+          <div v-if="!state.loading && paginatedOrganizations.length === 0" class="empty_state">No organizations found.</div>
         </div>
-      </div>
-      
-      <!-- Pagination -->
-      <Pagination 
-        :current-page="state.currentPage"
-        :total-pages="paginationInfo.totalPages"
-        :total-items="paginationInfo.totalItems"
-        :loading="state.loading"
-        :show-info="false"
-        @page-change="handlePageChange"
-      />
-    </div>
+        <Pagination :current-page="state.currentPage" :total-pages="paginationInfo.totalPages" :total-items="paginationInfo.totalItems" :loading="state.loading" :show-info="false" @page-change="handlePageChange" />
+      </section>
+    </main>
 
     <!-- Add Organization Modal -->
     <div v-if="state.showAddModal" class="modal_overlay" @mousedown.self="handleOverlayMouseDown" @mouseup.self="handleOverlayMouseUp">
@@ -441,24 +395,52 @@
             <h2 class="modal_title">Add Review</h2>
             <div class="form_divider"></div>
             
-            <!-- Review Form -->
-            <div class="form_row">
-              <div class="form_group">
-                <label>Organization Name *</label>
-                <input 
-                  type="text" 
-                  v-model="reviewData.organizationName" 
-                  placeholder="Enter organization name"
-                />
+            <!-- Existing Reviews Carousel -->
+            <div v-if="existingReviews.length > 0" class="existing_reviews_carousel">
+              <h3 class="section_subtitle">Existing Reviews</h3>
+              <div class="carousel_container">
+                <!-- Previous Button -->
+                <button 
+                  class="review_nav_btn prev" 
+                  @click="prevReview" 
+                  :disabled="currentReviewIndex === 0"
+                >
+                  <div class="nav_arrow_left"></div>
+                </button>
+                
+                <!-- Current Review Card -->
+                <div class="review_carousel_card" v-if="currentReview">
+                  <div class="review_card_header">
+                    <div class="review_position">{{ currentReview.job_position || 'N/A' }}</div>
+                    <button class="delete_review_btn" @click="deleteExistingReview(currentReview._id)" title="Delete review">
+                      <div class="delete_icon"></div>
+                    </button>
+                  </div>
+                  <p class="review_card_text">{{ currentReview.review_text }}</p>
+                  <div class="review_counter">{{ currentReviewIndex + 1 }} / {{ existingReviews.length }}</div>
+                </div>
+                
+                <!-- Next Button -->
+                <button 
+                  class="review_nav_btn next" 
+                  @click="nextReview" 
+                  :disabled="currentReviewIndex === existingReviews.length - 1"
+                >
+                  <div class="nav_arrow_right"></div>
+                </button>
               </div>
-              <div class="form_group">
-                <label>Job Position *</label>
-                <input 
-                  type="text" 
-                  v-model="reviewData.jobPosition" 
-                  placeholder="Enter job position"
-                />
-              </div>
+              <div class="form_divider" style="margin: 20px 0;"></div>
+            </div>
+            
+            <!-- Add New Review Form -->
+            <h3 class="section_subtitle">Add New Review</h3>
+            <div class="form_group">
+              <label>Job Position *</label>
+              <input 
+                type="text" 
+                v-model="reviewData.jobPosition" 
+                placeholder="Enter job position"
+              />
             </div>
             
             <!-- Review Text -->
@@ -470,21 +452,6 @@
                 placeholder="Write your review here..."
                 rows="6"
               ></textarea>
-            </div>
-            
-            <!-- Star Rating -->
-            <div class="rating_section">
-              <div class="star_rating">
-                <span 
-                  v-for="star in 5" 
-                  :key="star"
-                  class="star"
-                  :class="{ active: star <= reviewData.rating }"
-                  @click="setRating(star)"
-                >
-                  ★
-                </span>
-              </div>
             </div>
             
             <!-- Action Buttons -->
@@ -576,11 +543,12 @@
       <div class="import_modal">
         <h2 class="modal_title">Import Organizations</h2>
         <div class="form_divider"></div>
+        <p class="supported_formats">Supported formats: CSV, XLSX, XLS</p>
         
         <div class="file_upload_section">
           <input 
             type="file" 
-            accept=".csv,.xlsx,.xls,.xlxs" 
+            accept=".csv,.xlsx,.xls" 
             @change="handleImportFile"
             ref="importFileInput"
             style="display: none;"
@@ -647,7 +615,7 @@ import { useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
-import { organizationAPI, mouAPI, checkTokenValidity, BACKEND_URL } from '../services/api'
+import { organizationAPI, mouAPI, reviewAPI, checkTokenValidity, BACKEND_URL } from '../services/api'
 
 // ===========================
 // REACTIVE STATE MANAGEMENT
@@ -668,11 +636,30 @@ const state = reactive({
 
 // Search and filter data
 const searchText = ref('')
+const currentLanguage = ref<'EN' | 'TH'>((localStorage.getItem('admin_language') as 'EN' | 'TH') || 'EN')
+
+const text = (english: string, thai: string) => currentLanguage.value === 'TH' ? thai : english
+
+const setLanguage = (language: 'EN' | 'TH') => {
+  currentLanguage.value = language
+  localStorage.setItem('admin_language', language)
+}
+
 const showDeleteModal = ref(false)
 const showNotificationModal = ref(false)
 const showImportModal = ref(false)
 const importFile = ref<File | null>(null)
 const importResults = ref<any>(null)
+const IMPORT_MAX_FILE_SIZE = 25 * 1024 * 1024
+const IMPORT_ALLOWED_EXTENSIONS = ['.csv', '.xlsx', '.xls']
+const IMPORT_ALLOWED_MIME_TYPES = [
+  'text/csv',
+  'application/csv',
+  'text/plain',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/octet-stream'
+]
 const notificationMessage = ref('')
 const notificationType = ref<'success' | 'error' | 'warning'>('success')
 const selectedOrganization = ref<any>(null)
@@ -972,6 +959,7 @@ const filteredProvince = computed(() => {
 // Organizations data from backend
 const allOrganizations = ref<any[]>([])
 const mouDataMap = ref<Record<string, any>>({})
+const existingReviews = ref<any[]>([])
 
 // Compute organization type counts
 const organizationTypeCounts = computed(() => {
@@ -1257,11 +1245,10 @@ const modalFilteredIndustryCategory = computed(() => {
 
 // Review form data
 const reviewData = reactive({
-  organizationName: '',
   jobPosition: '',
-  review: '',
-  rating: 0
+  review: ''
 })
+const currentReviewIndex = ref(0)
 
 // MOU form data
 const mouData = reactive({
@@ -1323,16 +1310,71 @@ const resetForm = () => {
   })
   
   // Reset review data
-  reviewData.organizationName = ''
   reviewData.jobPosition = ''
   reviewData.review = ''
-  reviewData.rating = 0
   
   // Reset MOU data
   mouData.mouFile = null
   mouData.startDate = ''
   mouData.endDate = ''
   mouData.publishMOU = false
+  
+  // Reset existing reviews
+  existingReviews.value = []
+  currentReviewIndex.value = 0
+}
+
+// Fetch existing reviews for organization
+const fetchExistingReviews = async (orgId: string) => {
+  try {
+    const response = await reviewAPI.getByOrganization(orgId)
+    existingReviews.value = response.data.data || []
+    currentReviewIndex.value = 0
+    console.log('Existing reviews loaded:', existingReviews.value.length, 'items')
+  } catch (error: any) {
+    console.warn('Error loading existing reviews:', error)
+    existingReviews.value = []
+    currentReviewIndex.value = 0
+  }
+}
+
+// Navigate to previous review
+const prevReview = () => {
+  if (currentReviewIndex.value > 0) {
+    currentReviewIndex.value--
+  }
+}
+
+// Navigate to next review
+const nextReview = () => {
+  if (currentReviewIndex.value < existingReviews.value.length - 1) {
+    currentReviewIndex.value++
+  }
+}
+
+// Get current review
+const currentReview = computed(() => {
+  return existingReviews.value[currentReviewIndex.value] || null
+})
+
+// Delete a review
+const deleteExistingReview = async (reviewId: string) => {
+  const confirmed = confirm('Are you sure you want to delete this review?')
+  if (!confirmed) return
+  
+  try {
+    await reviewAPI.delete(reviewId)
+    // Remove from local list
+    existingReviews.value = existingReviews.value.filter(r => r._id !== reviewId)
+    notificationMessage.value = 'Review deleted successfully!'
+    notificationType.value = 'success'
+    showNotificationModal.value = true
+  } catch (error: any) {
+    console.error('Error deleting review:', error)
+    notificationMessage.value = 'Failed to delete review'
+    notificationType.value = 'error'
+    showNotificationModal.value = true
+  }
 }
 
 const switchTab = (tab: 'organization' | 'review' | 'mou') => {
@@ -1400,19 +1442,16 @@ const saveAllData = async () => {
     const orgId = state.editingOrgId || result.data.data._id
 
     // Step 2: Save Review Data (if provided)
-    if (reviewData.organizationName && reviewData.jobPosition && reviewData.review && reviewData.rating > 0) {
+    if (reviewData.jobPosition && reviewData.review) {
       try {
         const reviewFormData = new FormData()
         reviewFormData.append('organization_id', orgId)
-        reviewFormData.append('organization_name', reviewData.organizationName)
         reviewFormData.append('job_position', reviewData.jobPosition)
-        reviewFormData.append('review', reviewData.review)
-        reviewFormData.append('rating', String(reviewData.rating))
+        reviewFormData.append('review_text', reviewData.review)
         
-        // TODO: Add review API call when available
-        // await reviewAPI.create(reviewFormData)
+        await reviewAPI.create(reviewFormData)
         savedItems.push('Review')
-        console.log('Review data ready to save:', reviewData)
+        console.log('Review saved successfully:', reviewData)
       } catch (reviewError: any) {
         console.error('Review save failed:', reviewError)
         errors.push('Review')
@@ -1564,10 +1603,6 @@ const handleMOUUpload = (event: Event) => {
   }
 }
 
-const setRating = (rating: number) => {
-  reviewData.rating = rating
-}
-
 const saveReview = async () => {
   await saveAllData()
 }
@@ -1693,6 +1728,10 @@ const editOrganization = async (id: string | number) => {
     }
     
     state.editingOrgId = id as string
+    
+    // Fetch existing reviews
+    await fetchExistingReviews(id as string)
+    
     state.showAddModal = true
     state.activeTab = 'organization'
   } catch (error: any) {
@@ -1807,12 +1846,13 @@ const handleImportFile = (event: Event) => {
     const file = target.files[0]
     
     // Validate file type
-    const validTypes = ['.csv', '.xlsx', '.xls', '.xlxs']
     const fileName = file.name.toLowerCase()
-    const isValid = validTypes.some(type => fileName.endsWith(type))
+    const fileExtension = fileName.substring(fileName.lastIndexOf('.'))
+    const isValidExtension = IMPORT_ALLOWED_EXTENSIONS.includes(fileExtension)
+    const isValidMimeType = !file.type || IMPORT_ALLOWED_MIME_TYPES.includes(file.type)
     
-    if (!isValid) {
-      notificationMessage.value = 'Invalid file type. Please upload CSV or Excel file (.csv, .xlsx, .xls, .xlxs)'
+    if (!isValidExtension || !isValidMimeType) {
+      notificationMessage.value = 'Invalid file type. Please upload a CSV or Excel file (.csv, .xlsx, .xls)'
       notificationType.value = 'error'
       showNotificationModal.value = true
       target.value = ''
@@ -1820,8 +1860,8 @@ const handleImportFile = (event: Event) => {
     }
     
     // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      notificationMessage.value = 'File size too large. Maximum 10MB allowed'
+    if (file.size > IMPORT_MAX_FILE_SIZE) {
+      notificationMessage.value = 'File size too large. Maximum 25MB allowed'
       notificationType.value = 'error'
       showNotificationModal.value = true
       target.value = ''
@@ -3310,23 +3350,147 @@ onBeforeUnmount(() => {
   margin: 20px 0;
 }
 
-.star_rating {
+/* Review Tab Styles */
+.review_tab {
   display: flex;
-  gap: 3px;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.section_subtitle {
+  font-family: 'Outfit';
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 20px;
+  color: #000000;
+  margin: 0;
+  padding-top: 10px;
+}
+
+.existing_reviews_carousel {
+  background: #F9F9F9;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.carousel_container {
+  display: flex;
   align-items: center;
+  gap: 15px;
+  justify-content: space-between;
+  min-height: 200px;
 }
 
-.star {
-  font-size: 30px;
-  color: #D9D9D9;
+.review_nav_btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #D0D0D0;
+  background: #FFFFFF;
+  border-radius: 4px;
   cursor: pointer;
-  transition: color 0.2s ease;
-  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
 }
 
-.star.active,
-.star:hover {
-  color: #FFD700;
+.review_nav_btn:hover:not(:disabled) {
+  background: #F0F0F0;
+  border-color: #AB1C03;
+}
+
+.review_nav_btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nav_arrow_left,
+.nav_arrow_right {
+  width: 6px;
+  height: 6px;
+  background: #000000;
+}
+
+.nav_arrow_left {
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+
+.nav_arrow_right {
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.review_carousel_card {
+  flex: 1;
+  background: #FFFFFF;
+  border: 1px solid #E0E0E0;
+  border-radius: 6px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 180px;
+}
+
+.review_card_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.review_position {
+  font-family: 'Inter';
+  font-weight: 600;
+  font-size: 14px;
+  color: #545454;
+}
+
+.delete_review_btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: #F0F0F0;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+
+.delete_review_btn:hover {
+  background: #E0E0E0;
+}
+
+.delete_icon {
+  width: 14px;
+  height: 14px;
+  background: #C70000;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z'/%3E%3C/svg%3E") no-repeat center;
+  mask-size: contain;
+}
+
+.review_card_text {
+  font-family: 'Inter';
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333333;
+  margin: 0;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 120px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.review_counter {
+  font-family: 'Inter';
+  font-size: 12px;
+  color: #999999;
+  text-align: right;
 }
 
 
@@ -3714,5 +3878,141 @@ onBeforeUnmount(() => {
   color: #991B1B;
   margin: 4px 0;
 }
+
+/* Figma organization page */
+.admin_organization {
+  width: 100%;
+  min-width: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  background: #ffffff;
+  color: #1f2937;
+}
+
+.main_content {
+  position: relative;
+  width: calc(100% - 66px);
+  min-width: 0;
+  height: 100vh;
+  margin-left: 66px;
+  padding: 0;
+  overflow: auto;
+  background: #f3f4f6;
+  display: block;
+}
+
+.top_bar {
+  position: relative;
+  height: 50px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+.top_bar_titles { display: none; }
+.top_bar_actions {
+  position: absolute;
+  top: 11px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  transform: scale(.75);
+  transform-origin: top right;
+}
+.language_switcher { display: flex; gap: 3px; height: 26px; }
+.language_switcher button { display: grid; place-items: center; width: 33px; height: 26px; box-sizing: border-box; border-radius: 2px; font: 600 12px/15px Inter, sans-serif; cursor: pointer; }
+.language_active { background: #8b0000; border: 1px solid #8b0000; color: #ffffff; }
+.language_option { background: #ffffff; border: 1px solid #a1a1a1; color: #1f2937; }
+.language_switcher button.selected { background: #8b0000; border: 1px solid #8b0000; color: #ffffff; }
+.language_switcher button:not(.selected) { background: #ffffff; border: 1px solid #a1a1a1; color: #1f2937; }
+.admin_badge { display: flex; align-items: center; gap: 8px; width: 120px; height: 36px; padding: 6px 10px; box-sizing: border-box; border-radius: 20px; background: #f3f4f6; font: 600 12px/15px Inter, sans-serif; }
+.admin_avatar { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: #8b0000; color: #ffffff; }
+
+.content_area { width: min(820px, calc(100% - 47px)); margin: 0 auto; padding-top: 15px; }
+.page_heading { display: flex; align-items: flex-start; justify-content: space-between; min-height: 50px; }
+.page_heading h1 { margin: 0; font: 700 18px/22px Inter, sans-serif; color: #1f2937; }
+.page_heading p { margin: 1px 0 0; font: 400 10px/12px Inter, sans-serif; color: #73737a; }
+.page_actions { display: flex; gap: 14px; padding-top: 11px; transform: scale(.75); transform-origin: top right; }
+.page_actions button { height: 36px; box-sizing: border-box; border-radius: 8px; font: 600 13px/16px Inter, sans-serif; cursor: pointer; }
+.page_actions .import_btn { display: flex; align-items: center; gap: 6px; width: 120px; padding: 10px 13px; background: #ffffff; border: 0.9px solid #a8a8ac; color: #000000; }
+.page_actions .add_org_btn { display: flex; align-items: center; gap: 5px; width: 154px; padding: 10px 16px; background: #8b0000; border: 0; color: #ffffff; }
+.page_actions .upload_icon { width: 12px; height: 12px; background: #000000; }
+.page_actions .plus_icon { width: 12px; height: 12px; }
+
+.filter_section { width: min(810px, 100%); height: 146px; box-sizing: border-box; margin: 0 0 22px; padding: 12px 10px 11px 20px; background: #ffffff; border-radius: 0; box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25); }
+.search_input { width: 100%; height: 30px; box-sizing: border-box; padding: 9px 12px; border: 0.4px solid #a8a8ac; border-radius: 8px; font: 400 10px/12px Inter, sans-serif; color: #1f2937; }
+.filter_labels { display: grid; grid-template-columns: repeat(5, 122px); gap: 3px; margin-top: 14px; padding: 0 2px; font: 500 10px/12px Inter, sans-serif; color: #000000; }
+.dropdowns_grid { display: grid; grid-template-columns: repeat(5, 122px); gap: 3px; margin: 0; }
+.dropdown_container { margin: 0; min-width: 0; }
+.dropdown_header { height: 28px; box-sizing: border-box; padding: 7px; border: 0.4px solid #a8a8ac; border-radius: 8px; }
+.dropdown_text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 10px/12px Inter, sans-serif; color: #73737a; }
+.dropdown_arrow { width: 8px; height: 6px; background: #000000; }
+.filter_buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 13px; }
+.reset_btn, .search_btn { height: 20px; padding: 4px 12px; border-radius: 20px; font: 400 10px/12px Inter, sans-serif; cursor: pointer; }
+.reset_btn { background: #ffffff; border: 1px solid #b1b1b1; color: #000000; }
+.search_btn { background: #ab1c03; border: 0; color: #ffffff; }
+
+.table_container { width: 818px; max-width: 100%; min-height: 208px; margin: 0 auto; box-sizing: border-box; overflow: hidden; background: #ffffff; border: 1px solid #d1d1d2; border-radius: 12px; }
+.table_header, .table_row { display: grid; grid-template-columns: minmax(0, 201px) minmax(0, 81px) minmax(0, 66px) minmax(0, 81px) minmax(0, 76px) minmax(0, 76px) minmax(0, 1fr); align-items: center; }
+.table_header { height: 28px; padding: 0 15px; box-sizing: border-box; background: #8b0000; color: #ffffff; font: 600 8px/10px Inter, sans-serif; }
+.table_row { min-height: 36px; padding: 0 15px; box-sizing: border-box; border-top: 1px solid #e6e6e8; color: #1f2937; font: 400 9px/11px Inter, sans-serif; }
+.table_header > span + span,
+.table_row > div + div { border-left: 1px solid #d1d1d2; padding-left: 10px; }
+.table_header > span + span { border-left-color: rgba(255, 255, 255, 0.45); }
+.table_row > div {
+  position: static !important;
+  inset: auto !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0;
+  padding: 0;
+  transform: none;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-family: Inter, sans-serif !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  line-height: inherit !important;
+}
+.table_row .org_name { position: static !important; min-width: 0 !important; max-width: 100% !important; font-size: 9px; line-height: 11px; }
+.table_row .action_buttons { display: flex; position: static !important; gap: 5px; align-items: center; }
+.table_header > span + span,
+.table_row > div + div { border-left: 0; padding-left: 0; }
+.table_header,
+.table_row { position: relative; }
+.table_header::after,
+.table_row::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent 0, transparent 25%, rgba(255, 255, 255, .45) 25%, rgba(255, 255, 255, .45) calc(25% + 1px), transparent calc(25% + 1px), transparent 35%, rgba(255, 255, 255, .45) 35%, rgba(255, 255, 255, .45) calc(35% + 1px), transparent calc(35% + 1px), transparent 43%, rgba(255, 255, 255, .45) 43%, rgba(255, 255, 255, .45) calc(43% + 1px), transparent calc(43% + 1px), transparent 53%, rgba(255, 255, 255, .45) 53%, rgba(255, 255, 255, .45) calc(53% + 1px), transparent calc(53% + 1px), transparent 62%, rgba(255, 255, 255, .45) 62%, rgba(255, 255, 255, .45) calc(62% + 1px), transparent calc(62% + 1px), transparent 71%, rgba(255, 255, 255, .45) 71%, rgba(255, 255, 255, .45) calc(71% + 1px), transparent calc(71% + 1px));
+}
+.table_row::after {
+  background: linear-gradient(to right, transparent 0, transparent 25%, #d1d1d2 25%, #d1d1d2 calc(25% + 1px), transparent calc(25% + 1px), transparent 35%, #d1d1d2 35%, #d1d1d2 calc(35% + 1px), transparent calc(35% + 1px), transparent 43%, #d1d1d2 43%, #d1d1d2 calc(43% + 1px), transparent calc(43% + 1px), transparent 53%, #d1d1d2 53%, #d1d1d2 calc(53% + 1px), transparent calc(53% + 1px), transparent 62%, #d1d1d2 62%, #d1d1d2 calc(62% + 1px), transparent calc(62% + 1px), transparent 71%, #d1d1d2 71%, #d1d1d2 calc(71% + 1px), transparent calc(71% + 1px));
+}
+.org_name { font-weight: 600; cursor: pointer; }
+.org_name:hover { color: #8b0000; }
+.status_pill { display: inline-flex; padding: 3px 8px; border-radius: 10px; font: 600 10px/12px Inter, sans-serif; color: #ffffff; }
+.status_pill.active { background: #22c55e; }
+.status_pill.inactive { background: #ef4444; }
+.action_buttons { display: flex; gap: 7px; align-items: center; }
+.text_action { padding: 0; border: 0; background: transparent; color: #73737a; font: 400 11px/13px Inter, sans-serif; cursor: pointer; }
+.text_action:hover { color: #8b0000; text-decoration: underline; }
+.text_action.danger:hover { color: #dc2626; }
+.empty_state { padding: 45px 20px; text-align: center; color: #73737a; font: 400 13px/16px Inter, sans-serif; }
+.content_area :deep(.pagination_wrapper) { margin-top: 14px; padding-right: 4px; transform: scale(.75); transform-origin: top right; }
+
+@media (max-width: 1100px) {
+  .content_area { width: calc(100% - 32px); }
+  .table_container { overflow-x: auto; }
+  .table_header, .table_row { min-width: 1090px; }
+}
+
 </style>
 

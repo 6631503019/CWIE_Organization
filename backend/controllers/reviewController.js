@@ -85,7 +85,7 @@ const createReview = async (req, res, next) => {
         const { organization_id, job_position, review_text, rating } = req.body;
 
         // Check required fields
-        const requiredFields = ['organization_id', 'job_position', 'review_text', 'rating'];
+        const requiredFields = ['organization_id', 'job_position', 'review_text'];
         const missingFields = requiredFields.filter(field => !req.body[field]);
 
         if (missingFields.length > 0) {
@@ -96,8 +96,8 @@ const createReview = async (req, res, next) => {
             );
         }
 
-        // Validate rating range
-        if (rating < 1 || rating > 5) {
+        // Validate rating range if provided
+        if (rating && (rating < 1 || rating > 5)) {
             throw new CustomError(
                 ERROR_CODES.VALIDATION_INVALID_RANGE,
                 'Rating must be between 1 and 5',

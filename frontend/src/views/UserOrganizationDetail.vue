@@ -370,9 +370,11 @@ onMounted(async () => {
 
 .org_title {
   position: absolute;
-  left: 74px;
-  right: 74px;
-  top: 77px;
+  width: 744px;
+  height: 48px;
+  left: 187px;
+  top: 18px;
+  margin: 0;
   
   font-family: 'Outfit', sans-serif;
   font-style: normal;
@@ -381,7 +383,6 @@ onMounted(async () => {
   line-height: 35px;
   text-align: center;
   color: #000000;
-  margin: 0;
 }
 
 .org_logo_large {
@@ -403,53 +404,58 @@ onMounted(async () => {
 
 .org_address {
   position: absolute;
-  left: 74px;
-  right: 74px;
-  top: 600px;
+  width: 909px;
+  height: auto;
+  left: 79px;
+  top: 625px;
   
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 400;
-  font-size: 15px;
-  line-height: 19px;
+  font-size: 20px;
+  line-height: 25px;
+  color: #000000;
   text-align: center;
-  color: rgba(0, 0, 0, 0.8);
 }
 
 .section_label {
   position: absolute;
-  left: 74px;
-  
   font-family: 'Outfit', sans-serif;
   font-style: normal;
   font-weight: 400;
-  font-size: 16px;
-  line-height: 20px;
+  font-size: 20px;
+  line-height: 25px;
   color: #000000;
 }
 
 .business_type_label {
-  top: 640px;
+  width: 124px;
+  height: 25px;
+  left: 83px;
+  top: 703px;
 }
 
 .location_label {
-  top: 693px;
+  width: 124px;
+  height: 25px;
+  left: 366px;
+  top: 700px;
 }
 
 .tags_container {
   position: absolute;
-  left: 74px;
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
 }
 
 .business_tags {
-  top: 668px;
+  left: 79px;
+  top: 743px;
 }
 
 .location_tags {
-  top: 721px;
+  left: 366px;
+  top: 739px;
 }
 
 .tag {
@@ -475,18 +481,19 @@ onMounted(async () => {
 
 .contact_item {
   position: absolute;
-  left: 74px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .email_item {
-  top: 760px;
+  left: 79px;
+  top: 786px;
 }
 
 .phone_item {
-  top: 787px;
+  left: 366px;
+  top: 783px;
 }
 
 .icon {
@@ -516,52 +523,63 @@ onMounted(async () => {
 
 .details_section {
   position: absolute;
-  left: 74px;
-  right: 74px;
-  top: 840px;
+  left: 83px;
+  top: 850px;
+  width: 967px;
 }
 
 .section_title {
-  font-family: 'Outfit', sans-serif;
+  margin: 0 0 15px 0;
+  font-family: 'Inter', sans-serif;
   font-style: normal;
   font-weight: 600;
-  font-size: 20px;
-  line-height: 25px;
+  font-size: 16px;
+  line-height: 19px;
   color: #000000;
-  margin: 0 0 12px 0;
 }
 
 .details_text {
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 20px;
-  color: rgba(0, 0, 0, 0.8);
   margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  color: #000000;
   white-space: pre-line;
 }
 
 .reviews_section {
   position: absolute;
-  left: 74px;
-  right: 74px;
+  left: 83px;
   top: 1050px;
+  width: 900px;
 }
 
 .review_carousel {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-top: 20px;
+  gap: 15px;
+  margin-top: 33px;
 }
 
 .review_nav_btn {
-  background: transparent;
-  border: none;
+  width: 40px;
+  height: 40px;
+  background: #FFFFFF;
+  border: 1px solid #D0D0D0;
+  border-radius: 50%;
   cursor: pointer;
-  padding: 10px;
-  transition: opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.review_nav_btn:hover:not(:disabled) {
+  background: #F5F5F5;
+  border-color: #AB1C03;
 }
 
 .review_nav_btn:disabled {
@@ -569,81 +587,84 @@ onMounted(async () => {
   cursor: not-allowed;
 }
 
-.review_nav_btn:not(:disabled):hover {
-  opacity: 0.7;
-}
-
 .nav_arrow {
-  width: 0;
-  height: 0;
-  border-style: solid;
+  width: 20px;
+  height: 20px;
+  background: #000000;
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
 }
 
-.nav-arrow.left {
-  border-width: 10px 15px 10px 0;
-  border-color: transparent #000000 transparent transparent;
+.nav_arrow.left {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z'/%3E%3C/svg%3E");
 }
 
-.nav-arrow.right {
-  border-width: 10px 0 10px 15px;
-  border-color: transparent transparent transparent #000000;
+.nav_arrow.right {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z'/%3E%3C/svg%3E");
 }
 
 .review_card {
   flex: 1;
-  background: #F9F9F9;
-  border: 1px solid #E0E0E0;
-  border-radius: 12px;
-  padding: 24px;
-  min-height: 180px;
+  height: auto;
+  min-height: 70px;
+  padding: 10px;
   position: relative;
-}
-
-.review_header {
-  margin-bottom: 16px;
-}
-
-.job_position_label {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  color: #000000;
-}
-
-.job_position_value {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 400;
-  font-size: 14px;
-  color: #666666;
-}
-
-.review_text {
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 20px;
-  color: rgba(0, 0, 0, 0.8);
-  margin: 0 0 20px 0;
-  min-height: 60px;
+  
+  background: rgba(230, 229, 229, 0.5);
+  border-radius: 5px;
 }
 
 .review_counter {
   position: absolute;
-  bottom: 24px;
-  right: 24px;
+  bottom: 10px;
+  right: 10px;
   font-family: 'Inter', sans-serif;
-  font-weight: 500;
   font-size: 12px;
-  color: #999999;
+  font-weight: 500;
+  color: #767676;
+}
+
+.review_header {
+  margin-bottom: 10px;
+}
+
+.job_position_label {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  color: #545454;
+}
+
+.job_position_value {
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  color: #000000;
+}
+
+.review_text {
+  margin: 0 0 10px 0;
+  font-family: 'Inter', sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 19px;
+  color: #000000;
 }
 
 .no_reviews {
-  text-align: center;
-  padding: 40px;
-  color: #999999;
+  margin-top: 33px;
   font-family: 'Inter', sans-serif;
-  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 19px;
+  color: #767676;
 }
 </style>
 

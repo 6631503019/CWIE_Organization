@@ -1,5 +1,4 @@
 const Organization = require('../models/Organization');
-const Notification = require('../models/Notification');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 const { deleteStoredFile } = require('../utils/fileCleanup');
 
@@ -192,15 +191,6 @@ const createOrganization = async (req, res, next) => {
 
         console.log('🟢 CREATE - Saved to DB - is_public:', organization.is_public, 'Type:', typeof organization.is_public);
 
-        // Create notification
-        await Notification.create({
-            requested_by: req.user._id,
-            requested_by_name: req.user.name,
-            action: 'Add',
-            establishment_name: organization.name_en || organization.name_th,
-            establishment_id: organization._id
-        });
-
         res.status(201).json({
             success: true,
             message: 'Organization created successfully',
@@ -281,15 +271,6 @@ const updateOrganization = async (req, res, next) => {
 
         console.log('🟡 UPDATE - Saved to DB - is_public:', organization.is_public, 'Type:', typeof organization.is_public);
 
-        // Create notification
-        await Notification.create({
-            requested_by: req.user._id,
-            requested_by_name: req.user.name,
-            action: 'Edit',
-            establishment_name: organization.name_en || organization.name_th,
-            establishment_id: organization._id
-        });
-
         res.status(200).json({
             success: true,
             message: 'Organization updated successfully',
@@ -315,15 +296,6 @@ const deleteOrganization = async (req, res, next) => {
         if (organization.logo_path) {
             deleteStoredFile(organization.logo_path, 'logo file');
         }
-
-        // Create notification before deleting
-        await Notification.create({
-            requested_by: req.user._id,
-            requested_by_name: req.user.name,
-            action: 'Delete',
-            establishment_name: organization.name_en || organization.name_th,
-            establishment_id: organization._id
-        });
 
         await Organization.findByIdAndDelete(req.params.id);
 

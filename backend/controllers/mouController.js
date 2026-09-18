@@ -176,30 +176,6 @@ const createMOU = async (req, res, next) => {
             console.log('CREATE NEW - Converted is_published to:', req.body.is_published, 'Type:', typeof req.body.is_published);
         }
 
-        // Validate and convert start_date if provided
-        if (req.body.start_date) {
-            const startDate = new Date(req.body.start_date);
-            if (isNaN(startDate.getTime())) {
-                throw new CustomError(
-                    ERROR_CODES.VALIDATION_DATE_INVALID,
-                    'Invalid start date format'
-                );
-            }
-            req.body.start_date = startDate;
-        }
-
-        // Validate and convert end_date if provided
-        if (req.body.end_date) {
-            const endDate = new Date(req.body.end_date);
-            if (isNaN(endDate.getTime())) {
-                throw new CustomError(
-                    ERROR_CODES.VALIDATION_DATE_INVALID,
-                    'Invalid end date format'
-                );
-            }
-            req.body.end_date = endDate;
-        }
-
         const mou = await MOU.create(req.body);
 
         console.log('CREATE NEW - Created MOU:', mou._id, 'is_published:', mou.is_published);
@@ -242,30 +218,6 @@ const updateMOU = async (req, res, next) => {
             console.log('Converted is_published to:', req.body.is_published, 'Type:', typeof req.body.is_published);
         }
 
-        // Validate and convert start_date if provided
-        if (req.body.start_date) {
-            const startDate = new Date(req.body.start_date);
-            if (isNaN(startDate.getTime())) {
-                throw new CustomError(
-                    ERROR_CODES.VALIDATION_DATE_INVALID,
-                    'Invalid start date format'
-                );
-            }
-            req.body.start_date = startDate;
-        }
-
-        // Validate and convert end_date if provided
-        if (req.body.end_date) {
-            const endDate = new Date(req.body.end_date);
-            if (isNaN(endDate.getTime())) {
-                throw new CustomError(
-                    ERROR_CODES.VALIDATION_DATE_INVALID,
-                    'Invalid end date format'
-                );
-            }
-            req.body.end_date = endDate;
-        }
-
         if (req.file) {
             // Validate file type (should be PDF)
             if (req.file.mimetype !== 'application/pdf') {
@@ -275,12 +227,12 @@ const updateMOU = async (req, res, next) => {
                     { receivedType: req.file.mimetype }
                 );
             }
-
+            
             // Delete old MOU file if exists
             if (mou.mou_file_path) {
                 deleteStoredFile(mou.mou_file_path, 'old MOU file');
             }
-
+            
             req.body.mou_file_path = req.file.path;
         }
 

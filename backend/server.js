@@ -14,7 +14,7 @@ require('./models/Roadshow');
 require('./models/MOU');
 require('./models/Country');
 require('./models/IndustryCategory');
-require('./models/Notification');
+require('./models/InternshipRecord');
 
 // Import routes
 const organizationRoutes = require('./routes/organizationRoutes');
@@ -22,7 +22,6 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const mouRoutes = require('./routes/mouRoutes');
 const roadshowRoutes = require('./routes/roadshowRoutes');
 const authRoutes = require('./routes/authRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');
 const importRoutes = require('./routes/importRoutes');
 
 // Import middleware
@@ -134,7 +133,6 @@ app.use('/api/organizations', organizationRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/mou', mouRoutes);
 app.use('/api/roadshows', roadshowRoutes);
-app.use('/api/notifications', notificationRoutes);
 app.use('/api/import', importRoutes);
 
 // Health check endpoint

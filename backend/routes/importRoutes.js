@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const { protect, authorize } = require('../middleware/auth');
 const { importOrganizations } = require('../controllers/importController');
+const { CustomError, ERROR_CODES } = require('../utils/customError');
 
 // Configure multer for file upload
 const storage = multer.diskStorage({
@@ -17,35 +18,58 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-    const allowedTypes = [
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/csv',
-        'application/csv',
-        'application/octet-stream'
-    ];
-
     const fileExtension = path.extname(file.originalname || '').toLowerCase();
-    const allowedExtensions = ['.csv', '.xlsx', '.xls', '.xlxs'];
-    const isValidMimeType = allowedTypes.includes(file.mimetype);
-    const isValidExtension = allowedExtensions.includes(fileExtension);
+    const allowedMimeTypesByExtension = {
+        '.csv': new Set(['text/csv', 'application/csv', 'text/plain', 'application/octet-stream']),
+        '.xlsx': new Set([
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'application/zip',
+            'application/octet-stream',
+            'application/vnd.ms-excel'
+        ]),
+        '.xls': new Set(['application/vnd.ms-excel', 'application/octet-stream', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
+    };
+    const allowedMimeTypes = allowedMimeTypesByExtension[fileExtension];
 
-    if (isValidMimeType || isValidExtension) {
-        cb(null, true);
-    } else {
-        cb(new Error('Invalid file type. Only Excel (.xlsx, .xls, .xlxs) and CSV files are allowed'), false);
+    if (!allowedMimeTypes) {
+        return cb(new Error('Invalid file type. Please upload a CSV or Excel file (.csv, .xlsx, .xls)'), false);
     }
+
+    // Some browsers send an empty or generic MIME type for local files.
+    if (file.mimetype && !allowedMimeTypes.has(file.mimetype)) {
+        return cb(new Error('File extension and MIME type do not match'), false);
+    }
+
+    cb(null, true);
 };
 
 const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024 // 5MB limit
+        fileSize: 25 * 1024 * 1024 // 25MB limit
     }
 });
 
+const uploadOrganizationFile = (req, res, next) => {
+    upload.single('file')(req, res, (error) => {
+        if (!error) return next();
+
+        if (error.code === 'LIMIT_FILE_SIZE') {
+            return next(new CustomError(
+                ERROR_CODES.VALIDATION_FILE_SIZE_TOO_LARGE,
+                'File size too large. Maximum 25MB allowed'
+            ));
+        }
+
+        return next(new CustomError(
+            ERROR_CODES.VALIDATION_FILE_TYPE_INVALID,
+            error.message || 'Invalid file type. Please upload a CSV or Excel file (.csv, .xlsx, .xls)'
+        ));
+    });
+};
+
 // Routes
-router.post('/organizations', protect, authorize('admin'), upload.single('file'), importOrganizations);
+router.post('/organizations', protect, authorize('admin'), uploadOrganizationFile, importOrganizations);
 
 module.exports = router;

@@ -18,18 +18,17 @@ async function createAdminUser() {
             process.exit(0);
         }
 
-        // Create admin user
+        // Create the admin profile used after Google authentication.
         const admin = await User.create({
             name: 'Admin User',
             email: 'admin@mfu.ac.th',
-            password: 'admin123',
             role: 'admin',
             isActive: true
         });
 
         console.log('✅ Admin user created successfully!');
         console.log('Email:', admin.email);
-        console.log('Password: admin123');
+        console.log('Login method: Google Lamduan Mail');
         console.log('Role:', admin.role);
 
         await mongoose.connection.close();

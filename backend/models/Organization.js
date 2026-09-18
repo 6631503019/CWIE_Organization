@@ -39,7 +39,6 @@ const organizationSchema = new mongoose.Schema({
     email: {
         type: String,
         required: [true, 'Email is required'],
-        unique: true,
         lowercase: true,
         validate: {
             validator: function (v) {
@@ -75,6 +74,8 @@ const organizationSchema = new mongoose.Schema({
 
 // Indexes for better search performance
 organizationSchema.index({ name_th: 'text', name_en: 'text' });
+organizationSchema.index({ name_th: 1 });
+organizationSchema.index({ name_en: 1 });
 organizationSchema.index({ organization_type: 1 });
 organizationSchema.index({ country_id: 1 });
 organizationSchema.index({ is_public: 1 });

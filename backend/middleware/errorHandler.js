@@ -32,9 +32,16 @@ const errorHandler = (err, req, res, next) => {
     }
 
     // Mongoose Duplicate Key Error
-    if (err.code === 11000) {
-        const field = Object.keys(err.keyValue)[0];
-        const value = err.keyValue[field];
+    const firstWriteError = err.writeErrors?.[0]?.err || err.writeErrors?.[0] || null;
+    const isDuplicateKeyError = err.code === 11000 || firstWriteError?.code === 11000;
+    if (isDuplicateKeyError) {
+        const duplicateInfo = err.keyValue || firstWriteError?.keyValue || {};
+        const duplicateMessage = err.message || firstWriteError?.errmsg || '';
+        const field = Object.keys(duplicateInfo)[0] || (duplicateMessage.match(/index: (\w+)_1 dup key/) || [])[1] || 'field';
+        const parsedValue = (duplicateMessage.match(/dup key: \{\s*\w+:\s*"([^"]*)"/) || [])[1];
+        const value = duplicateInfo[field] !== undefined && duplicateInfo[field] !== null
+            ? duplicateInfo[field]
+            : (parsedValue || 'duplicate value');
 
         let errorCode = ERROR_CODES.CONFLICT_DUPLICATE_ENTRY;
 

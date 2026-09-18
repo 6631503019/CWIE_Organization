@@ -239,10 +239,45 @@
           <h2 class="modal_title">Add Review</h2>
           <div class="form_divider"></div>
           
-          <div class="form_field">
-            <label>Organization Name</label>
-            <input type="text" v-model="reviewData.organizationName" placeholder="Organization Name" />
+          <!-- Existing Reviews Carousel -->
+          <div v-if="existingReviews.length > 0" class="existing_reviews_carousel">
+            <h3 class="section_subtitle">Existing Reviews</h3>
+            <div class="carousel_container">
+              <!-- Previous Button -->
+              <button 
+                class="review_nav_btn prev" 
+                @click="prevReview" 
+                :disabled="currentReviewIndex === 0"
+              >
+                <div class="nav_arrow_left"></div>
+              </button>
+              
+              <!-- Current Review Card -->
+              <div class="review_carousel_card" v-if="currentReview">
+                <div class="review_card_header">
+                  <div class="review_position">{{ currentReview.job_position || 'N/A' }}</div>
+                  <button class="delete_review_btn" @click="deleteExistingReview(currentReview._id)" title="Delete review">
+                    <div class="delete_icon"></div>
+                  </button>
+                </div>
+                <p class="review_card_text">{{ currentReview.review_text }}</p>
+                <div class="review_counter">{{ currentReviewIndex + 1 }} / {{ existingReviews.length }}</div>
+              </div>
+              
+              <!-- Next Button -->
+              <button 
+                class="review_nav_btn next" 
+                @click="nextReview" 
+                :disabled="currentReviewIndex === existingReviews.length - 1"
+              >
+                <div class="nav_arrow_right"></div>
+              </button>
+            </div>
+            <div class="form_divider" style="margin: 20px 0;"></div>
           </div>
+          
+          <!-- Add New Review Form -->
+          <h3 class="section_subtitle">Add New Review</h3>
           
           <div class="form_field">
             <label>Job Position</label>
@@ -252,22 +287,6 @@
           <div class="form_field">
             <label>Review</label>
             <textarea v-model="reviewData.review" placeholder="Write your review..." rows="6"></textarea>
-          </div>
-          
-          <!-- Star Rating -->
-          <div class="star_rating">
-            <label>Rating</label>
-            <div class="stars">
-              <span 
-                v-for="star in 5" 
-                :key="star"
-                class="star"
-                :class="{ filled: star <= reviewData.rating }"
-                @click="reviewData.rating = star"
-              >
-                ★
-              </span>
-            </div>
           </div>
           
           <!-- Action Buttons -->
@@ -371,6 +390,8 @@ const loading = ref(false)
 const logoPreview = ref<string | null>(null)
 const mouPreview = ref<string | null>(null)
 const existingMouId = ref<string | null>(null)
+const existingReviews = ref<any[]>([])
+const currentReviewIndex = ref(0)
 
 // Form data
 const formData = reactive({
@@ -448,11 +469,61 @@ const filteredProvinces = computed(() => {
 })
 
 const reviewData = reactive({
-  organizationName: '',
   jobPosition: '',
-  review: '',
-  rating: 0
+  review: ''
 })
+
+// Fetch existing reviews for organization
+const fetchExistingReviews = async (orgId: string) => {
+  try {
+    const response = await reviewAPI.getByOrganization(orgId)
+    existingReviews.value = response.data.data || []
+    currentReviewIndex.value = 0
+    console.log('Existing reviews loaded:', existingReviews.value.length, 'items')
+  } catch (error: any) {
+    console.warn('Error loading existing reviews:', error)
+    existingReviews.value = []
+    currentReviewIndex.value = 0
+  }
+}
+
+// Navigate to previous review
+const prevReview = () => {
+  if (currentReviewIndex.value > 0) {
+    currentReviewIndex.value--
+  }
+}
+
+// Navigate to next review
+const nextReview = () => {
+  if (currentReviewIndex.value < existingReviews.value.length - 1) {
+    currentReviewIndex.value++
+  }
+}
+
+// Get current review
+const currentReview = computed(() => {
+  return existingReviews.value[currentReviewIndex.value] || null
+})
+
+// Delete a review
+const deleteExistingReview = async (reviewId: string) => {
+  const confirmed = confirm('Are you sure you want to delete this review?')
+  if (!confirmed) return
+  
+  try {
+    await reviewAPI.delete(reviewId)
+    // Remove from local list
+    existingReviews.value = existingReviews.value.filter(r => r._id !== reviewId)
+    // Reset index if needed
+    if (currentReviewIndex.value >= existingReviews.value.length) {
+      currentReviewIndex.value = Math.max(0, existingReviews.value.length - 1)
+    }
+    console.log('Review deleted successfully')
+  } catch (error: any) {
+    console.error('Error deleting review:', error)
+  }
+}
 
 const mouData = reactive({
   mouFile: null as File | null,
@@ -538,7 +609,7 @@ const saveAllData = async () => {
     console.log('Organization saved successfully')
 
     // Step 2: Save Review Data (if provided)
-    if (reviewData.jobPosition && reviewData.review && reviewData.rating > 0) {
+    if (reviewData.jobPosition && reviewData.review) {
       if (!savedOrgId) {
         errors.push('Review (No organization ID)')
       } else {
@@ -546,8 +617,7 @@ const saveAllData = async () => {
           const reviewPayload = {
             organization_id: savedOrgId,
             job_position: reviewData.jobPosition,
-            review_text: reviewData.review,
-            rating: reviewData.rating
+            review_text: reviewData.review
           }
           
           await reviewAPI.create(reviewPayload)
@@ -656,6 +726,9 @@ const loadOrganizationData = async () => {
     
     // Load existing MOU if any
     await loadMOUData()
+    
+    // Fetch existing reviews
+    await fetchExistingReviews(props.organizationId)
   } catch (error: any) {
     console.error('Error loading organization:', error)
     alert('Failed to load organization data')
@@ -1220,36 +1293,6 @@ watch(() => props.modelValue, (newValue) => {
   display: none;
 }
 
-/* Star Rating */
-.star_rating {
-  margin: 20px 0;
-}
-
-.star-rating label {
-  display: block;
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  color: #000000;
-  margin-bottom: 10px;
-}
-
-.stars {
-  display: flex;
-  gap: 10px;
-}
-
-.star {
-  font-size: 32px;
-  color: #D0D0D0;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-
-.star.filled {
-  color: #FFD700;
-}
-
 /* MOU Upload Section */
 .mou_upload_section {
   display: flex;
@@ -1363,6 +1406,147 @@ watch(() => props.modelValue, (newValue) => {
   background: #D0D0D0;
   cursor: not-allowed;
 }
+
+/* Review Carousel Styles */
+.existing_reviews_carousel {
+  background: #F9F9F9;
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.section_subtitle {
+  font-family: 'Outfit';
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 20px;
+  color: #000000;
+  margin: 0 0 15px 0;
+}
+
+.carousel_container {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  justify-content: space-between;
+  min-height: 180px;
+}
+
+.review_nav_btn {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #D0D0D0;
+  background: #FFFFFF;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.review_nav_btn:hover:not(:disabled) {
+  background: #F0F0F0;
+  border-color: #AB1C03;
+}
+
+.review_nav_btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nav_arrow_left,
+.nav_arrow_right {
+  width: 6px;
+  height: 6px;
+  background: #000000;
+}
+
+.nav_arrow_left {
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+
+.nav_arrow_right {
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.review_carousel_card {
+  flex: 1;
+  background: #FFFFFF;
+  border: 1px solid #E0E0E0;
+  border-radius: 6px;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 160px;
+}
+
+.review_card_header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.review_position {
+  font-family: 'Inter';
+  font-weight: 600;
+  font-size: 14px;
+  color: #545454;
+}
+
+.delete_review_btn {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: #F0F0F0;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+  padding: 0;
+}
+
+.delete_review_btn:hover {
+  background: #E0E0E0;
+}
+
+.delete_icon {
+  width: 12px;
+  height: 12px;
+  background: #C70000;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z'/%3E%3C/svg%3E") no-repeat center;
+  mask-size: contain;
+}
+
+.review_card_text {
+  font-family: 'Inter';
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333333;
+  margin: 0;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 100px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.review_counter {
+  font-family: 'Inter';
+  font-size: 12px;
+  color: #999999;
+  text-align: right;
+  margin-top: auto;
+}
+
 </style>
 
 

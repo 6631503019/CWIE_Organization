@@ -27,16 +27,11 @@
             @error="(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27271%27 height=%27272%27%3E%3Crect fill=%27%23ddd%27 width=%27271%27 height=%27272%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'"
           />
         </div>
-        
+
         <!-- Roadshow Content -->
         <div class="roadshow_content">
           <h2 class="roadshow_title_large">{{ roadshow.title }}</h2>
           <p class="roadshow_description">{{ roadshow.description }}</p>
-        </div>
-
-        <!-- Countdown Timer Badge -->
-        <div v-if="roadshow.deleted_date" class="countdown_badge" :class="Get_Countdown_Status(roadshow.deleted_date)">
-          <span class="countdown_number">{{ Get_Days_Until_Deletion(roadshow.deleted_date) }}</span>
         </div>
       </div>
     </div>
@@ -92,53 +87,6 @@ const handlePageChange = async (page: number) => {
     } finally {
       state.loading = false
     }
-  }
-}
-
-/**
- * Calculate days until deletion for countdown timer
- * Purpose: Returns number of days remaining until deletion date
- * Input: str_Deleted_Date - date string in YYYY-MM-DD format
- * Output: Number of days remaining (returns 0 if date is in past)
- * Side effects: None
- */
-const Get_Days_Until_Deletion = (str_Deleted_Date: string): number => {
-  try {
-    if (!str_Deleted_Date) return 0
-    
-    const obj_Today = new Date()
-    obj_Today.setHours(0, 0, 0, 0)
-    
-    const obj_Deleted_Date = new Date(str_Deleted_Date)
-    obj_Deleted_Date.setHours(0, 0, 0, 0)
-    
-    const i_Days_Remaining = Math.ceil((obj_Deleted_Date.getTime() - obj_Today.getTime()) / (1000 * 60 * 60 * 24))
-    
-    return Math.max(0, i_Days_Remaining)
-  } catch (error) {
-    console.error('Error calculating days until deletion:', error)
-    return 0
-  }
-}
-
-/**
- * Get countdown status class for styling
- * Purpose: Return CSS class based on urgency level
- * Input: str_Deleted_Date - date string in YYYY-MM-DD format
- * Output: CSS class name (status_safe, status_warning, status_critical, or status_expired)
- * Side effects: None
- */
-const Get_Countdown_Status = (str_Deleted_Date: string): string => {
-  try {
-    const i_Days = Get_Days_Until_Deletion(str_Deleted_Date)
-    
-    if (i_Days <= 0) return 'status_expired'
-    if (i_Days <= 3) return 'status_critical'
-    if (i_Days <= 7) return 'status_warning'
-    return 'status_safe'
-  } catch (error) {
-    console.error('Error determining countdown status:', error)
-    return 'status_safe'
   }
 }
 

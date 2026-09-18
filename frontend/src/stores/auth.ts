@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia'
+import { signInWithPopup, signOut } from 'firebase/auth'
+import { firebaseAuth, googleProvider } from '../config/firebase'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -15,15 +17,6 @@ interface obj_User {
 }
 
 /**
- * Interface for Login Credentials
- * Properties: email, password
- */
-interface obj_Login_Credentials {
-    email: string
-    password: string
-}
-
-/**
  * Interface for Login Response
  * Properties: success (boolean), message (optional string)
  */
@@ -32,47 +25,19 @@ interface obj_Login_Response {
     message?: string
 }
 
+type Login_Type = 'admin' | 'student'
+
 // ============================================================================
 // CONSTANTS
 // ============================================================================
 const CONST_AUTH_STORE_NAME = 'auth'
 const CONST_BACKEND_URL = 'http://localhost:5000'
-const CONST_API_AUTH_LOGIN_ENDPOINT = '/api/auth/login'
+const CONST_API_AUTH_GOOGLE_ENDPOINT = '/api/auth/google'
 const CONST_AUTH_TOKEN_STORAGE_KEY = 'auth_token'
 const CONST_AUTH_USER_STORAGE_KEY = 'auth_user'
 const CONST_AUTH_REFRESH_TOKEN_STORAGE_KEY = 'auth_refresh_token'
 const CONST_AUTH_TOKEN_LEGACY_KEY = 'token'
-const CONST_MOCK_LOGIN_DELAY_MS = 1000
-const CONST_ERROR_BACKEND_LOGIN_FAILED = 'Backend login failed'
-const CONST_ERROR_INVALID_CREDENTIALS = 'Invalid email or password'
 const CONST_ERROR_PARSE_USER_DATA = 'Failed to parse stored user data'
-
-// ============================================================================
-// MOCK USER DATABASE
-// ============================================================================
-const obj_Mock_Users_Database = {
-    'admin': {
-        id: '1',
-        name: 'Admin User',
-        email: 'admin',
-        password: 'admin123',
-        role: 'admin' as const
-    },
-    'user': {
-        id: '2',
-        name: 'Regular User',
-        email: 'user@mfu.ac.th',
-        password: 'user123',
-        role: 'user' as const
-    },
-    'test': {
-        id: '3',
-        name: 'Test User',
-        email: 'test',
-        password: 'test123',
-        role: 'test' as const
-    }
-}
 
 // ============================================================================
 // PINIA STORE DEFINITION
@@ -170,168 +135,38 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
     // ACTIONS (Methods that modify state)
     // ========================================================================
     actions: {
-        /**
-         * Action: Login
-         * Purpose: Authenticate user with backend, fallback to mock if backend unavailable
-         * Input: obj_Credentials - object with email and password
-         * Output: Promise<obj_Login_Response> - login result
-         * Side Effects: Updates state, stores tokens in localStorage
-         */
-        async Login(obj_Credentials: obj_Login_Credentials): Promise<obj_Login_Response> {
+        async Login_With_Google(loginType: Login_Type): Promise<obj_Login_Response> {
             try {
-                // Input validation
-                if (!obj_Credentials || !obj_Credentials.email || !obj_Credentials.password) {
-                    throw new Error('Email and password are required')
-                }
-
                 this.bln_Is_Loading = true
+                const credential = await signInWithPopup(firebaseAuth, googleProvider)
+                const idToken = await credential.user.getIdToken()
+                const response = await fetch(`${CONST_BACKEND_URL}${CONST_API_AUTH_GOOGLE_ENDPOINT}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idToken, loginType })
+                })
+                const data = await response.json()
 
-                // Step 1: Try backend login first
-                try {
-                    const obj_Backend_Response = await this.Login_With_Backend(obj_Credentials)
-                    if (obj_Backend_Response.success) {
-                        return obj_Backend_Response
-                    }
-                } catch (error) {
-                    console.warn('Backend login failed:', error instanceof Error ? error.message : String(error))
-                    console.info('Switching to mock authentication...')
+                if (!response.ok || !data.success) {
+                    const error = new Error(data.message || 'Google login failed')
+                    ;(error as Error & { code?: number }).code = data.errorCode
+                    throw error
                 }
 
-                // Step 2: If backend fails, fallback to mock authentication
-                return await this.Login_With_Mock(obj_Credentials)
-
+                this.obj_Current_User = data.data
+                this.str_Auth_Token = data.token
+                localStorage.setItem(CONST_AUTH_TOKEN_STORAGE_KEY, data.token)
+                localStorage.setItem(CONST_AUTH_USER_STORAGE_KEY, JSON.stringify(data.data))
+                localStorage.setItem(CONST_AUTH_REFRESH_TOKEN_STORAGE_KEY, data.refreshToken)
+                return { success: true, message: data.message }
             } catch (error) {
-                console.error('Login error:', error)
+                await signOut(firebaseAuth).catch(() => undefined)
                 return {
                     success: false,
-                    message: error instanceof Error ? error.message : CONST_ERROR_BACKEND_LOGIN_FAILED
+                    message: error instanceof Error ? error.message : 'Google login failed'
                 }
             } finally {
                 this.bln_Is_Loading = false
-            }
-        },
-
-        /**
-         * Action: Login_With_Backend
-         * Purpose: Attempt authentication against backend API
-         * Input: obj_Credentials - object with email and password
-         * Output: Promise<obj_Login_Response> - login result from backend
-         * Side Effects: Updates state and localStorage if successful
-         */
-        async Login_With_Backend(obj_Credentials: obj_Login_Credentials): Promise<obj_Login_Response> {
-            try {
-                // Step 1: Validate input
-                if (!obj_Credentials || !obj_Credentials.email || !obj_Credentials.password) {
-                    throw new Error('Invalid credentials provided')
-                }
-
-                // Step 2: Construct API URL
-                const str_Login_URL = `${CONST_BACKEND_URL}${CONST_API_AUTH_LOGIN_ENDPOINT}`
-
-                // Step 3: Send login request to backend
-                const response = await fetch(str_Login_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(obj_Credentials)
-                })
-
-                // Step 4: Validate response status
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-                }
-
-                // Step 5: Validate content type
-                const str_Content_Type = response.headers.get('content-type')
-                if (!str_Content_Type || !str_Content_Type.includes('application/json')) {
-                    throw new Error('Invalid content type: expected JSON')
-                }
-
-                // Step 6: Parse response
-                const obj_Data = await response.json()
-
-                // Step 7: Handle successful response
-                if (obj_Data.success) {
-                    this.obj_Current_User = obj_Data.data
-                    this.str_Auth_Token = obj_Data.token
-
-                    // Step 8: Store tokens in localStorage
-                    localStorage.setItem(CONST_AUTH_TOKEN_STORAGE_KEY, this.str_Auth_Token!)
-                    localStorage.setItem(CONST_AUTH_USER_STORAGE_KEY, JSON.stringify(this.obj_Current_User))
-
-                    // Step 9: Store refresh token if provided
-                    if (obj_Data.refreshToken) {
-                        localStorage.setItem(CONST_AUTH_REFRESH_TOKEN_STORAGE_KEY, obj_Data.refreshToken)
-                    }
-
-                    return { success: true, message: 'Login successful' }
-                } else {
-                    throw new Error(obj_Data.message || CONST_ERROR_BACKEND_LOGIN_FAILED)
-                }
-
-            } catch (error) {
-                // Re-throw error to be caught by parent handler
-                throw error
-            }
-        },
-
-        /**
-         * Action: Login_With_Mock
-         * Purpose: Authenticate using mock user database (for development)
-         * Input: obj_Credentials - object with email and password
-         * Output: Promise<obj_Login_Response> - login result
-         * Side Effects: Updates state and localStorage
-         */
-        async Login_With_Mock(obj_Credentials: obj_Login_Credentials): Promise<obj_Login_Response> {
-            try {
-                // Input validation
-                if (!obj_Credentials || !obj_Credentials.email || !obj_Credentials.password) {
-                    return {
-                        success: false,
-                        message: CONST_ERROR_INVALID_CREDENTIALS
-                    }
-                }
-
-                // Step 1: Simulate network delay
-                await new Promise(resolve => setTimeout(resolve, CONST_MOCK_LOGIN_DELAY_MS))
-
-                // Step 2: Find user in mock database
-                const obj_Found_User = Object.values(obj_Mock_Users_Database).find(obj_User =>
-                    obj_User.email === obj_Credentials.email && obj_User.password === obj_Credentials.password
-                )
-
-                // Step 3: Return failure if user not found
-                if (!obj_Found_User) {
-                    return {
-                        success: false,
-                        message: CONST_ERROR_INVALID_CREDENTIALS
-                    }
-                }
-
-                // Step 4: Update state with user data
-                this.obj_Current_User = {
-                    id: obj_Found_User.id,
-                    name: obj_Found_User.name,
-                    email: obj_Found_User.email,
-                    role: obj_Found_User.role
-                }
-
-                // Step 5: Generate mock token
-                this.str_Auth_Token = 'mock_token_' + obj_Found_User.id
-
-                // Step 6: Store in localStorage
-                localStorage.setItem(CONST_AUTH_TOKEN_STORAGE_KEY, this.str_Auth_Token)
-                localStorage.setItem(CONST_AUTH_USER_STORAGE_KEY, JSON.stringify(this.obj_Current_User))
-
-                return { success: true, message: 'Login successful (mock)' }
-
-            } catch (error) {
-                console.error('Mock login error:', error)
-                return {
-                    success: false,
-                    message: error instanceof Error ? error.message : CONST_ERROR_BACKEND_LOGIN_FAILED
-                }
             }
         },
 
@@ -413,15 +248,6 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
         // ======================================================================
         // These are kept for backward compatibility with existing code
         // that hasn't been updated to use the new naming convention
-
-        /**
-         * Action: login (LEGACY)
-         * Purpose: Alias for Login action
-         * @deprecated Use Login instead
-         */
-        login(obj_Credentials: { username: string; password: string }): Promise<boolean> {
-            return this.Login(obj_Credentials)
-        },
 
         /**
          * Action: logout (LEGACY)

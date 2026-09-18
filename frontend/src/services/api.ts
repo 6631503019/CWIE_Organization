@@ -323,13 +323,9 @@ export default obj_API_Client
 
 /**
  * obj_Auth_API
- * Purpose: Authentication endpoints (login, register, logout, profile)
+ * Purpose: Authentication endpoints for the authenticated session
  */
 export const obj_Auth_API = {
-    login: (obj_Credentials: { email: string; password: string }) =>
-        obj_API_Client.post('/auth/login', obj_Credentials),
-    register: (obj_User_Data: any) =>
-        obj_API_Client.post('/auth/register', obj_User_Data),
     logout: () =>
         obj_API_Client.post('/auth/logout'),
     getProfile: () =>

@@ -94,28 +94,18 @@ backend/
 
 ## 🔐 Authentication
 
-### Register User
+### Google Workspace Login
 ```bash
-POST /api/auth/register
+POST /api/auth/google
 Content-Type: application/json
 
 {
-  "name": "John Doe",
-  "email": "john@example.com",
-  "password": "password123"
+   "idToken": "<firebase-id-token>",
+   "loginType": "admin|student"
 }
 ```
 
-### Login
-```bash
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "email": "john@example.com",
-  "password": "password123"
-}
-```
+Only verified `@mfu.ac.th` accounts are allowed. User roles are managed in MongoDB.
 
 ### Get Current User
 ```bash

@@ -79,11 +79,6 @@
               <span class="job_position_value">{{ currentReview.job_position || 'N/A' }}</span>
             </div>
             <p class="review_text">{{ currentReview.review_text || 'No review available.' }}</p>
-            <div class="review_rating">
-              <span v-for="star in 5" :key="star" class="star" :class="{ filled: star <= (currentReview.rating || 0) }">
-                ★
-              </span>
-            </div>
             <div class="review_counter">{{ currentReviewIndex + 1 }} / {{ reviews.length }}</div>
           </div>
           
@@ -153,18 +148,8 @@ const fullAddress = computed(() => {
   const org = organization.value
   const parts = []
   
-  if (org.name_en || org.name_th) {
-    parts.push(org.name_en || org.name_th)
-  }
-  
-  if (org.address) {
-    const addr = org.address
-    if (addr.address_line) parts.push(addr.address_line)
-    if (addr.district) parts.push(addr.district)
-    if (addr.province) parts.push(addr.province)
-    if (addr.postal_code) parts.push(addr.postal_code)
-    if (addr.country) parts.push(addr.country)
-  }
+  if (org.address_en) parts.push(org.address_en)
+  else if (org.address_th) parts.push(org.address_th)
   
   return parts.join(', ') || 'No address available'
 })
@@ -633,11 +618,11 @@ onMounted(async () => {
   mask-position: center;
 }
 
-.nav-arrow.left {
+.nav_arrow.left {
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z'/%3E%3C/svg%3E");
 }
 
-.nav-arrow.right {
+.nav_arrow.right {
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z'/%3E%3C/svg%3E");
 }
 

@@ -33,11 +33,6 @@
           {{ roadshow.details }}
         </div>
 
-        <!-- Countdown Timer Badge -->
-        <div v-if="roadshow.deleted_date" class="countdown_badge" :class="Get_Countdown_Status(roadshow.deleted_date)">
-          <span class="countdown_number">{{ Get_Days_Until_Deletion(roadshow.deleted_date) }}</span>
-        </div>
-
         <!-- Activity Images Grid -->
         <div v-if="roadshow.activity_image_paths && roadshow.activity_image_paths.length > 0" class="activity_images_grid">
           <div v-for="(str_Image_Path, index) in roadshow.activity_image_paths" :key="index" class="activity_image_card">
@@ -67,53 +62,6 @@ const state = reactive({
 })
 
 const roadshow = ref<any>(null)
-
-/**
- * Calculate days until deletion for countdown timer
- * Purpose: Returns number of days remaining until deletion date
- * Input: str_Deleted_Date - date string in YYYY-MM-DD format
- * Output: Number of days remaining (returns 0 if date is in past)
- * Side effects: None
- */
-const Get_Days_Until_Deletion = (str_Deleted_Date: string): number => {
-  try {
-    if (!str_Deleted_Date) return 0
-    
-    const obj_Today = new Date()
-    obj_Today.setHours(0, 0, 0, 0)
-    
-    const obj_Deleted_Date = new Date(str_Deleted_Date)
-    obj_Deleted_Date.setHours(0, 0, 0, 0)
-    
-    const i_Days_Remaining = Math.ceil((obj_Deleted_Date.getTime() - obj_Today.getTime()) / (1000 * 60 * 60 * 24))
-    
-    return Math.max(0, i_Days_Remaining)
-  } catch (error) {
-    console.error('Error calculating days until deletion:', error)
-    return 0
-  }
-}
-
-/**
- * Get countdown status class for styling
- * Purpose: Return CSS class based on urgency level
- * Input: str_Deleted_Date - date string in YYYY-MM-DD format
- * Output: CSS class name (status_safe, status_warning, status_critical, or status_expired)
- * Side effects: None
- */
-const Get_Countdown_Status = (str_Deleted_Date: string): string => {
-  try {
-    const i_Days = Get_Days_Until_Deletion(str_Deleted_Date)
-    
-    if (i_Days <= 0) return 'status_expired'
-    if (i_Days <= 3) return 'status_critical'
-    if (i_Days <= 7) return 'status_warning'
-    return 'status_safe'
-  } catch (error) {
-    console.error('Error determining countdown status:', error)
-    return 'status_safe'
-  }
-}
 
 onMounted(async () => {
   console.log('UserRoadshowDetail mounted, ID:', route.params.id)
@@ -263,45 +211,6 @@ onMounted(async () => {
   font-size: 14px;
 }
 
-/* Countdown Timer Badge */
-.countdown_badge {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 18px;
-  color: #FFFFFF;
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
-}
-
-.countdown_badge.status_safe {
-  background: #10B981;
-}
-
-.countdown_badge.status_warning {
-  background: #F59E0B;
-}
-
-.countdown_badge.status_critical {
-  background: #EF4444;
-}
-
-.countdown_badge.status_expired {
-  background: #6B7280;
-}
-
-.countdown_number {
-  display: block;
-  line-height: 1;
-}
-
 /* Activity Images Section */
 .activity_images_grid {
   position: absolute;
@@ -340,4 +249,3 @@ onMounted(async () => {
   object-fit: cover;
 }
 </style>
-

@@ -1,5 +1,4 @@
 const Roadshow = require('../models/Roadshow');
-const Notification = require('../models/Notification');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 const { deleteStoredFile } = require('../utils/fileCleanup');
 
@@ -12,23 +11,12 @@ const getRoadshows = async (req, res, next) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        const filter = {};
-
-        // Filter by public/private
-        if (req.query.public !== 'false') {
-            filter.is_public = true;
-        }
+        const filter = req.query.public !== 'false' ? { is_public: true } : {};
 
         // Filter by upcoming events only if requested
         if (req.query.upcoming === 'true') {
             filter.event_date = { $gte: new Date() };
         }
-
-        // Auto-exclude roadshows with deleted_date in the past
-        const now = new Date();
-        filter.$and = [
-            { $or: [{ deleted_date: null }, { deleted_date: { $gte: now } }] }
-        ];
 
         const roadshows = await Roadshow.find(filter)
             .sort({ event_date: -1 })
@@ -89,10 +77,10 @@ const getRoadshow = async (req, res, next) => {
 // @access  Private (Admin)
 const createRoadshow = async (req, res, next) => {
     try {
-        const { topic, details, posted_date, deleted_date } = req.body;
+        const { topic, details, event_date } = req.body;
 
-        // Check required fields - accept posted_date from frontend
-        const requiredFields = ['topic', 'details', 'posted_date'];
+        // Check required fields
+        const requiredFields = ['topic', 'details', 'event_date'];
         const missingFields = requiredFields.filter(field => !req.body[field]);
 
         if (missingFields.length > 0) {
@@ -103,29 +91,18 @@ const createRoadshow = async (req, res, next) => {
             );
         }
 
-        // Validate posted date
-        const postedDate = new Date(posted_date);
-        if (isNaN(postedDate.getTime())) {
+        // Validate event date
+        const eventDate = new Date(event_date);
+        if (isNaN(eventDate.getTime())) {
             throw new CustomError(
                 ERROR_CODES.VALIDATION_DATE_INVALID,
-                'Invalid posted date format'
+                'Invalid event date format'
             );
         }
 
-        // Map posted_date to event_date for backward compatibility AND set posted_date as Date object
-        req.body.event_date = postedDate;
-        req.body.posted_date = postedDate;
-
-        // Validate deleted date if provided
-        if (deleted_date) {
-            const deletedDate = new Date(deleted_date);
-            if (isNaN(deletedDate.getTime())) {
-                throw new CustomError(
-                    ERROR_CODES.VALIDATION_DATE_INVALID,
-                    'Invalid deleted date format'
-                );
-            }
-            req.body.deleted_date = deletedDate;
+        // Check if event date is in the past (optional warning)
+        if (eventDate < new Date()) {
+            console.warn('Warning: Event date is in the past');
         }
 
         // Handle file uploads
@@ -134,10 +111,7 @@ const createRoadshow = async (req, res, next) => {
                 req.body.poster_path = '/' + req.files.poster[0].path.replace(/\\/g, '/').replace(/^\/+/, '');
             }
             if (req.files.activity_image) {
-                // Store all activity images as an array
-                req.body.activity_image_paths = req.files.activity_image.map(file =>
-                    '/' + file.path.replace(/\\/g, '/').replace(/^\/+/, '')
-                );
+                req.body.activity_image_path = '/' + req.files.activity_image[0].path.replace(/\\/g, '/').replace(/^\/+/, '');
             }
         }
 
@@ -150,16 +124,6 @@ const createRoadshow = async (req, res, next) => {
         req.body.admin_id = req.user._id;
 
         const roadshow = await Roadshow.create(req.body);
-
-        // Create notification
-        await Notification.create({
-            requested_by: req.user._id,
-            requested_by_name: req.user.name,
-            action: 'Add',
-            establishment_name: roadshow.topic,
-            establishment_id: roadshow._id,
-            establishment_type: 'Roadshow'
-        });
 
         res.status(201).json({
             success: true,
@@ -182,34 +146,7 @@ const updateRoadshow = async (req, res, next) => {
             throw createNotFoundError('roadshow', req.params.id);
         }
 
-        // Handle date fields - map posted_date to event_date for backward compatibility
-        if (req.body.posted_date) {
-            const postedDate = new Date(req.body.posted_date);
-            if (isNaN(postedDate.getTime())) {
-                throw new CustomError(
-                    ERROR_CODES.VALIDATION_DATE_INVALID,
-                    'Invalid posted date format'
-                );
-            }
-            req.body.event_date = postedDate;
-            req.body.posted_date = postedDate;
-        }
-
-        // Validate deleted date if provided
-        if (req.body.deleted_date) {
-            const deletedDate = new Date(req.body.deleted_date);
-            if (isNaN(deletedDate.getTime())) {
-                throw new CustomError(
-                    ERROR_CODES.VALIDATION_DATE_INVALID,
-                    'Invalid deleted date format'
-                );
-            }
-        } else if (req.body.deleted_date === '') {
-            // Allow clearing deleted_date by sending empty string
-            req.body.deleted_date = null;
-        }
-
-        // Validate event date if provided (backward compatibility)
+        // Validate event date if provided
         if (req.body.event_date) {
             const eventDate = new Date(req.body.event_date);
             if (isNaN(eventDate.getTime())) {
@@ -229,50 +166,11 @@ const updateRoadshow = async (req, res, next) => {
                 req.body.poster_path = '/' + req.files.poster[0].path.replace(/\\/g, '/').replace(/^\/+/, '');
             }
             if (req.files.activity_image) {
-                // Delete old activity images if replacing
-                if (roadshow.activity_image_paths && roadshow.activity_image_paths.length > 0) {
-                    roadshow.activity_image_paths.forEach(imagePath => {
-                        deleteStoredFile(imagePath, 'old roadshow activity image');
-                    });
+                if (roadshow.activity_image_path) {
+                    deleteStoredFile(roadshow.activity_image_path, 'old roadshow activity image');
                 }
-                // Store all new activity images
-                req.body.activity_image_paths = req.files.activity_image.map(file =>
-                    '/' + file.path.replace(/\\/g, '/').replace(/^\/+/, '')
-                );
+                req.body.activity_image_path = '/' + req.files.activity_image[0].path.replace(/\\/g, '/').replace(/^\/+/, '');
             }
-        }
-
-        // Handle activity image deletion if requested
-        if (req.body.delete_activity_image === 'true') {
-            if (roadshow.activity_image_paths && roadshow.activity_image_paths.length > 0) {
-                roadshow.activity_image_paths.forEach(imagePath => {
-                    deleteStoredFile(imagePath, 'roadshow activity image');
-                });
-            }
-            req.body.activity_image_paths = [];
-            delete req.body.delete_activity_image; // Remove this field from update
-        }
-
-        // Handle deletion of specific activity images (for editing individual images)
-        if (req.body.delete_activity_image_indices) {
-            try {
-                const indices = JSON.parse(req.body.delete_activity_image_indices);
-                if (Array.isArray(indices) && roadshow.activity_image_paths) {
-                    // Delete files
-                    indices.sort((a, b) => b - a).forEach(index => {
-                        if (index >= 0 && index < roadshow.activity_image_paths.length) {
-                            deleteStoredFile(roadshow.activity_image_paths[index], 'roadshow activity image');
-                        }
-                    });
-                    // Remove from array
-                    req.body.activity_image_paths = roadshow.activity_image_paths.filter(
-                        (_, index) => !indices.includes(index)
-                    );
-                }
-            } catch (err) {
-                console.warn('Invalid delete_activity_image_indices format');
-            }
-            delete req.body.delete_activity_image_indices;
         }
 
         // Convert is_public from string to boolean (FormData always sends strings)
@@ -285,16 +183,6 @@ const updateRoadshow = async (req, res, next) => {
             req.body,
             { new: true, runValidators: true }
         );
-
-        // Create notification
-        await Notification.create({
-            requested_by: req.user._id,
-            requested_by_name: req.user.name,
-            action: 'Edit',
-            establishment_name: updatedRoadshow.topic,
-            establishment_id: updatedRoadshow._id,
-            establishment_type: 'Roadshow'
-        });
 
         res.status(200).json({
             success: true,
@@ -324,16 +212,6 @@ const deleteRoadshow = async (req, res, next) => {
         if (roadshow.activity_image_path) {
             deleteStoredFile(roadshow.activity_image_path, 'roadshow activity image');
         }
-
-        // Create notification before deletion
-        await Notification.create({
-            requested_by: req.user._id,
-            requested_by_name: req.user.name,
-            action: 'Delete',
-            establishment_name: roadshow.topic,
-            establishment_id: roadshow._id,
-            establishment_type: 'Roadshow'
-        });
 
         await Roadshow.findByIdAndDelete(req.params.id);
 

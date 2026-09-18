@@ -16,72 +16,28 @@
           <!-- Title -->
           <h1 class="form_title">MFU CWIE Organization Database</h1>
           
-          <!-- Input Fields Container -->
-          <div class="input_fields_container">
-            <!-- Email Input -->
-            <div class="input_basic">
-              <div class="input_label_frame">
-                <span class="input_label">ID</span>
-                <span class="input_required">*</span>
-              </div>
-              <div class="input_frame" :class="{ focused: emailFocused }">
-                <div class="input_cursor" v-if="emailFocused"></div>
-                <div class="input_content_frame">
-                  <input 
-                    v-model="email"
-                    @focus="emailFocused = true"
-                    @blur="emailFocused = false"
-                    type="email"
-                    class="input_value"
-                    required
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- Password Input -->
-            <div class="input_password">
-              <div class="password_label_frame">
-                <span class="password_label">Password</span>
-                <div class="password_asterix">
-                  <span class="password_required">*</span>
-                </div>
-              </div>
-              <div class="password_frame" :class="{ focused: passwordFocused }">
-                <div class="password_cursor" v-if="passwordFocused"></div>
-                <div class="password_content_frame">
-                  <input 
-                    v-model="password"
-                    :type="showPassword ? 'text' : 'password'"
-                    class="password_value"
-                    @focus="passwordFocused = true"
-                    @blur="passwordFocused = false"
-                    @keydown.enter="handleLogin"
-                    required
-                  />
-                </div>
-                <i 
-                  v-if="password.length > 0"
-                  :class="showPassword ? 'pi pi-eye-slash' : 'pi pi-eye'"
-                  class="password_toggle_icon"
-                  @click="showPassword = !showPassword"
-                ></i>
-              </div>
-            </div>
-          </div>
         </div>
         
-        <!-- Login Button -->
-        <button 
-          type="button" 
-          @click="handleLogin"
-          class="login_button"
-          :disabled="isLoading"
-        >
-          <span class="button_text">
-            {{ isLoading ? 'Logging in...' : 'Log In' }}
-          </span>
-        </button>
+        <div class="google_login_buttons">
+          <button
+            type="button"
+            class="login_button google_login_button"
+            @click="handleGoogleLogin('admin')"
+            :disabled="isLoading"
+          >
+            <i class="pi pi-google"></i>
+            <span class="button_text">Login with Admin Lamduan Mail</span>
+          </button>
+          <button
+            type="button"
+            class="login_button google_login_button student_login_button"
+            @click="handleGoogleLogin('student')"
+            :disabled="isLoading"
+          >
+            <i class="pi pi-google"></i>
+            <span class="button_text">Login with Student Lamduan Mail</span>
+          </button>
+        </div>
       </div>
     </div>
     
@@ -98,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 
@@ -107,53 +63,25 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 // Form state
-const email = ref('')
-const password = ref('')
-const emailFocused = ref(false)
-const passwordFocused = ref(false)
-const showPassword = ref(false)
-const emailError = ref(false)
-
 // Loading and error states - initialize with default values
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
-const handleLogin = async () => {
-  // Clear previous errors
+const handleGoogleLogin = async (loginType: 'admin' | 'student') => {
   error.value = null
-  
-  // Basic validation
-  if (!email.value || !password.value) {
-    error.value = 'Please enter ID and password'
-    return
-  }
 
   try {
     isLoading.value = true
-    
-    // Use auth store to handle login
-    const loginResult = await authStore.Login({
-      email: email.value,
-      password: password.value
-    })
+    const loginResult = await authStore.Login_With_Google(loginType)
 
     if (loginResult.success) {
-      // Clear form
-      email.value = ''
-      password.value = ''
-
-      // Redirect based on user role
-      if (authStore.bln_Is_Admin) {
-        await router.push('/admin/dashboard')
-      } else {
-        await router.push('/user/organization')
-      }
+      await router.push(authStore.bln_Is_Admin ? '/admin/organization' : '/user/organization')
     } else {
-      error.value = loginResult.message || 'Login failed'
+      error.value = loginResult.message || 'Google login failed'
     }
   } catch (err) {
-    console.error('Login error:', err)
-    error.value = err instanceof Error ? err.message : 'Login failed. Please try again.'
+    console.error('Google login error:', err)
+    error.value = err instanceof Error ? err.message : 'Google login failed. Please try again.'
   } finally {
     isLoading.value = false
   }
@@ -731,6 +659,30 @@ const handleLogin = async () => {
   cursor: not-allowed;
 }
 
+.google_login_buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 373px;
+}
+
+.google_login_button {
+  gap: 10px;
+  background: #253858;
+}
+
+.google_login_button:hover {
+  background: #172a46;
+}
+
+.student_login_button {
+  background: #198754;
+}
+
+.student_login_button:hover {
+  background: #146c43;
+}
+
 /* Button Text */
 .button_text {
   width: auto;
@@ -827,6 +779,10 @@ const handleLogin = async () => {
   }
 
   .form_section {
+    width: 100%;
+  }
+
+  .google_login_buttons {
     width: 100%;
   }
 
