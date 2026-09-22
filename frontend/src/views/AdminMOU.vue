@@ -1,11 +1,18 @@
 <template>
   <div class="admin_mou">
     <AdminNavbar />
+    <AdminTopBar
+    />
     
     <!-- Main Content Area -->
     <div class="main_content">
       <!-- Page Title -->
-      <h1 class="page_title">MOU</h1>
+      <div class="mou_page_actions">
+        <button type="button" class="add_mou_btn" @click="Open_Add_MOU">
+          <span class="mou_plus_icon" aria-hidden="true">+</span>
+          <span>Add MOU</span>
+        </button>
+      </div>
       
       <!-- Search and Filter Section -->
       <div class="search_filter_section">
@@ -91,6 +98,45 @@
         />
       </div>
     </div>
+
+    <div v-if="bln_Show_Add_MOU_Modal" class="add_mou_overlay" @click.self="Close_Add_MOU">
+      <form class="add_mou_modal" @submit.prevent="Submit_Add_MOU">
+        <button type="button" class="add_mou_close" aria-label="Close" @click="Close_Add_MOU">&times;</button>
+        <h2>Add MOU</h2>
+        <div class="add_mou_divider"></div>
+
+        <label class="add_mou_label" for="mou-organization">Organization*</label>
+        <select id="mou-organization" v-model="obj_Add_MOU.organizationId" class="add_mou_input" required>
+          <option value="">Select organization</option>
+          <option v-for="organization in arr_Add_MOU_Organizations" :key="organization._id" :value="organization._id">
+            {{ organization.name_en || organization.name_th }}
+          </option>
+        </select>
+
+        <label class="add_mou_label" for="mou-file">MOU Document*</label>
+        <label class="add_mou_file_box" for="mou-file">
+          <span>{{ obj_Add_MOU.file?.name || 'Browse Files (PDF)' }}</span>
+          <input id="mou-file" type="file" accept=".pdf,.doc,.docx,image/*" required @change="Handle_Add_MOU_File" />
+        </label>
+
+        <div class="add_mou_dates">
+          <label class="add_mou_label">Start Date
+            <input v-model="obj_Add_MOU.startDate" type="date" class="add_mou_input" />
+          </label>
+          <label class="add_mou_label">End Date
+            <input v-model="obj_Add_MOU.endDate" type="date" class="add_mou_input" />
+          </label>
+        </div>
+
+        <p v-if="obj_state.error" class="add_mou_error">{{ obj_state.error }}</p>
+        <div class="add_mou_actions">
+          <button type="button" class="add_mou_cancel" @click="Close_Add_MOU">Cancel</button>
+          <button type="submit" class="add_mou_submit" :disabled="obj_state.loading">
+            {{ obj_state.loading ? 'Uploading...' : 'Upload' }}
+          </button>
+        </div>
+      </form>
+    </div>
     
     <!-- Edit Modal -->
     <OrganizationEditModal 
@@ -106,6 +152,7 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
+import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import Pagination from '../components/Pagination.vue'
 import OrganizationEditModal from '../components/OrganizationEditModal.vue'
 import { organizationAPI, mouAPI, BACKEND_URL } from '../services/api'
@@ -149,6 +196,9 @@ const str_Status_Dropdown_Search = ref('')
 const bln_Show_Edit_Modal = ref(false)
 const str_Editing_Org_ID = ref<string | null>(null)
 const str_Editing_Tab = ref<'organization' | 'review' | 'mou'>('organization')
+const bln_Show_Add_MOU_Modal = ref(false)
+const arr_Add_MOU_Organizations = ref<any[]>([])
+const obj_Add_MOU = reactive({ organizationId: '', file: null as File | null, startDate: '', endDate: '' })
 
 // ===========================
 // DATA ARRAYS
@@ -210,6 +260,57 @@ const Arr_Get_Paginated_MOUs = computed(() => {
   const i_End = i_Start + obj_state.itemsPerPage
   return Arr_Get_Filtered_MOUs.value.slice(i_Start, i_End)
 })
+
+const Open_Add_MOU = async () => {
+  obj_state.error = null
+  bln_Show_Add_MOU_Modal.value = true
+  if (arr_Add_MOU_Organizations.value.length > 0) return
+  try {
+    const response = await organizationAPI.getAll({ limit: 10000, public: 'false' })
+    arr_Add_MOU_Organizations.value = response.data.data || []
+  } catch (error: any) {
+    obj_state.error = error.response?.data?.message || 'Failed to load organizations'
+  }
+}
+
+const Close_Add_MOU = () => {
+  bln_Show_Add_MOU_Modal.value = false
+  obj_Add_MOU.organizationId = ''
+  obj_Add_MOU.file = null
+  obj_Add_MOU.startDate = ''
+  obj_Add_MOU.endDate = ''
+  obj_state.error = null
+}
+
+const Handle_Add_MOU_File = (event: Event) => {
+  const input = event.target as HTMLInputElement
+  obj_Add_MOU.file = input.files?.[0] || null
+}
+
+const Submit_Add_MOU = async () => {
+  if (!obj_Add_MOU.organizationId || !obj_Add_MOU.file) return
+  if (obj_Add_MOU.startDate && obj_Add_MOU.endDate && obj_Add_MOU.endDate <= obj_Add_MOU.startDate) {
+    obj_state.error = 'End date must be after start date'
+    return
+  }
+
+  obj_state.loading = true
+  obj_state.error = null
+  try {
+    const formData = new FormData()
+    formData.append('organization_id', obj_Add_MOU.organizationId)
+    formData.append('mou', obj_Add_MOU.file)
+    if (obj_Add_MOU.startDate) formData.append('start_date', obj_Add_MOU.startDate)
+    if (obj_Add_MOU.endDate) formData.append('end_date', obj_Add_MOU.endDate)
+    await mouAPI.create(formData)
+    Close_Add_MOU()
+    await Load_Organizations_From_API()
+  } catch (error: any) {
+    obj_state.error = error.response?.data?.message || 'Failed to upload MOU'
+  } finally {
+    obj_state.loading = false
+  }
+}
 
 /**
  * Calculate total number of pages
@@ -515,16 +616,22 @@ onBeforeUnmount(() => {
 
 .admin_mou {
   position: relative;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  min-width: 0;
+  min-height: 100dvh;
+  height: 100dvh;
   background: #F6F7F8;
-  overflow-x: auto;
+  box-sizing: border-box;
 }
 
 .main_content {
-  margin-left: 232px;
-  padding: 20px;
-  height: calc(100vh - 40px);
+  width: calc(100% - 66px);
+  min-width: 0;
+  min-height: calc(100dvh - 50px);
+  height: auto;
+  margin-left: 66px;
+  padding: 24px clamp(16px, 3vw, 50px);
+  box-sizing: border-box;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -896,6 +1003,51 @@ onBeforeUnmount(() => {
   justify-content: center;
   margin-top: 40px;
   margin-bottom: 50px;
+}
+
+.admin_mou { width: 100%; min-width: 0; min-height: 100dvh; height: 100dvh; background: #F6F7F8; }
+.admin_mou > .main_content { width: calc(100% - 66px); min-width: 0; min-height: calc(100dvh - 50px); height: auto; margin-left: 66px; padding: 24px clamp(16px, 3vw, 50px); box-sizing: border-box; overflow-y: auto; }
+.admin_mou .search_filter_section { width: min(1135px, 100%); max-width: none; }
+.admin_mou .search_controls { display: grid; grid-template-columns: minmax(220px, 1fr) minmax(190px, 276px) auto; align-items: center; gap: clamp(16px, 3vw, 53px); }
+.admin_mou .search_input_wrapper, .admin_mou .status_filter, .admin_mou .status_dropdown, .admin_mou .status_options { width: 100%; max-width: none; }
+.admin_mou .mou_cards_grid { width: min(1135px, 100%); max-width: none; gap: clamp(20px, 3vw, 42px); }
+.admin_mou .mou_card { flex: 1 1 250px; max-width: 250px; }
+
+.admin_mou .mou_page_actions {
+  display: flex;
+  justify-content: flex-end;
+  width: min(1135px, 100%);
+  margin-bottom: -8px;
+}
+
+.admin_mou .add_mou_btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 105px;
+  height: 36px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 8px;
+  background: #8B0000;
+  color: #FFFFFF;
+  cursor: pointer;
+  font: 600 13px/16px Inter, sans-serif;
+}
+
+.admin_mou .add_mou_btn:hover { background: #700000; }
+.admin_mou .mou_plus_icon { font-size: 20px; line-height: 16px; }
+
+@media (max-width: 900px) {
+  .admin_mou .search_controls { grid-template-columns: minmax(0, 1fr) minmax(170px, 276px); }
+  .admin_mou .action_buttons { grid-column: 1 / -1; justify-content: flex-end; }
+}
+
+@media (max-width: 640px) {
+  .admin_mou > .main_content { width: calc(100% - 66px); padding-inline: 12px; }
+  .admin_mou .search_controls { grid-template-columns: 1fr; gap: 12px; padding: 16px; }
+  .admin_mou .action_buttons { justify-content: flex-end; }
 }
 </style>
 

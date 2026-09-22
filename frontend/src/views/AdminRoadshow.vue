@@ -1,6 +1,8 @@
 <template>
   <div class="admin_roadshow">
     <AdminNavbar />
+    <AdminTopBar
+    />
     
     <!-- Roadshow Title -->
     <h1 class="roadshow_title">Roadshow</h1>
@@ -228,6 +230,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import AdminNavbar from '../components/AdminNavbar.vue'
+import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
 
@@ -2436,6 +2439,28 @@ onBeforeUnmount(() => {
 .undo_all_btn:hover {
   background: #FEE2E2;
   border-color: #DC2626;
+}
+
+.admin_roadshow { width: 100%; min-height: 100dvh; height: 100dvh; overflow-x: hidden; background: #F6F7F8; }
+.admin_roadshow > .main_content { width: calc(100% - 66px); min-width: 0; min-height: calc(100dvh - 50px); height: auto; margin-left: 66px; padding: 24px clamp(16px, 3vw, 50px); box-sizing: border-box; overflow-x: hidden; overflow-y: auto; }
+.admin_roadshow .roadshow_title, .admin_roadshow .btn_add_roadshow, .admin_roadshow .roadshow_cards_container { position: static; left: auto; right: auto; top: auto; }
+.admin_roadshow .roadshow_title { width: auto; height: auto; margin: 0 0 8px; }
+.admin_roadshow .btn_add_roadshow { margin: 0 0 20px auto; }
+.admin_roadshow .roadshow_cards_container { width: min(1035px, 100%); max-width: none; margin: 0 auto; }
+.admin_roadshow .roadshow_large_card { width: 100%; max-width: none; box-sizing: border-box; }
+.admin_roadshow .roadshow_image_large { flex: 0 1 270px; max-width: 270px; }
+
+@media (max-width: 900px) {
+  .admin_roadshow .roadshow_large_card { height: auto; min-height: 287px; }
+  .admin_roadshow .roadshow_image_large { flex-basis: 220px; max-width: 220px; }
+  .admin_roadshow .roadshow_content { padding-left: 24px; }
+}
+
+@media (max-width: 640px) {
+  .admin_roadshow > .main_content { width: calc(100% - 66px); padding-inline: 12px; }
+  .admin_roadshow .roadshow_large_card { flex-direction: column; }
+  .admin_roadshow .roadshow_image_large { width: calc(100% - 24px); max-width: none; height: 180px; margin: 12px; flex-basis: auto; }
+  .admin_roadshow .roadshow_content { padding: 8px 16px 20px; }
 }
 
 </style>

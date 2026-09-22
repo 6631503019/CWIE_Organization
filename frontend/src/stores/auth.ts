@@ -149,7 +149,7 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
 
                 if (!response.ok || !data.success) {
                     const error = new Error(data.message || 'Google login failed')
-                    ;(error as Error & { code?: number }).code = data.errorCode
+                        ; (error as Error & { code?: number }).code = data.errorCode
                     throw error
                 }
 
@@ -179,6 +179,7 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
          */
         async Logout(): Promise<void> {
             try {
+                await signOut(firebaseAuth).catch(() => undefined)
                 // Step 1: Clear state
                 this.obj_Current_User = null
                 this.str_Auth_Token = null
