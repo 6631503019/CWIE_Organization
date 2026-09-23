@@ -99,44 +99,165 @@
       </div>
     </div>
 
-    <div v-if="bln_Show_Add_MOU_Modal" class="add_mou_overlay" @click.self="Close_Add_MOU">
-      <form class="add_mou_modal" @submit.prevent="Submit_Add_MOU">
-        <button type="button" class="add_mou_close" aria-label="Close" @click="Close_Add_MOU">&times;</button>
-        <h2>Add MOU</h2>
-        <div class="add_mou_divider"></div>
+    <!-- Add MOU Modal -->
+<Teleport to="body">
+  <div
+    v-if="bln_Show_Add_MOU_Modal"
+    class="add_mou_overlay"
+    @click.self="Close_Add_MOU"
+  >
+    <form
+      class="add_mou_modal"
+      @submit.prevent="Submit_Add_MOU"
+    >
+      <!-- Close -->
+      <button
+        type="button"
+        class="add_mou_close"
+        aria-label="Close"
+        @click="Close_Add_MOU"
+      >
+        ×
+      </button>
 
-        <label class="add_mou_label" for="mou-organization">Organization*</label>
-        <select id="mou-organization" v-model="obj_Add_MOU.organizationId" class="add_mou_input" required>
-          <option value="">Select organization</option>
-          <option v-for="organization in arr_Add_MOU_Organizations" :key="organization._id" :value="organization._id">
-            {{ organization.name_en || organization.name_th }}
-          </option>
-        </select>
+      <!-- Title -->
+      <h2 class="add_mou_title">Add MOU</h2>
 
-        <label class="add_mou_label" for="mou-file">MOU Document*</label>
-        <label class="add_mou_file_box" for="mou-file">
-          <span>{{ obj_Add_MOU.file?.name || 'Browse Files (PDF)' }}</span>
-          <input id="mou-file" type="file" accept=".pdf,.doc,.docx,image/*" required @change="Handle_Add_MOU_File" />
+      <div class="add_mou_divider"></div>
+
+      <!-- Organization -->
+      <div class="add_mou_field">
+        <label
+          class="add_mou_label"
+          for="mou-organization"
+        >
+          Organization<span>*</span>
         </label>
 
-        <div class="add_mou_dates">
-          <label class="add_mou_label">Start Date
-            <input v-model="obj_Add_MOU.startDate" type="date" class="add_mou_input" />
+        <div class="add_mou_organization_picker">
+  <input
+    id="mou-organization"
+    v-model="str_Add_MOU_Organization_Search"
+    type="text"
+    class="add_mou_input"
+    placeholder="Search organization"
+    autocomplete="off"
+    :disabled="obj_state.loading"
+    @focus="bln_Show_Add_MOU_Organization_List = true"
+  />
+
+  <div
+    v-if="bln_Show_Add_MOU_Organization_List"
+    class="add_mou_organization_dropdown"
+  >
+    <button
+      v-for="organization in arr_Filtered_Add_MOU_Organizations"
+      :key="organization._id"
+      type="button"
+      class="add_mou_organization_option"
+      @click="Select_Add_MOU_Organization(organization)"
+    >
+      {{ organization.name_en || organization.name_th || 'Unnamed Organization' }}
+    </button>
+
+    <div
+      v-if="arr_Filtered_Add_MOU_Organizations.length === 0"
+      class="add_mou_organization_empty"
+    >
+      No organizations found
+    </div>
+  </div>
+</div>
+      </div>
+
+      <!-- MOU File -->
+      <div class="add_mou_field">
+        <label
+          class="add_mou_label"
+          for="mou-file"
+        >
+          MOU Document<span>*</span>
+        </label>
+
+        <label
+          class="add_mou_file_box"
+          for="mou-file"
+        >
+          <span class="add_mou_file_text">
+            {{ obj_Add_MOU.file?.name || 'Browse Files (PDF)' }}
+          </span>
+
+          <input
+            id="mou-file"
+            type="file"
+            accept=".pdf,.doc,.docx,image/*"
+            required
+            @change="Handle_Add_MOU_File"
+          />
+        </label>
+      </div>
+
+      <!-- Dates -->
+      <div class="add_mou_dates">
+        <div class="add_mou_field">
+          <label class="add_mou_label">
+            Start Date
           </label>
-          <label class="add_mou_label">End Date
-            <input v-model="obj_Add_MOU.endDate" type="date" class="add_mou_input" />
-          </label>
+
+          <input
+            v-model="obj_Add_MOU.startDate"
+            type="date"
+            class="add_mou_input"
+          />
         </div>
 
-        <p v-if="obj_state.error" class="add_mou_error">{{ obj_state.error }}</p>
-        <div class="add_mou_actions">
-          <button type="button" class="add_mou_cancel" @click="Close_Add_MOU">Cancel</button>
-          <button type="submit" class="add_mou_submit" :disabled="obj_state.loading">
-            {{ obj_state.loading ? 'Uploading...' : 'Upload' }}
-          </button>
+        <div class="add_mou_field">
+          <label class="add_mou_label">
+            End Date
+          </label>
+
+          <input
+            v-model="obj_Add_MOU.endDate"
+            type="date"
+            class="add_mou_input"
+          />
         </div>
-      </form>
-    </div>
+      </div>
+
+      <!-- Error -->
+      <p
+        v-if="obj_state.error"
+        class="add_mou_error"
+      >
+        {{ obj_state.error }}
+      </p>
+
+      <!-- Actions -->
+      <div class="add_mou_actions">
+        <button
+          type="button"
+          class="add_mou_cancel"
+          :disabled="obj_state.loading"
+          @click="Close_Add_MOU"
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          class="add_mou_submit"
+          :disabled="
+            obj_state.loading ||
+            !obj_Add_MOU.organizationId ||
+            !obj_Add_MOU.file
+          "
+        >
+          {{ obj_state.loading ? 'Uploading...' : 'Upload' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</Teleport>
     
     <!-- Edit Modal -->
     <OrganizationEditModal 
@@ -199,6 +320,30 @@ const str_Editing_Tab = ref<'organization' | 'review' | 'mou'>('organization')
 const bln_Show_Add_MOU_Modal = ref(false)
 const arr_Add_MOU_Organizations = ref<any[]>([])
 const obj_Add_MOU = reactive({ organizationId: '', file: null as File | null, startDate: '', endDate: '' })
+const str_Add_MOU_Organization_Search = ref('')
+const bln_Show_Add_MOU_Organization_List = ref(false)
+
+const arr_Filtered_Add_MOU_Organizations = computed(() => {
+  const search = str_Add_MOU_Organization_Search.value
+    .trim()
+    .toLowerCase()
+
+  if (!search) {
+    return arr_Add_MOU_Organizations.value
+  }
+
+  return arr_Add_MOU_Organizations.value.filter((organization) => {
+    const nameEn = String(organization.name_en || '').toLowerCase()
+    const nameTh = String(organization.name_th || '').toLowerCase()
+
+    return (
+      nameEn.includes(search) ||
+      nameTh.includes(search)
+    )
+  })
+})
+
+
 
 // ===========================
 // DATA ARRAYS
@@ -280,6 +425,9 @@ const Close_Add_MOU = () => {
   obj_Add_MOU.startDate = ''
   obj_Add_MOU.endDate = ''
   obj_state.error = null
+  str_Add_MOU_Organization_Search.value = ''
+bln_Show_Add_MOU_Organization_List.value = false
+obj_state.error = null
 }
 
 const Handle_Add_MOU_File = (event: Event) => {
@@ -287,26 +435,85 @@ const Handle_Add_MOU_File = (event: Event) => {
   obj_Add_MOU.file = input.files?.[0] || null
 }
 
+const Select_Add_MOU_Organization = (organization: any) => {
+  obj_Add_MOU.organizationId = organization._id
+
+  str_Add_MOU_Organization_Search.value =
+    organization.name_en ||
+    organization.name_th ||
+    'Unnamed Organization'
+
+  bln_Show_Add_MOU_Organization_List.value = false
+}
+
 const Submit_Add_MOU = async () => {
-  if (!obj_Add_MOU.organizationId || !obj_Add_MOU.file) return
-  if (obj_Add_MOU.startDate && obj_Add_MOU.endDate && obj_Add_MOU.endDate <= obj_Add_MOU.startDate) {
+  // Validate organization
+  if (!obj_Add_MOU.organizationId) {
+    obj_state.error = 'Please select an organization'
+    return
+  }
+
+  // Validate file
+  const file = obj_Add_MOU.file
+
+  if (!file) {
+    obj_state.error = 'Please select an MOU document'
+    return
+  }
+
+  // Validate dates
+  if (
+    obj_Add_MOU.startDate &&
+    obj_Add_MOU.endDate &&
+    obj_Add_MOU.endDate <= obj_Add_MOU.startDate
+  ) {
     obj_state.error = 'End date must be after start date'
     return
   }
 
   obj_state.loading = true
   obj_state.error = null
+
   try {
     const formData = new FormData()
-    formData.append('organization_id', obj_Add_MOU.organizationId)
-    formData.append('mou', obj_Add_MOU.file)
-    if (obj_Add_MOU.startDate) formData.append('start_date', obj_Add_MOU.startDate)
-    if (obj_Add_MOU.endDate) formData.append('end_date', obj_Add_MOU.endDate)
+
+    formData.append(
+      'organization_id',
+      String(obj_Add_MOU.organizationId)
+    )
+
+    // ใช้ตัวแปร file ที่ผ่าน null check แล้ว
+    formData.append('mou', file)
+
+    if (obj_Add_MOU.startDate) {
+      formData.append(
+        'start_date',
+        obj_Add_MOU.startDate
+      )
+    }
+
+    if (obj_Add_MOU.endDate) {
+      formData.append(
+        'end_date',
+        obj_Add_MOU.endDate
+      )
+    }
+
     await mouAPI.create(formData)
+
     Close_Add_MOU()
+
     await Load_Organizations_From_API()
+
   } catch (error: any) {
-    obj_state.error = error.response?.data?.message || 'Failed to upload MOU'
+    console.error('Submit_Add_MOU error:', error)
+
+    obj_state.error =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      error?.message ||
+      'Failed to upload MOU'
+
   } finally {
     obj_state.loading = false
   }
@@ -1048,6 +1255,374 @@ onBeforeUnmount(() => {
   .admin_mou > .main_content { width: calc(100% - 66px); padding-inline: 12px; }
   .admin_mou .search_controls { grid-template-columns: 1fr; gap: 12px; padding: 16px; }
   .admin_mou .action_buttons { justify-content: flex-end; }
+}
+
+/* =========================================
+   ADD MOU MODAL
+   Figma Group 259
+   ========================================= */
+
+.add_mou_overlay {
+  position: fixed;
+  inset: 0;
+
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+
+  padding-top: 51px;
+
+  background: rgba(0, 0, 0, 0.35);
+
+  z-index: 9999;
+
+  box-sizing: border-box;
+}
+
+.add_mou_modal {
+  position: relative;
+
+  width: 520px;
+  min-height: 360px;
+  max-width: calc(100vw - 32px);
+
+  box-sizing: border-box;
+
+  padding: 24px 32px 22px;
+
+  background: #ffffff;
+
+  border-radius: 12px;
+
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+
+  font-family: 'Inter', sans-serif;
+}
+
+.add_mou_close {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+
+  width: 30px;
+  height: 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  border: none;
+  background: transparent;
+
+  color: #555555;
+
+  font-size: 26px;
+  line-height: 1;
+
+  cursor: pointer;
+}
+
+.add_mou_close:hover {
+  color: #000000;
+}
+
+.add_mou_title {
+  margin: 0;
+
+  font-family: 'Outfit', sans-serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 30px;
+
+  color: #000000;
+}
+
+.add_mou_divider {
+  width: 100%;
+  height: 1px;
+
+  margin: 12px 0 18px;
+
+  background: #d9d9d9;
+}
+
+.add_mou_field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.add_mou_label {
+  margin-bottom: 6px;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 16px;
+
+  color: #333333;
+}
+
+.add_mou_label span {
+  color: #ab1c03;
+  margin-left: 2px;
+}
+
+.add_mou_input {
+  width: 100%;
+  height: 36px;
+
+  box-sizing: border-box;
+
+  padding: 7px 10px;
+
+  border: 1px solid #b1b1b1;
+  border-radius: 6px;
+
+  background: #ffffff;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+
+  color: #333333;
+
+  outline: none;
+}
+
+.add_mou_input:focus {
+  border-color: #ab1c03;
+}
+
+.add_mou_input:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+.add_mou_organization_picker {
+  position: relative;
+  width: 100%;
+}
+
+.add_mou_organization_dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #b1b1b1;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 10001;
+}
+
+.add_mou_organization_option {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  background: #ffffff;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: #333333;
+  cursor: pointer;
+}
+
+.add_mou_organization_option:hover {
+  background: #f5f5f5;
+}
+
+.add_mou_organization_empty {
+  padding: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: #777777;
+}
+
+.add_mou_organization_picker {
+  position: relative;
+  width: 100%;
+}
+
+.add_mou_organization_dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 180px;
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #b1b1b1;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 10001;
+}
+
+.add_mou_organization_option {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  background: #ffffff;
+  text-align: left;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: #333333;
+  cursor: pointer;
+}
+
+.add_mou_organization_option:hover {
+  background: #f5f5f5;
+}
+
+.add_mou_organization_empty {
+  padding: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: #777777;
+}
+
+.add_mou_file_box {
+  width: 100%;
+  height: 36px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 10px;
+
+  border: 1px dashed #b1b1b1;
+  border-radius: 6px;
+
+  background: #fafafa;
+
+  cursor: pointer;
+}
+
+.add_mou_file_box:hover {
+  border-color: #ab1c03;
+  background: #fffafa;
+}
+
+.add_mou_file_box input[type='file'] {
+  display: none;
+}
+
+.add_mou_file_text {
+  overflow: hidden;
+
+  white-space: nowrap;
+  text-overflow: ellipsis;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+
+  color: #666666;
+}
+
+.add_mou_dates {
+  display: grid;
+
+  grid-template-columns: 1fr 1fr;
+
+  gap: 16px;
+
+  margin-top: 12px;
+}
+
+.add_mou_error {
+  margin: 8px 0 0;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  line-height: 14px;
+
+  color: #d00000;
+}
+
+.add_mou_actions {
+  display: flex;
+
+  justify-content: flex-end;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 16px;
+}
+
+.add_mou_cancel,
+.add_mou_submit {
+  height: 32px;
+
+  padding: 0 18px;
+
+  border-radius: 6px;
+
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+.add_mou_cancel {
+  border: 1px solid #b1b1b1;
+
+  background: #ffffff;
+
+  color: #333333;
+}
+
+.add_mou_cancel:hover {
+  background: #f5f5f5;
+}
+
+.add_mou_submit {
+  border: 1px solid #8b0000;
+
+  background: #8b0000;
+
+  color: #ffffff;
+}
+
+.add_mou_submit:hover {
+  background: #700000;
+}
+
+.add_mou_submit:disabled,
+.add_mou_cancel:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+
+/* =========================================
+   ADD MOU RESPONSIVE
+   ========================================= */
+
+@media (max-width: 600px) {
+  .add_mou_overlay {
+    padding: 20px 16px;
+    align-items: flex-start;
+  }
+
+  .add_mou_modal {
+    width: 100%;
+    max-width: 520px;
+
+    padding: 22px 20px;
+  }
+
+  .add_mou_dates {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
 }
 </style>
 
