@@ -1,5 +1,5 @@
 <template>
-  <div class="admin-navbar">
+  <div class="admin-navbar" @mouseenter="handleNavbarEnter"@mouseleave="handleNavbarLeave">
     <!-- Logo Image -->
     <img 
       src="https://archives.mfu.ac.th/wp-content/uploads/2019/06/Mae-Fah-Luang-University-2.png" 
@@ -87,6 +87,19 @@ watch(
   },
   { immediate: true }
 )
+const handleNavbarEnter = () => {
+  document.documentElement.style.setProperty(
+    '--admin-navbar-width',
+    '227px'
+  )
+}
+
+const handleNavbarLeave = () => {
+  document.documentElement.style.setProperty(
+    '--admin-navbar-width',
+    '66px'
+  )
+}
 
 const navigateTo = (path: string) => {
   console.log('Navigating to:', path)
@@ -107,13 +120,16 @@ const navigateTo = (path: string) => {
   right: auto;
   top: 0;
   bottom: 0;
+
   width: 66px;
-  height: 100dvh;
+
   background: #8B0000;
   box-shadow: none;
   overflow: hidden;
   z-index: 1000;
+
   transition: width 0.2s ease;
+
   transform: translateX(0);
   flex: none;
 }

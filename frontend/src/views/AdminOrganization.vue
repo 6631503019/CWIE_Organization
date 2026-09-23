@@ -21,7 +21,7 @@
         </div>
 
         <section class="filter_section">
-          <input type="text" :placeholder="text('Search organisation...', 'ค้นหาองค์กร...')" class="search_input" v-model="searchText" />
+          <input type="text" :placeholder="text('Search organization...', 'ค้นหาองค์กร...')" class="search_input" v-model="searchText" />
           <div class="filter_labels">
             <span>{{ text('Business Type', 'ประเภทธุรกิจ') }}</span><span>{{ text('Business Category', 'หมวดหมู่ธุรกิจ') }}</span><span>{{ text('Region', 'ภูมิภาค') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Province', 'จังหวัด') }}</span>
           </div>
