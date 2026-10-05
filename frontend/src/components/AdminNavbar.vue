@@ -302,5 +302,5 @@ const navigateTo = (path: string) => {
 .admin-navbar:hover .nav-organization { top: 113px; }
 .admin-navbar:hover .nav-mou { top: 168px; }
 .admin-navbar:hover .nav-roadshow { top: 223px; }
-.admin-navbar:hover .nav-organization.active { background: #600606; border-radius: 2px; }
+.admin-navbar:hover .nav-organization.active, .admin-navbar:hover .nav-mou.active, .admin-navbar:hover .nav-roadshow.active { background: #600606; border-radius: 2px; }
 </style>

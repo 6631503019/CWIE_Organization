@@ -1,105 +1,139 @@
 <template>
   <div class="admin_mou_more_detail">
     <AdminNavbar />
-    
-    <!-- Main Content Card -->
-    <div class="content_card">
-      <!-- Back Button -->
-      <div class="back_button" @click="goBack">
-        <div class="back_arrow"></div>
+
+    <!-- Figma: TopBar -->
+    <header class="detail_topbar">
+      <div class="breadcrumb">
+        <span>{{ text('Organization', 'องค์กร') }}</span>
+        <span class="breadcrumb_separator">›</span>
+        <span class="breadcrumb_current">
+          {{ organization?.name_en || organization?.name_th || text('Organization', 'องค์กร') }}
+        </span>
       </div>
-      
-      <!-- MOU Badge -->
-      <div class="mou_badge" @click="openMOUDocument" :class="{ 'has_mou': mouDocumentUrl }">
-        MOU
+
+      <div class="topbar_actions">
+        <button type="button" class="edit_button" @click="editOrganization">
+          {{ text('Edit', 'แก้ไข') }}
+        </button>
+
+        <button type="button" class="back_list_button" @click="goBack">
+          {{ text('Back to List', 'กลับไปยังรายการ') }}
+        </button>
       </div>
-      
-      <!-- Organization Name -->
-      <h1 class="org_title">{{ organization?.name_en || organization?.name_th || 'Organization Name' }}</h1>
-      
-      <!-- Organization Logo -->
-      <div class="org_logo_large">
-        <img :src="logoUrl" :alt="organization?.name_en" />
-      </div>
-      
-      <!-- Address -->
-      <div class="org_address">{{ fullAddress }}</div>
-      
-      <!-- Business Type Section -->
-      <div class="section_label business_type_label">Business Type</div>
-      <div class="tags_container business_tags">
-        <div class="tag" v-for="(type, index) in businessTypes" :key="index">{{ type }}</div>
-      </div>
-      
-      <!-- Location Section -->
-      <div class="section_label location_label">Location</div>
-      <div class="tags_container location_tags">
-        <div class="tag">{{ organization?.address?.country || 'Thailand' }}</div>
-        <div class="tag">{{ organization?.address?.region || 'Central' }}</div>
-        <div class="tag">{{ organization?.address?.province || 'Bangkok' }}</div>
-      </div>
-      
-      <!-- Email -->
-      <div class="contact_item email_item">
-        <div class="icon email_icon"></div>
-        <span class="contact_text">{{ organization?.email || 'N/A' }}</span>
-      </div>
-      
-      <!-- Phone -->
-      <div class="contact_item phone_item">
-        <div class="icon phone_icon"></div>
-        <span class="contact_text">{{ organization?.tel || 'N/A' }}</span>
-      </div>
-      
-      <!-- Details Section -->
-      <div class="details_section">
-        <h2 class="section_title">Details</h2>
-        <p class="details_text">{{ organization?.details || 'No details available.' }}</p>
-      </div>
-      
-      <!-- Reviews Section -->
-      <div class="reviews_section">
-        <h2 class="section_title">Reviews</h2>
-        
-        <!-- Review Navigation -->
-        <div class="review_carousel" v-if="reviews.length > 0">
-          <!-- Previous Button -->
-          <button 
-            class="review_nav_btn prev" 
-            @click="prevReview" 
-            :disabled="currentReviewIndex === 0"
-          >
-            <div class="nav_arrow left"></div>
-          </button>
-          
-          <!-- Current Review Card -->
-          <div class="review_card" v-if="currentReview">
-            <div class="review_header">
-              <span class="job_position_label">Job position : </span>
-              <span class="job_position_value">{{ currentReview.job_position || 'N/A' }}</span>
-            </div>
-            <p class="review_text">{{ currentReview.review_text || 'No review available.' }}</p>
-            <div class="review_counter">{{ currentReviewIndex + 1 }} / {{ reviews.length }}</div>
+    </header>
+
+    <!-- Figma: Content -->
+    <main class="detail_content">
+      <!-- Profile Card -->
+      <section class="profile_card">
+        <div class="profile_header">
+          <div class="org_logo">
+            <img
+              :src="logoUrl"
+              :alt="organization?.name_en || organization?.name_th || 'Organization logo'"
+            />
           </div>
-          
-          <!-- Next Button -->
-          <button 
-            class="review_nav_btn next" 
-            @click="nextReview" 
-            :disabled="currentReviewIndex === reviews.length - 1"
+
+          <div class="profile_title_col">
+            <div class="profile_title_row">
+              <h1 class="org_name">
+                {{ organization?.name_en || organization?.name_th || 'No Name' }}
+              </h1>
+
+              <span
+                class="status_pill"
+                :class="{ inactive: !isOrganizationActive }"
+              >
+                {{ isOrganizationActive ? text('Active', 'ใช้งาน') : text('Inactive', 'ไม่ใช้งาน') }}
+              </span>
+            </div>
+
+            <div class="org_type">
+              {{ organizationTypeLabel }}
+            </div>
+          </div>
+        </div>
+
+        <p class="org_description">
+          {{ organizationDescription }}
+        </p>
+
+        <div class="profile_divider"></div>
+      </section>
+
+      <!-- Right-side organization information -->
+      <section class="organization_info">
+        <div class="info_row">
+          <div class="info_label">{{ text('Business Type', 'ประเภทองค์กร') }}</div>
+          <div class="info_value">{{ businessTypeLabel }}</div>
+        </div>
+
+        <div class="info_row">
+          <div class="info_label">{{ text('Business Category', 'ประเภทธุรกิจ') }}</div>
+          <div class="info_value">{{ businessCategoryLabel }}</div>
+        </div>
+
+        <div class="info_row info_row_school">
+          <div class="info_label">{{ text('School', 'สำนักวิชา') }}</div>
+          <div class="info_value">{{ schoolLabel }}</div>
+        </div>
+
+        <div class="info_row">
+          <div class="info_label">{{ text('Province', 'จังหวัด') }}</div>
+          <div class="info_value">{{ provinceLabel }}</div>
+        </div>
+
+        <div class="info_row">
+          <div class="info_label">{{ text('Country', 'ประเทศ') }}</div>
+          <div class="info_value">{{ countryLabel }}</div>
+        </div>
+
+        <div class="info_row">
+          <div class="info_label">{{ text('Telephone', 'โทรศัพท์') }}</div>
+          <div class="info_value">{{ telephoneLabel }}</div>
+        </div>
+
+        <div class="info_row">
+          <div class="info_label">{{ text('Email', 'อีเมล') }}</div>
+          <div class="info_value">{{ emailLabel }}</div>
+        </div>
+      </section>
+
+      <!-- Figma: ReviewsPanel -->
+      <section class="reviews_panel">
+        <h2 class="reviews_title">
+          {{ text('Senior Reviews', 'รีวิวจากนักศึกษา') }}
+        </h2>
+
+        <div v-if="reviews.length > 0" class="reviews_list">
+          <article
+            v-for="(review, index) in reviews"
+            :key="review._id || index"
+            class="review_row"
           >
-            <div class="nav_arrow right"></div>
-          </button>
+            <div class="review_meta">
+              <span class="meta_label">{{ text('Academic Year', 'ปีการศึกษา') }}</span>
+              <span class="meta_value">{{ getAcademicYear(review) }}</span>
+
+              <span class="meta_label">{{ text('Semester', 'ภาคการศึกษา') }}</span>
+              <span class="meta_value">{{ getSemester(review) }}</span>
+            </div>
+
+            <p class="review_text">
+              {{ review.review_text || review.review || 'N/A' }}
+            </p>
+          </article>
         </div>
-        
-        <div class="no_reviews" v-else>
-          <p>No reviews available yet.</p>
+
+        <div v-else class="no_reviews">
+          {{ text('No reviews available yet.', 'ยังไม่มีรีวิว') }}
         </div>
-      </div>
-    </div>
-    
-    <!-- Notification Modal -->
-    <NotificationModal 
+      </section>
+
+    </main>
+
+    <NotificationModal
       :show="showNotificationModal"
       :message="notificationMessage"
       :type="notificationType"
@@ -113,114 +147,236 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
-import { organizationAPI, reviewAPI, mouAPI, BACKEND_URL } from '../services/api'
+import { organizationAPI, reviewAPI, BACKEND_URL } from '../services/api'
 
 const route = useRoute()
 const router = useRouter()
 
-// Reactive data
 const organization = ref<any>(null)
 const reviews = ref<any[]>([])
-const currentReviewIndex = ref(0)
 const showNotificationModal = ref(false)
 const notificationMessage = ref('')
 const notificationType = ref<'success' | 'error' | 'warning'>('warning')
-const mouDocumentUrl = ref<string | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-// Computed properties
+const currentLanguage = ref<'EN' | 'TH'>(
+  (localStorage.getItem('admin_language') as 'EN' | 'TH') || 'EN'
+)
+
+const text = (english: string, thai: string) =>
+  currentLanguage.value === 'TH' ? thai : english
+
+const getValue = (...values: any[]): string => {
+  const value = values.find(
+    item =>
+      item !== null &&
+      item !== undefined &&
+      String(item).trim() !== ''
+  )
+
+  return value !== undefined && value !== null ? String(value) : 'N/A'
+}
+
+const getNestedValue = (obj: any, keys: string[]): any => {
+  let value = obj
+
+  for (const key of keys) {
+    if (value === null || value === undefined) return undefined
+    value = value[key]
+  }
+
+  return value
+}
+
 const logoUrl = computed(() => {
   if (organization.value?.logo_path) {
-    // Normalize logo path: replace backslashes with forward slashes and ensure leading slash
-    let logoPath = organization.value.logo_path.replace(/\\/g, '/')
+    let logoPath = String(organization.value.logo_path).replace(/\\/g, '/')
+
     if (!logoPath.startsWith('/')) {
       logoPath = '/' + logoPath
     }
+
     return `${BACKEND_URL}${logoPath}`
   }
-  return '/api/placeholder/435/435'
+
+  return '/api/placeholder/56/56'
 })
 
-const fullAddress = computed(() => {
-  if (!organization.value) return 'No address available'
-  
-  const org = organization.value
-  const parts = []
-  
-  if (org.address_en) parts.push(org.address_en)
-  else if (org.address_th) parts.push(org.address_th)
-  
-  return parts.join(', ') || 'No address available'
+const isOrganizationActive = computed(() => {
+  const value = organization.value?.is_public
+
+  return (
+    value === true ||
+    value === 'true' ||
+    value === 1 ||
+    value === '1'
+  )
 })
 
-const businessTypes = computed(() => {
-  if (!organization.value?.business_type) return ['Individual']
-  
-  // If business_type is an array
-  if (Array.isArray(organization.value.business_type)) {
-    return organization.value.business_type
+const organizationTypeLabel = computed(() => {
+  return getValue(
+    organization.value?.organization_type?.name_en,
+    organization.value?.organization_type?.name_th,
+    organization.value?.organization_type,
+    organization.value?.type
+  )
+})
+
+const businessTypeLabel = computed(() => {
+  const value =
+    organization.value?.business_type ??
+    organization.value?.businessType
+
+  if (Array.isArray(value)) {
+    return value
+      .map(item => {
+        if (typeof item === 'object') {
+          return getValue(item?.name_en, item?.name_th, item?.name)
+        }
+
+        return String(item)
+      })
+      .filter(Boolean)
+      .join(', ') || 'N/A'
   }
-  
-  // If business_type is a string, split by comma
-  if (typeof organization.value.business_type === 'string') {
-    return organization.value.business_type.split(',').map((t: string) => t.trim())
+
+  if (typeof value === 'object' && value !== null) {
+    return getValue(value?.name_en, value?.name_th, value?.name)
   }
-  
-  return ['Individual']
+
+  return getValue(value)
 })
 
-const currentReview = computed(() => {
-  if (reviews.value.length === 0) return null
-  return reviews.value[currentReviewIndex.value]
+const businessCategoryLabel = computed(() => {
+  const value =
+    organization.value?.business_category ??
+    organization.value?.business_category_id ??
+    organization.value?.industry_category
+
+  if (Array.isArray(value)) {
+    return value
+      .map(item => {
+        if (typeof item === 'object') {
+          return getValue(item?.name_en, item?.name_th, item?.name)
+        }
+
+        return String(item)
+      })
+      .filter(Boolean)
+      .join(', ') || 'N/A'
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    return getValue(value?.name_en, value?.name_th, value?.name)
+  }
+
+  return getValue(value)
 })
 
-// Review navigation
-const nextReview = () => {
-  if (currentReviewIndex.value < reviews.value.length - 1) {
-    currentReviewIndex.value++
-  }
+const schoolLabel = computed(() => {
+  return getValue(
+    organization.value?.school?.name_en,
+    organization.value?.school?.name_th,
+    organization.value?.school?.name,
+    organization.value?.school,
+    organization.value?.school_name_en,
+    organization.value?.school_name_th
+  )
+})
+
+const provinceLabel = computed(() => {
+  return getValue(
+    organization.value?.province?.name_en,
+    organization.value?.province?.name_th,
+    organization.value?.province?.name,
+    organization.value?.province,
+    organization.value?.address?.province
+  )
+})
+
+const countryLabel = computed(() => {
+  return getValue(
+    organization.value?.country?.name_en,
+    organization.value?.country?.name_th,
+    organization.value?.country?.name,
+    organization.value?.country,
+    organization.value?.address?.country
+  )
+})
+
+const telephoneLabel = computed(() => {
+  return getValue(
+    organization.value?.tel,
+    organization.value?.telephone,
+    organization.value?.phone,
+    organization.value?.phone_number
+  )
+})
+
+const emailLabel = computed(() => {
+  return getValue(organization.value?.email)
+})
+
+const organizationDescription = computed(() => {
+  return getValue(
+    organization.value?.details_en,
+    organization.value?.details_th,
+    organization.value?.details,
+    organization.value?.description_en,
+    organization.value?.description_th,
+    organization.value?.description
+  )
+})
+
+const getAcademicYear = (review: any): string => {
+  return getValue(
+    review?.academic_year,
+    review?.academicYear,
+    review?.year
+  )
 }
 
-const prevReview = () => {
-  if (currentReviewIndex.value > 0) {
-    currentReviewIndex.value--
-  }
+const getSemester = (review: any): string => {
+  return getValue(
+    review?.semester,
+    review?.term
+  )
 }
 
-// Fetch organization data
 const fetchOrganization = async () => {
   try {
     loading.value = true
+
     const orgId = route.params.id as string
-    
+
     if (!orgId) {
       throw new Error('Organization ID is required')
     }
-    
+
     const response = await organizationAPI.getById(orgId)
     organization.value = response.data.data
-    
+
     console.log('Organization loaded:', organization.value)
   } catch (err: any) {
-    error.value = err.response?.data?.message || 'Failed to load organization'
+    error.value =
+      err.response?.data?.message || 'Failed to load organization'
+
     console.error('Error loading organization:', err)
   } finally {
     loading.value = false
   }
 }
 
-// Fetch reviews for organization
 const fetchReviews = async () => {
   try {
     const orgId = route.params.id as string
-    
+
     if (!orgId) return
-    
-    // Use getByOrganization instead of getAll
+
     const response = await reviewAPI.getByOrganization(orgId)
     reviews.value = response.data.data || []
-    
+
     console.log('Reviews loaded:', reviews.value.length, 'items')
   } catch (err: any) {
     console.error('Error loading reviews:', err)
@@ -228,481 +384,427 @@ const fetchReviews = async () => {
   }
 }
 
-// Fetch MOU document for organization
-const fetchMOUDocument = async () => {
-  try {
-    const orgId = route.params.id as string
-    
-    if (!orgId) {
-      console.log('No organization ID provided')
-      return
-    }
-    
-    console.log('Fetching MOU for organization ID:', orgId)
-    const response = await mouAPI.getAll({ limit: 100 })
-    console.log('All MOUs from backend:', response.data.data)
-    
-    // Find MOU for this organization
-    const mou = response.data.data.find((item: any) => {
-      // organization_id can be either a string or an object with _id
-      const mouOrgId = typeof item.organization_id === 'object' 
-        ? item.organization_id?._id 
-        : item.organization_id
-      
-      const idMatch = String(mouOrgId) === String(orgId)
-      
-      console.log('Comparing MOU org ID:', mouOrgId, 'with target:', orgId, '- Match:', idMatch)
-      
-      return idMatch
-    })
-    
-    console.log('Found MOU:', mou)
-    
-    if (mou && mou.mou_path) {
-      mouDocumentUrl.value = `${BACKEND_URL}${mou.mou_path}`
-      console.log('✅ MOU document found:', mouDocumentUrl.value)
-    } else {
-      mouDocumentUrl.value = null
-      console.log('❌ No MOU document found for this organization')
-      console.log('Available MOUs:', response.data.data.length)
-    }
-  } catch (err: any) {
-    console.error('Error loading MOU document:', err)
-    mouDocumentUrl.value = null
-  }
+
+const editOrganization = () => {
+  const orgId = route.params.id as string
+
+  if (!orgId) return
+
+  /*
+   * Keep the existing application route structure.
+   * If the project already has a dedicated edit route, replace
+   * the route name below with that existing route name.
+   */
+  router.push({
+    path: `/admin/organization/${orgId}/edit`
+  })
 }
 
-// Open MOU document in new tab
-const openMOUDocument = () => {
-  if (mouDocumentUrl.value) {
-    window.open(mouDocumentUrl.value, '_blank')
-  } else {
-    notificationMessage.value = 'No MOU document available for this organization'
-    notificationType.value = 'warning'
-    showNotificationModal.value = true
-  }
-}
-
-// Navigation method
 const goBack = () => {
   router.back()
 }
 
-// Lifecycle hooks
 onMounted(async () => {
-  console.log('AdminMOUMoreDetail mounted for ID:', route.params.id)
-  
   await fetchOrganization()
   await fetchReviews()
-  await fetchMOUDocument()
 })
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 .admin_mou_more_detail {
   position: relative;
-  width: 1440px;
-  height: 1176px;
-  background: #F6F7F8;
-  overflow-x: auto;
-}
-
-.content_card {
-  box-sizing: border-box;
-  position: absolute;
-  width: 1118px;
-  height: 1232px;
-  left: 250px;
-  top: 50px;
-  
-  background: #FFFFFF;
-  border: 1px solid #000000;
-  border-radius: 15px;
-}
-
-.back_button {
-  position: absolute;
-  width: 40px;
-  height: 40px;
-  left: 20px;
-  top: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s ease;
-}
-
-.back_button:hover {
-  transform: translateX(-3px);
-}
-
-.back_arrow {
-  width: 24px;
-  height: 24px;
-  background: #000000;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z'/%3E%3C/svg%3E") no-repeat center;
-  mask-size: contain;
-}
-
-.mou_badge {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 5px 3px;
-  gap: 10px;
-  
-  position: absolute;
-  width: 71px;
-  height: 28px;
-  left: 1022px;
-  top: 22px;
-  
-  border: 1px solid #C70000;
-  border-radius: 5px;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 18px;
-  color: #C70000;
-  
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.mou_badge:hover {
-  background: #C70000;
-  color: #FFFFFF;
-}
-
-.mou_badge.has_mou {
-  cursor: pointer;
-}
-
-.mou_badge:not(.has_mou) {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.org_title {
-  position: absolute;
-  width: 744px;
-  height: 48px;
-  left: 187px;
-  top: 18px;
-  margin: 0;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 28px;
-  line-height: 35px;
-  text-align: center;
-  color: #000000;
-}
-
-.org_logo_large {
-  position: absolute;
-  width: 435px;
-  height: 435px;
-  left: 353px;
-  top: 126px;
-  border-radius: 50%;
-  overflow: hidden;
-}
-
-.org_logo_large img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  background: #e0e0e0;
+  min-width: 1100px;
+  min-height: 100vh;
+  background: #ffffff;
+  color: #1f2937;
+  overflow-x: auto;
+  font-family: 'Inter', sans-serif;
 }
 
-.org_address {
-  position: absolute;
-  width: 909px;
-  height: auto;
-  left: 79px;
-  top: 625px;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 25px;
-  color: #000000;
-  text-align: center;
-}
-
-.section_label {
-  position: absolute;
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 25px;
-  color: #000000;
-}
-
-.business_type_label {
-  width: 124px;
-  height: 25px;
-  left: 83px;
-  top: 703px;
-}
-
-.location_label {
-  width: 124px;
-  height: 25px;
-  left: 366px;
-  top: 700px;
-}
-
-.tags_container {
-  position: absolute;
+/* Figma TopBar: x=67, y=10, height=71 */
+.detail_topbar {
+  position: relative;
+  height: 71px;
+  margin-left: 67px;
+  margin-right: 17px;
+  top: 10px;
+  background: #ffffff;
   display: flex;
-  gap: 8px;
-}
-
-.business_tags {
-  left: 79px;
-  top: 743px;
-}
-
-.location_tags {
-  left: 366px;
-  top: 739px;
-}
-
-.tag {
+  align-items: center;
+  justify-content: space-between;
   box-sizing: border-box;
-  padding: 1px 8px;
-  height: 20px;
-  
-  background: #FFFFFF;
-  border: 1px solid #000000;
-  border-radius: 6px;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
+  padding: 0 32px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: #73737a;
+  font-size: 12px;
+  line-height: 15px;
   font-weight: 400;
-  font-size: 14px;
-  line-height: 18px;
-  color: #000000;
-  
+}
+
+.breadcrumb_separator {
+  color: #a1a1a8;
+}
+
+.breadcrumb_current {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topbar_actions {
   display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.contact_item {
-  position: absolute;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.email_item {
-  left: 79px;
-  top: 786px;
-}
-
-.phone_item {
-  left: 366px;
-  top: 783px;
-}
-
-.icon {
-  width: 15px;
-  height: 15px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-
-.email_icon {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000'%3E%3Cpath d='M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'/%3E%3C/svg%3E");
-}
-
-.phone_icon {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23000000'%3E%3Cpath d='M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z'/%3E%3C/svg%3E");
-}
-
-.contact_text {
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 17px;
-  color: #000000;
-}
-
-.details_section {
-  position: absolute;
-  left: 83px;
-  top: 850px;
-  width: 967px;
-}
-
-.section_title {
-  margin: 0 0 15px 0;
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 19px;
-  color: #000000;
-}
-
-.details_text {
-  margin: 0;
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
-  font-weight: 500;
-  font-size: 16px;
-  line-height: 19px;
-  color: #000000;
-  white-space: pre-line;
-}
-
-.reviews_section {
-  position: absolute;
-  left: 83px;
-  top: 1050px;
-  width: 900px;
-}
-
-.review_carousel {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  margin-top: 33px;
-}
-
-.review_nav_btn {
-  width: 40px;
-  height: 40px;
-  background: #FFFFFF;
-  border: 1px solid #D0D0D0;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
+  align-items: flex-start;
+  gap: 10px;
   flex-shrink: 0;
 }
 
-.review_nav_btn:hover:not(:disabled) {
-  background: #F5F5F5;
-  border-color: #AB1C03;
-}
-
-.review_nav_btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.nav_arrow {
-  width: 20px;
-  height: 20px;
-  background: #000000;
-  mask-size: contain;
-  mask-repeat: no-repeat;
-  mask-position: center;
-}
-
-.nav_arrow.left {
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z'/%3E%3C/svg%3E");
-}
-
-.nav_arrow.right {
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z'/%3E%3C/svg%3E");
-}
-
-.review_card {
-  flex: 1;
-  height: auto;
-  min-height: 70px;
-  padding: 10px;
-  position: relative;
-  
-  background: rgba(230, 229, 229, 0.5);
-  border-radius: 5px;
-}
-
-.review_counter {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
+/* Figma Edit: 51x31, border #E6E6E8, radius 8 */
+.edit_button,
+.back_list_button {
+  box-sizing: border-box;
+  height: 31px;
+  padding: 8px 14px;
+  border-radius: 8px;
   font-family: 'Inter', sans-serif;
   font-size: 12px;
-  font-weight: 500;
-  color: #767676;
-}
-
-.review_header {
-  margin-bottom: 10px;
-}
-
-.job_position_label {
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
+  line-height: 15px;
   font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.edit_button {
+  width: 51px;
+  background: #ffffff;
+  border: 1px solid #e6e6e8;
+  color: #1f2937;
+}
+
+.edit_button:hover {
+  background: #f8f8f9;
+}
+
+/* Figma Back: 96x31, #8B0000 */
+.back_list_button {
+  width: 96px;
+  background: #8b0000;
+  border: 1px solid #8b0000;
+  color: #ffffff;
+}
+
+.back_list_button:hover {
+  background: #720000;
+}
+
+/* Figma Content: starts at y=83 */
+.detail_content {
+  position: relative;
+  height: 570px;
+  margin-left: 60px;
+  margin-right: 9px;
+  margin-top: 2px;
+  background: #ffffff;
+}
+
+/* Figma ProfileCard: 356x191, x=32, y=24 */
+.profile_card {
+  position: absolute;
+  width: 356px;
+  height: 191px;
+  left: 32px;
+  top: 24px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+/* Figma HeaderRow: 340x56, x=24, y=24 */
+.profile_header {
+  position: absolute;
+  left: 24px;
+  top: 24px;
+  width: 340px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-sizing: border-box;
+}
+
+.org_logo {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f3f4f6;
+}
+
+.org_logo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.profile_title_col {
+  min-width: 0;
+  width: 258px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile_title_row {
+  width: 100%;
+  min-height: 19px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.org_name {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: 16px;
   line-height: 19px;
-  color: #545454;
+  font-weight: 700;
+  color: #1f2937;
 }
 
-.job_position_value {
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
+.status_pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 47px;
+  height: 18px;
+  padding: 3px 8px;
+  box-sizing: border-box;
+  background: #22c55e;
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 10px;
+  line-height: 12px;
   font-weight: 600;
-  font-size: 16px;
-  line-height: 19px;
-  color: #000000;
+}
+
+.status_pill.inactive {
+  background: #73737a;
+}
+
+.org_type {
+  width: 100%;
+  color: #73737a;
+  font-size: 11px;
+  line-height: 13px;
+  font-weight: 400;
+}
+
+/* Figma description */
+.org_description {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: 96px;
+  height: 60px;
+  margin: 0;
+  overflow: hidden;
+  color: #73737a;
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 400;
+  white-space: pre-line;
+}
+
+.profile_divider {
+  position: absolute;
+  width: 292px;
+  height: 1px;
+  left: 24px;
+  top: 172px;
+  background: #e6e6e8;
+}
+
+/* Right information column */
+.organization_info {
+  position: absolute;
+  left: 772px;
+  top: 52px;
+  width: 310px;
+  box-sizing: border-box;
+}
+
+.info_row {
+  width: 310px;
+  min-height: 15px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.info_row_school {
+  min-height: 30px;
+  margin-bottom: 16px;
+}
+
+.info_label {
+  width: 90px;
+  flex: 0 0 90px;
+  color: #73737a;
+  font-size: 11px;
+  line-height: 13px;
+  font-weight: 600;
+}
+
+.info_value {
+  width: 220px;
+  flex: 0 0 220px;
+  color: #1f2937;
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+
+/* Figma vertical divider: 220px long at x=740 */
+.organization_info::before {
+  content: '';
+  position: absolute;
+  width: 220px;
+  height: 1px;
+  left: -32px;
+  top: -4px;
+  background: #e6e6e8;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+/* ReviewsPanel: left=54, top=321, height=368 */
+.reviews_panel {
+  position: absolute;
+  left: 54px;
+  top: 321px;
+  right: 612px;
+  min-width: 580px;
+  height: 368px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.reviews_title {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  margin: 0;
+  color: #1f2937;
+  font-size: 15px;
+  line-height: 18px;
+  font-weight: 700;
+}
+
+.reviews_list {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  top: 54px;
+}
+
+.review_row {
+  min-height: 30px;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+  background: #ffffff;
+}
+
+.review_meta {
+  width: 110px;
+  min-width: 110px;
+  display: grid;
+  grid-template-columns: 1fr;
+  row-gap: 2px;
+}
+
+.meta_label {
+  color: #73737a;
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 400;
+}
+
+.meta_value {
+  color: #1f2937;
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 600;
+  margin-bottom: 2px;
 }
 
 .review_text {
-  margin: 0 0 10px 0;
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 19px;
-  color: #000000;
-}
-
-.review_rating {
-  display: flex;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.review-rating .star {
-  font-size: 20px;
-  color: #D0D0D0;
-}
-
-.review-rating .star.filled {
-  color: #FFD700;
+  width: 360px;
+  max-width: calc(100% - 126px);
+  height: 30px;
+  margin: 0;
+  overflow: hidden;
+  color: #1f2937;
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 400;
 }
 
 .no_reviews {
-  margin-top: 33px;
-  font-family: 'Inter', sans-serif;
-  font-style: normal;
-  font-weight: 500;
-  font-size: 16px;
-  line-height: 19px;
-  color: #767676;
+  position: absolute;
+  left: 20px;
+  top: 54px;
+  color: #73737a;
+  font-size: 12px;
+  line-height: 15px;
+}
+
+/* Laptop / smaller desktop */
+@media (max-width: 1200px) {
+  .admin_mou_more_detail {
+    min-width: 1000px;
+  }
+
+  .organization_info {
+    left: 700px;
+  }
+
+  .reviews_panel {
+    right: 420px;
+  }
+}
+
+/* Keep the Figma composition usable without changing the desktop proportions */
+@media (max-width: 900px) {
+  .admin_mou_more_detail {
+    min-width: 1000px;
+  }
+
+  .detail_topbar {
+    padding: 0 20px;
+  }
+
+  .detail_content {
+    overflow: visible;
+  }
 }
 </style>
-
-

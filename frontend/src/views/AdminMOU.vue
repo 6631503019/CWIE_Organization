@@ -1915,14 +1915,6 @@ const str_MOU_URL = str_MOU_Path
   font-family: 'Inter', sans-serif;
 }
 
-/* =========================================================
-   HEADER
-   ========================================================= */
-
-.admin_mou .mou_table thead {
-  height: 48px;
-  background: #AB0000;
-}
 
 .admin_mou .mou_table th {
   height: 48px;
@@ -1931,7 +1923,7 @@ const str_MOU_URL = str_MOU_Path
 
   box-sizing: border-box;
 
-  background: #AB0000;
+  background: #8B0000;
 
   border-bottom: 1px solid #FFFFFF;
   border-right: 1px solid #BCBCBE;
