@@ -62,6 +62,34 @@
         <div class="profile_divider"></div>
       </section>
 
+      <section v-if="mou" class="mou_information">
+        <div class="info_row">
+          <div class="info_label">{{ text('MOU Number', 'เลขที่ MOU') }}</div>
+          <div class="info_value">{{ getValue(mou.mou_number, mou.number) }}</div>
+        </div>
+        <div class="info_row">
+          <div class="info_label">{{ text('Start Date', 'วันที่เริ่มต้น') }}</div>
+          <div class="info_value">{{ formatDate(mou.start_date) }}</div>
+        </div>
+        <div class="info_row">
+          <div class="info_label">{{ text('End Date', 'วันที่สิ้นสุด') }}</div>
+          <div class="info_value">{{ formatDate(mou.end_date) }}</div>
+        </div>
+        <div class="info_row">
+          <div class="info_label">{{ text('Status', 'สถานะ') }}</div>
+          <div class="info_value">{{ mou.is_published ? text('Published', 'เผยแพร่') : text('Unpublished', 'ไม่เผยแพร่') }}</div>
+        </div>
+        <div class="info_row">
+          <div class="info_label">{{ text('Document', 'เอกสาร') }}</div>
+          <div class="info_value">
+            <a v-if="documentUrl" :href="documentUrl" target="_blank" rel="noopener noreferrer">
+              {{ documentName }}
+            </a>
+            <span v-else>N/A</span>
+          </div>
+        </div>
+      </section>
+
       <!-- Right-side organization information -->
       <section class="organization_info">
         <div class="info_row">
@@ -147,12 +175,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
-import { organizationAPI, reviewAPI, BACKEND_URL } from '../services/api'
+import { organizationAPI, reviewAPI, mouAPI, BACKEND_URL } from '../services/api'
+import { useLanguage } from '../composables/useLanguage'
 
 const route = useRoute()
 const router = useRouter()
 
 const organization = ref<any>(null)
+const mou = ref<any>(null)
 const reviews = ref<any[]>([])
 const showNotificationModal = ref(false)
 const notificationMessage = ref('')
@@ -160,12 +190,7 @@ const notificationType = ref<'success' | 'error' | 'warning'>('warning')
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-const currentLanguage = ref<'EN' | 'TH'>(
-  (localStorage.getItem('admin_language') as 'EN' | 'TH') || 'EN'
-)
-
-const text = (english: string, thai: string) =>
-  currentLanguage.value === 'TH' ? thai : english
+const { currentLanguage, text } = useLanguage()
 
 const getValue = (...values: any[]): string => {
   const value = values.find(
@@ -318,6 +343,24 @@ const emailLabel = computed(() => {
   return getValue(organization.value?.email)
 })
 
+const formatDate = (value: unknown): string => {
+  if (!value) return 'N/A'
+  const date = new Date(String(value))
+  return Number.isNaN(date.getTime())
+    ? String(value)
+    : date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+const documentPath = computed(() => {
+  const value = mou.value?.mou_path || mou.value?.mou_file_path
+  if (!value) return ''
+  const path = String(value).replace(/\\/g, '/')
+  return path.startsWith('/') ? path : `/${path}`
+})
+
+const documentUrl = computed(() => documentPath.value ? `${BACKEND_URL}${documentPath.value}` : '')
+const documentName = computed(() => documentPath.value.split('/').pop() || 'MOU Document')
+
 const organizationDescription = computed(() => {
   return getValue(
     organization.value?.details_en,
@@ -344,23 +387,34 @@ const getSemester = (review: any): string => {
   )
 }
 
-const fetchOrganization = async () => {
+const fetchMOU = async () => {
   try {
     loading.value = true
 
-    const orgId = route.params.id as string
+    const mouId = route.params.id as string
 
-    if (!orgId) {
-      throw new Error('Organization ID is required')
+    if (!mouId) {
+      throw new Error('MOU ID is required')
     }
 
-    const response = await organizationAPI.getById(orgId)
-    organization.value = response.data.data
+    const response = await mouAPI.getById(mouId)
+    mou.value = response.data.data
+    const organizationData = mou.value?.organization_id
+    const organizationId = typeof organizationData === 'object'
+      ? organizationData?._id
+      : organizationData
+    organization.value = typeof organizationData === 'object'
+      ? organizationData
+      : organizationId
+        ? (await organizationAPI.getById(String(organizationId))).data.data
+        : null
 
-    console.log('Organization loaded:', organization.value)
+    if (!organization.value) {
+      throw new Error('MOU organization data is missing')
+    }
   } catch (err: any) {
     error.value =
-      err.response?.data?.message || 'Failed to load organization'
+      err.response?.data?.message || 'Failed to load MOU details'
 
     console.error('Error loading organization:', err)
   } finally {
@@ -370,7 +424,9 @@ const fetchOrganization = async () => {
 
 const fetchReviews = async () => {
   try {
-    const orgId = route.params.id as string
+    const orgId = typeof mou.value?.organization_id === 'object'
+      ? mou.value.organization_id?._id
+      : mou.value?.organization_id
 
     if (!orgId) return
 
@@ -386,7 +442,9 @@ const fetchReviews = async () => {
 
 
 const editOrganization = () => {
-  const orgId = route.params.id as string
+  const orgId = typeof mou.value?.organization_id === 'object'
+    ? mou.value.organization_id?._id
+    : mou.value?.organization_id
 
   if (!orgId) return
 
@@ -405,7 +463,7 @@ const goBack = () => {
 }
 
 onMounted(async () => {
-  await fetchOrganization()
+  await fetchMOU()
   await fetchReviews()
 })
 </script>

@@ -1,6 +1,8 @@
 const Roadshow = require('../models/Roadshow');
+const InternshipRecord = require('../models/InternshipRecord');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 const { deleteStoredFile } = require('../utils/fileCleanup');
+const { normalizeRoadshowTime } = require('../utils/roadshowTime');
 
 // @desc    Get all roadshows
 // @route   GET /api/roadshows
@@ -19,6 +21,7 @@ const getRoadshows = async (req, res, next) => {
         }
 
         const roadshows = await Roadshow.find(filter)
+            .populate('organization_id', 'organization_name_en organization_name_th')
             .sort({ event_date: -1 })
             .skip(skip)
             .limit(limit);
@@ -47,7 +50,8 @@ const getRoadshows = async (req, res, next) => {
 // @access  Public
 const getRoadshow = async (req, res, next) => {
     try {
-        const roadshow = await Roadshow.findById(req.params.id);
+        const roadshow = await Roadshow.findById(req.params.id)
+            .populate('organization_id', 'organization_name_en organization_name_th');
 
         if (!roadshow) {
             throw createNotFoundError('roadshow', req.params.id);
@@ -77,10 +81,10 @@ const getRoadshow = async (req, res, next) => {
 // @access  Private (Admin)
 const createRoadshow = async (req, res, next) => {
     try {
-        const { topic, details, event_date } = req.body;
+        const { topic, details, event_date, organization_id } = req.body;
 
         // Check required fields
-        const requiredFields = ['topic', 'details', 'event_date'];
+        const requiredFields = ['topic', 'details', 'event_date', 'posted_date'];
         const missingFields = requiredFields.filter(field => !req.body[field]);
 
         if (missingFields.length > 0) {
@@ -89,6 +93,24 @@ const createRoadshow = async (req, res, next) => {
                 'Missing required fields',
                 { missingFields }
             );
+        }
+        if (organization_id) {
+            const organization = await InternshipRecord.findOne({ _id: organization_id, record_type: 'organization' });
+            if (!organization) {
+                throw createNotFoundError('organization', organization_id);
+            }
+        }
+
+        if (req.body.time !== undefined && req.body.time !== '') {
+            try {
+                req.body.time = normalizeRoadshowTime(req.body.time);
+            } catch (error) {
+                throw new CustomError(
+                    ERROR_CODES.VALIDATION_INVALID_FORMAT,
+                    error.message,
+                    { field: 'time' }
+                );
+            }
         }
 
         // Validate event date
@@ -111,7 +133,9 @@ const createRoadshow = async (req, res, next) => {
                 req.body.poster_path = '/' + req.files.poster[0].path.replace(/\\/g, '/').replace(/^\/+/, '');
             }
             if (req.files.activity_image) {
-                req.body.activity_image_path = '/' + req.files.activity_image[0].path.replace(/\\/g, '/').replace(/^\/+/, '');
+                req.body.activity_image_paths = req.files.activity_image.map(file =>
+                    '/' + file.path.replace(/\\/g, '/').replace(/^\/+/, '')
+                );
             }
         }
 
@@ -145,6 +169,12 @@ const updateRoadshow = async (req, res, next) => {
         if (!roadshow) {
             throw createNotFoundError('roadshow', req.params.id);
         }
+        if (req.body.organization_id) {
+            const organization = await InternshipRecord.findOne({ _id: req.body.organization_id, record_type: 'organization' });
+            if (!organization) {
+                throw createNotFoundError('organization', req.body.organization_id);
+            }
+        }
 
         // Validate event date if provided
         if (req.body.event_date) {
@@ -153,6 +183,19 @@ const updateRoadshow = async (req, res, next) => {
                 throw new CustomError(
                     ERROR_CODES.VALIDATION_DATE_INVALID,
                     'Invalid event date format'
+                );
+            }
+
+        }
+
+        if (req.body.time !== undefined && req.body.time !== '') {
+            try {
+                req.body.time = normalizeRoadshowTime(req.body.time);
+            } catch (error) {
+                throw new CustomError(
+                    ERROR_CODES.VALIDATION_INVALID_FORMAT,
+                    error.message,
+                    { field: 'time' }
                 );
             }
         }
@@ -166,10 +209,14 @@ const updateRoadshow = async (req, res, next) => {
                 req.body.poster_path = '/' + req.files.poster[0].path.replace(/\\/g, '/').replace(/^\/+/, '');
             }
             if (req.files.activity_image) {
-                if (roadshow.activity_image_path) {
-                    deleteStoredFile(roadshow.activity_image_path, 'old roadshow activity image');
+                if (Array.isArray(roadshow.activity_image_paths)) {
+                    roadshow.activity_image_paths.forEach(path =>
+                        deleteStoredFile(path, 'old roadshow activity image')
+                    );
                 }
-                req.body.activity_image_path = '/' + req.files.activity_image[0].path.replace(/\\/g, '/').replace(/^\/+/, '');
+                req.body.activity_image_paths = req.files.activity_image.map(file =>
+                    '/' + file.path.replace(/\\/g, '/').replace(/^\/+/, '')
+                );
             }
         }
 
@@ -182,7 +229,7 @@ const updateRoadshow = async (req, res, next) => {
             req.params.id,
             req.body,
             { new: true, runValidators: true }
-        );
+        ).populate('organization_id', 'organization_name_en organization_name_th');
 
         res.status(200).json({
             success: true,
@@ -209,8 +256,10 @@ const deleteRoadshow = async (req, res, next) => {
             deleteStoredFile(roadshow.poster_path, 'roadshow poster');
         }
 
-        if (roadshow.activity_image_path) {
-            deleteStoredFile(roadshow.activity_image_path, 'roadshow activity image');
+        if (Array.isArray(roadshow.activity_image_paths)) {
+            roadshow.activity_image_paths.forEach(path =>
+                deleteStoredFile(path, 'roadshow activity image')
+            );
         }
 
         await Roadshow.findByIdAndDelete(req.params.id);

@@ -70,7 +70,7 @@ const cleanupUploads = async () => {
         const roadshows = await Roadshow.find({
             $or: [
                 { poster_path: { $exists: true, $ne: null } },
-                { activity_image_path: { $exists: true, $ne: null } }
+                { activity_image_paths: { $exists: true, $ne: [] } }
             ]
         });
 
@@ -82,7 +82,9 @@ const cleanupUploads = async () => {
 
         const usedActivityPaths = new Set(
             roadshows
-                .map(item => normalizeStoredPath(item.activity_image_path))
+                .flatMap(item => Array.isArray(item.activity_image_paths)
+                    ? item.activity_image_paths.map(normalizeStoredPath)
+                    : [])
                 .filter(Boolean)
         );
 

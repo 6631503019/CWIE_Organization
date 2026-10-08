@@ -134,11 +134,11 @@
         <div class="table_container">
           <div class="table_header"><span>{{ text('Organization', 'องค์กร') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Province', 'จังหวัด') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Status', 'สถานะ') }}</span><span>{{ text('Actions', 'การดำเนินการ') }}</span></div>
           <div v-for="org in paginatedOrganizations" :key="org.id" class="table_row">
-            <div class="org_name" @click="viewOrganizationDetail(org.id)">{{ org.name }}</div>
-            <div class="org_category">{{ org.category }}</div>
-            <div class="org_school">{{ org.industryCategory || 'SIT' }}</div>
-            <div class="org_province">{{ org.province }}</div>
-            <div class="org_country">{{ org.country || 'Thailand' }}</div>
+            <div class="org_name" @click="viewOrganizationDetail(org.id)">{{ getLocalizedOrganizationName(org.rawData) }}</div>
+            <div class="org_category">{{ getLocalizedOrganizationField(org.rawData, 'organization_type', 'business_type_en', 'business_type_th') }}</div>
+            <div class="org_school">{{ getLocalizedOrganizationField(org.rawData, 'industry_category_id', 'business_category_en', 'business_category_th') }}</div>
+            <div class="org_province">{{ getLocalizedOrganizationField(org.rawData, 'province_id', 'province_en', 'province_th') }}</div>
+            <div class="org_country">{{ getLocalizedOrganizationField(org.rawData, 'country_id', 'country_en', 'country_th') }}</div>
             <div><span class="status_pill" :class="org.status">{{ org.status === 'active' ? text('Active', 'ใช้งาน') : text('Inactive', 'ไม่ใช้งาน') }}</span></div>
             <div class="action_buttons"><button class="text_action" @click="!state.loading && editOrganization(org.id)" :disabled="state.loading">{{ text('Edit', 'แก้ไข') }}</button><button class="text_action danger" @click="!state.loading && deleteOrganization(org.id)" :disabled="state.loading">{{ text('Delete', 'ลบ') }}</button><button v-if="org.hasMOU" class="text_action" @click="!state.loading && viewDocument(org.id)">{{ text('View', 'ดู') }}</button></div>
           </div>
@@ -627,7 +627,38 @@ const state = reactive({
 
 // Search and filter data
 const searchText = ref('')
-const { text } = useLanguage()
+const { currentLanguage, text } = useLanguage()
+
+const getLocalizedValue = (english: unknown, thai: unknown): string => {
+  const preferred = currentLanguage.value === 'TH' ? thai : english
+  const fallback = currentLanguage.value === 'TH' ? english : thai
+  return String(preferred || fallback || 'N/A')
+}
+
+const getLocalizedOrganizationName = (organization: any): string =>
+  getLocalizedValue(
+    organization.organization_name_en || organization.name_en,
+    organization.organization_name_th || organization.name_th
+  )
+
+const getLocalizedOrganizationField = (
+  organization: any,
+  fallbackField: string,
+  englishField: string,
+  thaiField: string
+): string =>
+  getLocalizedValue(
+    organization?.[englishField] || organization?.[fallbackField],
+    organization?.[thaiField] || organization?.[fallbackField]
+  )
+
+const getLocalizedReferenceName = (value: any): string => {
+  if (!value) return 'N/A'
+  if (typeof value === 'object') {
+    return getLocalizedValue(value.name_en, value.name_th)
+  }
+  return String(value)
+}
 
 const showDeleteModal = ref(false)
 const showNotificationModal = ref(false)
@@ -4034,4 +4065,3 @@ onBeforeUnmount(() => {
 }
 
 </style>
-

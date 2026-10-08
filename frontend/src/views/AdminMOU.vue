@@ -76,7 +76,7 @@
       >
         <!-- Organization -->
         <td class="mou_table_org">
-          <span>{{ mou.name }}</span>
+          <span>{{ getLocalizedOrganizationName(mou) }}</span>
         </td>
 
         <!-- Document Name -->
@@ -268,7 +268,7 @@
             <input
               id="mou-file"
               type="file"
-              accept=".pdf,.doc,.docx,image/*"
+              accept=".pdf,application/pdf"
               required
               @change="Handle_Add_MOU_File"
             />
@@ -328,8 +328,19 @@
   import Pagination from '../components/Pagination.vue'
   import OrganizationEditModal from '../components/OrganizationEditModal.vue'
   import { organizationAPI, mouAPI, BACKEND_URL } from '../services/api'
+  import { useLanguage } from '../composables/useLanguage'
 
   const router = useRouter()
+  const { currentLanguage } = useLanguage()
+
+  const getLocalizedValue = (english: unknown, thai: unknown): string => {
+    const preferred = currentLanguage.value === 'TH' ? thai : english
+    const fallback = currentLanguage.value === 'TH' ? english : thai
+    return String(preferred || fallback || 'N/A')
+  }
+
+  const getLocalizedOrganizationName = (mou: any): string =>
+    getLocalizedValue(mou.name_en, mou.name_th)
 
   // ===========================
   // CONSTANTS
@@ -431,7 +442,7 @@
     if (str_Search_Text.value.trim()) {
       const str_Search = str_Search_Text.value.toLowerCase()
       arr_Filtered = arr_Filtered.filter(obj_MOU => 
-        obj_MOU.name.toLowerCase().includes(str_Search) ||
+        getLocalizedOrganizationName(obj_MOU).toLowerCase().includes(str_Search) ||
         obj_MOU.status.toLowerCase().includes(str_Search)
       )
     }
@@ -481,7 +492,17 @@
 
   const Handle_Add_MOU_File = (event: Event) => {
     const input = event.target as HTMLInputElement
-    obj_Add_MOU.file = input.files?.[0] || null
+    const file = input.files?.[0] || null
+
+    if (file && file.type !== 'application/pdf') {
+      obj_Add_MOU.file = null
+      input.value = ''
+      obj_state.error = 'MOU file must be a PDF document'
+      return
+    }
+
+    obj_state.error = null
+    obj_Add_MOU.file = file
   }
 
   const Select_Add_MOU_Organization = (organization: any) => {
@@ -507,6 +528,11 @@
 
     if (!file) {
       obj_state.error = 'Please select an MOU document'
+      return
+    }
+
+    if (file.type !== 'application/pdf') {
+      obj_state.error = 'MOU file must be a PDF document'
       return
     }
 
@@ -671,7 +697,7 @@
     }
 
     const str_Confirm_Message =
-      `Are you sure you want to delete the MOU for "${obj_MOU.name}"?`
+      `Are you sure you want to delete the MOU for "${getLocalizedOrganizationName(obj_MOU)}"?`
 
     if (!window.confirm(str_Confirm_Message)) {
       return
@@ -763,10 +789,8 @@ const str_MOU_URL = str_MOU_Path
 
   organizationId: obj_Organization?._id,
 
-  name:
-    obj_Organization?.name_en ||
-    obj_Organization?.name_th ||
-    'No Name',
+  name_en: obj_Organization?.name_en || '',
+  name_th: obj_Organization?.name_th || '',
 
   documentName: str_MOU_Path
     ? String(str_MOU_Path)
@@ -831,10 +855,8 @@ const str_MOU_URL = str_MOU_Path
   organizationId: obj_Organization?._id,
 
   // Organization
-  name:
-    obj_Organization?.name_en ||
-    obj_Organization?.name_th ||
-    'No Name',
+  name_en: obj_Organization?.name_en || '',
+  name_th: obj_Organization?.name_th || '',
 
   // Document name
   documentName: obj_MOU_Data?.mou_file_path
@@ -2248,4 +2270,3 @@ const str_MOU_URL = str_MOU_Path
   border-bottom: none !important;
 }
   </style>
-
