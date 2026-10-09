@@ -7,10 +7,35 @@ const roadshowSchema = new mongoose.Schema({
         required: [true, 'Topic is required'],
         trim: true
     },
+    title_en: {
+        type: String,
+        trim: true,
+        maxlength: [500, 'English title cannot exceed 500 characters']
+    },
+    title_th: {
+        type: String,
+        trim: true,
+        maxlength: [500, 'Thai title cannot exceed 500 characters']
+    },
     details: {
         type: String,
         required: [true, 'Details are required'],
         maxlength: [5000, 'Details cannot exceed 5000 characters']
+    },
+    organization: {
+        type: String,
+        trim: true,
+        maxlength: [500, 'Organization cannot exceed 500 characters']
+    },
+    organization_en: {
+        type: String,
+        trim: true,
+        maxlength: [500, 'English organization cannot exceed 500 characters']
+    },
+    organization_th: {
+        type: String,
+        trim: true,
+        maxlength: [500, 'Thai organization cannot exceed 500 characters']
     },
     organization_id: {
         type: mongoose.Schema.Types.ObjectId,

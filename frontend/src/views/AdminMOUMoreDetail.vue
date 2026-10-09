@@ -62,34 +62,6 @@
         <div class="profile_divider"></div>
       </section>
 
-      <section v-if="mou" class="mou_information">
-        <div class="info_row">
-          <div class="info_label">{{ text('MOU Number', 'เลขที่ MOU') }}</div>
-          <div class="info_value">{{ getValue(mou.mou_number, mou.number) }}</div>
-        </div>
-        <div class="info_row">
-          <div class="info_label">{{ text('Start Date', 'วันที่เริ่มต้น') }}</div>
-          <div class="info_value">{{ formatDate(mou.start_date) }}</div>
-        </div>
-        <div class="info_row">
-          <div class="info_label">{{ text('End Date', 'วันที่สิ้นสุด') }}</div>
-          <div class="info_value">{{ formatDate(mou.end_date) }}</div>
-        </div>
-        <div class="info_row">
-          <div class="info_label">{{ text('Status', 'สถานะ') }}</div>
-          <div class="info_value">{{ mou.is_published ? text('Published', 'เผยแพร่') : text('Unpublished', 'ไม่เผยแพร่') }}</div>
-        </div>
-        <div class="info_row">
-          <div class="info_label">{{ text('Document', 'เอกสาร') }}</div>
-          <div class="info_value">
-            <a v-if="documentUrl" :href="documentUrl" target="_blank" rel="noopener noreferrer">
-              {{ documentName }}
-            </a>
-            <span v-else>N/A</span>
-          </div>
-        </div>
-      </section>
-
       <!-- Right-side organization information -->
       <section class="organization_info">
         <div class="info_row">

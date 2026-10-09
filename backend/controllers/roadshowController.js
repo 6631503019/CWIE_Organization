@@ -81,7 +81,7 @@ const getRoadshow = async (req, res, next) => {
 // @access  Private (Admin)
 const createRoadshow = async (req, res, next) => {
     try {
-        const { topic, details, event_date, organization_id } = req.body;
+        const { topic, details, event_date, organization_id, organization } = req.body;
 
         // Check required fields
         const requiredFields = ['topic', 'details', 'event_date', 'posted_date'];
@@ -94,6 +94,14 @@ const createRoadshow = async (req, res, next) => {
                 { missingFields }
             );
         }
+        if (organization !== undefined) {
+            req.body.organization = String(organization).trim();
+        }
+        ['organization_en', 'organization_th', 'title_en', 'title_th'].forEach((field) => {
+            if (req.body[field] !== undefined) {
+                req.body[field] = String(req.body[field]).trim();
+            }
+        });
         if (organization_id) {
             const organization = await InternshipRecord.findOne({ _id: organization_id, record_type: 'organization' });
             if (!organization) {
@@ -169,6 +177,14 @@ const updateRoadshow = async (req, res, next) => {
         if (!roadshow) {
             throw createNotFoundError('roadshow', req.params.id);
         }
+        if (req.body.organization !== undefined) {
+            req.body.organization = String(req.body.organization).trim();
+        }
+        ['organization_en', 'organization_th', 'title_en', 'title_th'].forEach((field) => {
+            if (req.body[field] !== undefined) {
+                req.body[field] = String(req.body[field]).trim();
+            }
+        });
         if (req.body.organization_id) {
             const organization = await InternshipRecord.findOne({ _id: req.body.organization_id, record_type: 'organization' });
             if (!organization) {

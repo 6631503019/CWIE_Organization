@@ -1,4 +1,4 @@
-const TIME_RANGE_PATTERN = /^([01]\d|2[0-3])([:.])([0-5]\d)\s*-\s*([01]\d|2[0-3])([:.])([0-5]\d)$/;
+const TIME_RANGE_PATTERN = /^([01]\d|2[0-3])([:.])([0-5]\d)\s*-\s*([01]\d|2[0-3])([:.])([0-5]\d)$/
 
 /**
  * Normalize a roadshow time range to HH.MM - HH.MM.
@@ -19,7 +19,7 @@ const normalizeRoadshowTime = (value) => {
         throw new Error('Roadshow time must use HH.MM - HH.MM format');
     }
 
-    return `${match[1]}.${match[3]} - ${match[4]}.${match[6]}`;
+    return `${match[1]}.${match[3]} - ${match[4]}.${match[6]}`
 };
 
 const formatRoadshowTime = (value) => {

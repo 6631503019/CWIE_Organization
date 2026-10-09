@@ -19,7 +19,7 @@
             <span class="status_pill" :class="Get_Status_Class(obj_Roadshow_Data)">
               {{ Get_Status(obj_Roadshow_Data) }}
             </span>
-            <h1 class="roadshow_title_detail">{{ obj_Roadshow_Data.topic || '—' }}</h1>
+            <h1 class="roadshow_title_detail">{{ Get_Roadshow_Title(obj_Roadshow_Data) }}</h1>
             <p class="organized_by">
               Organized by {{ Get_Organization_Name(obj_Roadshow_Data) }}
             </p>
@@ -29,7 +29,7 @@
             <div class="roadshow_image_detail">
               <img
                 :src="Str_Get_Image_URL(obj_Roadshow_Data.poster_path)"
-                :alt="obj_Roadshow_Data.topic || 'Roadshow'"
+                :alt="Get_Roadshow_Title(obj_Roadshow_Data)"
                 @error="(e) => (e.target as HTMLImageElement).src = Str_Get_Image_URL(null)"
               />
             </div>
@@ -55,17 +55,6 @@
 
             <section class="description_section">
               {{ obj_Roadshow_Data.details || '—' }}
-            </section>
-
-            <section class="agenda_section">
-              <h2>Agenda</h2>
-              <div v-if="Array.isArray(obj_Roadshow_Data.agenda) && obj_Roadshow_Data.agenda.length">
-                <div v-for="(obj_Agenda, index) in obj_Roadshow_Data.agenda" :key="index" class="agenda_row">
-                  <span>{{ obj_Agenda.time || '—' }}</span>
-                  <span>{{ obj_Agenda.title || obj_Agenda.activity || '—' }}</span>
-                </div>
-              </div>
-              <div v-else class="agenda_empty">—</div>
             </section>
 
             <div v-if="obj_Roadshow_Data.activity_image_paths && obj_Roadshow_Data.activity_image_paths.length" class="activity_images_grid">
@@ -114,7 +103,19 @@ const obj_Roadshow_Data = ref<any>(null)  // Object: roadshow details from API
 const route = useRoute()
 const { currentLanguage } = useLanguage()
 
+function Get_Roadshow_Title(obj_Roadshow: any): string {
+  const str_Title = currentLanguage.value === 'TH'
+    ? obj_Roadshow?.title_th || obj_Roadshow?.title_en || obj_Roadshow?.topic
+    : obj_Roadshow?.title_en || obj_Roadshow?.title_th || obj_Roadshow?.topic
+  return str_Title || '—'
+}
+
 function Get_Organization_Name(obj_Roadshow: any): string {
+  const str_Manual_Organization = currentLanguage.value === 'TH'
+    ? obj_Roadshow?.organization_th || obj_Roadshow?.organization_en
+    : obj_Roadshow?.organization_en || obj_Roadshow?.organization_th
+  if (str_Manual_Organization) return str_Manual_Organization
+
   const obj_Organization = obj_Roadshow?.organization_id
   if (obj_Organization && typeof obj_Organization === 'object') {
     return currentLanguage.value === 'TH'
@@ -137,7 +138,8 @@ function Str_Get_Image_URL(str_Image_Path: string | null): string {
   }
   
   // Return complete URL by combining base URL with image path
-  return `${CONST_API_BASE_URL}${str_Image_Path}`
+  const normalizedPath = str_Image_Path.replace(/\\/g, '/')
+  return `${CONST_API_BASE_URL}${normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`}`
 }
 
 // ============================================================================
@@ -158,7 +160,9 @@ function Get_Status(obj_Roadshow: any): string {
     }
   }
 
-  return obj_Roadshow.isPublic ? 'Active' : 'Upcoming'
+  return (obj_Roadshow.is_public ?? obj_Roadshow.isPublic)
+    ? 'Active'
+    : 'Upcoming'
 }
 
 // ============================================================================
@@ -516,57 +520,6 @@ onMounted(async () => {
   font-weight: 400;
   overflow-wrap: anywhere;
 }
-
-/* Figma agenda: x=830, y=306, width=420 */
-.agenda_section {
-  position: absolute;
-  left: 830px;
-  top: 306px;
-  width: 420px;
-  color: #1F2937;
-}
-
-.agenda_section h2 {
-  margin: 0 0 7px;
-  font-size: 14px;
-  line-height: 17px;
-  font-weight: 400;
-}
-
-.agenda_row {
-  display: flex;
-  gap: 16px;
-  width: 420px;
-  min-height: 15px;
-  margin-bottom: 5px;
-  font-size: 12px;
-  line-height: 15px;
-  font-weight: 400;
-}
-
-.agenda_row span:first-child {
-  width: 100px;
-  flex: 0 0 100px;
-  color: #000000;
-}
-
-.agenda_row span:last-child {
-  min-width: 0;
-  color: #1F2937;
-}
-
-.agenda_empty {
-  font-size: 12px;
-}
-
-/* ---------------------------------------------------------
-   Additional information
-   The supplied Figma coordinate (x=1300) is outside the 1326px
-   canvas, so it is intentionally kept out of the visible 1244px
-   detail frame instead of covering Agenda/Back/Edit.
-   It remains available below the detail content when data exists.
-   --------------------------------------------------------- */
-
 .additional_row {
   display: flex;
   gap: 12px;
@@ -614,11 +567,11 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
-/* Figma Edit: x=1184, y=671, 57×32 */
+/* Figma Edit: keep the button inside the detail frame */
 .btn_edit {
   position: absolute;
   left: 1184px;
-  top: 671px;
+  top: 590px;
   width: 57px;
   height: 32px;
   padding: 8px 16px;
@@ -700,4 +653,13 @@ onMounted(async () => {
     width: calc(100% - 66px);
   }
 }
+
+/* Final fix: Edit button must stay inside the white detail card */
+.detail_content > .btn_edit {
+  position: absolute;
+  left: 1184px;
+  top: 590px;
+  z-index: 20;
+}
+
 </style>

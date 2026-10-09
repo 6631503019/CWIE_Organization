@@ -13,7 +13,7 @@
       </div>
 
 
-      <button class="btn_add_roadshow" type="button" @click="bln_Show_Create_Modal = true">
+      <button class="btn_add_roadshow" type="button" @click="Open_Create_Roadshow">
         <span class="plus_icon">+</span>
         <span class="button_text">Add Roadshow</span>
       </button>
@@ -40,19 +40,44 @@
       <table v-else class="roadshow_table">
         <thead>
           <tr>
-            <th class="col_organization">Organization</th>
+            <th class="col_organization">{{ text('Organization', 'องค์กร') }}</th>
             <th class="col_title">Roadshow title</th>
+            <th class="col_date">Date</th>
             <th class="col_time">Time</th>
             <th class="col_location">Location</th>
+            <th class="col_status">Status</th>
             <th class="col_actions">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="roadshow in Arr_Get_Paginated_Roadshows" :key="roadshow.id">
-            <td class="organization_cell">{{ roadshow.organization || '—' }}</td>
-            <td class="title_cell" :title="roadshow.title">{{ roadshow.title || '—' }}</td>
-            <td class="time_cell">{{ roadshow.time || '—' }}</td>
-            <td class="location_cell">{{ roadshow.location || '—' }}</td>
+            <td class="organization_cell">{{ Get_Roadshow_Organization(roadshow) }}</td>
+
+            <td class="title_cell" :title="Get_Roadshow_Title(roadshow)">
+              {{ Get_Roadshow_Title(roadshow) }}
+            </td>
+
+            <td class="date_cell">
+              {{ Format_Table_Date(roadshow.event_date || roadshow.posted_date) }}
+            </td>
+
+            <td class="time_cell">
+              {{ formatRoadshowTime(roadshow.time || '') || '—' }}
+            </td>
+
+            <td class="location_cell">
+              {{ roadshow.location || '—' }}
+            </td>
+
+            <td class="status_cell">
+              <span
+                class="status_pill"
+                :class="Get_Date_Status_Class(roadshow)"
+              >
+                {{ Get_Date_Status(roadshow) }}
+              </span>
+            </td>
+
             <td class="actions_cell">
               <div class="table_actions">
                 <button type="button" class="table_action view_action" @click.stop="View_Roadshow(roadshow)">View</button>
@@ -61,8 +86,9 @@
               </div>
             </td>
           </tr>
+
           <tr v-if="Arr_Get_Paginated_Roadshows.length === 0">
-            <td colspan="5" class="empty_table_cell">No roadshows found.</td>
+            <td colspan="7" class="empty_table_cell">No roadshows found.</td>
           </tr>
         </tbody>
       </table>
@@ -89,11 +115,53 @@
 
         <!-- Topic Field -->
         <div class="form_group">
-          <label>Topic*</label>
+          <label>Roadshow Title (EN)*</label>
           <input 
             type="text" 
-            v-model="obj_Form_Data.topic" 
-            placeholder="Enter topic"
+            v-model="obj_Form_Data.title_en"
+            placeholder="Enter roadshow title in English"
+          />
+        </div>
+
+        <div class="form_group">
+          <label>Roadshow Title (TH)*</label>
+          <input
+            type="text"
+            v-model="obj_Form_Data.title_th"
+            placeholder="กรอกชื่อ Roadshow ภาษาไทย"
+          />
+        </div>
+
+        <!-- Organization Field -->
+        <div class="form_group">
+          <label for="roadshow-organization-en">Organization (EN)</label>
+          <input
+            id="roadshow-organization-en"
+            type="text"
+            v-model="obj_Form_Data.organization_en"
+            placeholder="Enter organization in English"
+            autocomplete="organization"
+          />
+        </div>
+
+        <div class="form_group">
+          <label for="roadshow-organization-th">Organization (TH)</label>
+          <input
+            id="roadshow-organization-th"
+            type="text"
+            v-model="obj_Form_Data.organization_th"
+            placeholder="กรอกชื่อองค์กรภาษาไทย"
+          />
+        </div>
+
+        <!-- Location Field -->
+        <div class="form_group">
+          <label for="roadshow-location">Location*</label>
+          <input
+            id="roadshow-location"
+            type="text"
+            v-model="obj_Form_Data.location"
+            placeholder="Enter location"
           />
         </div>
 
@@ -110,15 +178,22 @@
 
         <!-- Time Range Field -->
         <div class="form_group">
-          <label for="roadshow-time">Time*</label>
+          <label for="roadshow-start-time">Start Time*</label>
           <input
-            id="roadshow-time"
-            type="text"
-            v-model="obj_Form_Data.time"
-            placeholder="12.00 - 15.00"
-            inputmode="numeric"
+            id="roadshow-start-time"
+            type="time"
+            v-model="obj_Form_Data.start_time"
           />
-          <small class="form_hint">Use 24-hour format: HH.MM - HH.MM</small>
+        </div>
+
+        <div class="form_group">
+          <label for="roadshow-end-time">End Time*</label>
+          <input
+            id="roadshow-end-time"
+            type="time"
+            v-model="obj_Form_Data.end_time"
+          />
+          <small class="form_hint">Select a 24-hour time range</small>
         </div>
 
         <!-- Event Date Field -->
@@ -257,7 +332,7 @@ import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
 import { formatRoadshowTime, normalizeRoadshowTime } from '../utils/roadshowTime'
-import { organizationAPI } from '../services/api'
+import { useLanguage } from '../composables/useLanguage'
 
 // ===========================
 // CONSTANTS
@@ -299,8 +374,30 @@ const str_Editing_Roadshow_ID = ref<string | null>(null)
 // ===========================
 // Roadshow data array - will be populated from backend
 const arr_Roadshows = ref<any[]>([])
-const arr_Organizations = ref<any[]>([])
 const str_Search_Query = ref('')
+const { currentLanguage, text } = useLanguage()
+
+const Get_Roadshow_Organization = (obj_Roadshow: any): string => {
+  const str_Organization = currentLanguage.value === 'TH'
+    ? obj_Roadshow.organization_th || obj_Roadshow.organization_en || obj_Roadshow.organization
+    : obj_Roadshow.organization_en || obj_Roadshow.organization_th || obj_Roadshow.organization
+  return str_Organization || '—'
+}
+
+const Get_Roadshow_Title = (obj_Roadshow: any): string => {
+  const str_Title = currentLanguage.value === 'TH'
+    ? obj_Roadshow.title_th || obj_Roadshow.title_en || obj_Roadshow.title
+    : obj_Roadshow.title_en || obj_Roadshow.title_th || obj_Roadshow.title
+  return str_Title || '—'
+}
+
+const Split_Roadshow_Time = (str_Time: string): { start: string; end: string } => {
+  const arr_Time = String(str_Time || '').replace(/:/g, '.').split('-').map((part) => part.trim())
+  return {
+    start: arr_Time[0] ? arr_Time[0].replace('.', ':') : '',
+    end: arr_Time[1] ? arr_Time[1].replace('.', ':') : ''
+  }
+}
 
 // ===========================
 // IMAGE PREVIEW URLS
@@ -333,7 +430,11 @@ const Arr_Get_Filtered_Roadshows = computed(() => {
 
   return arr_Roadshows.value.filter((roadshow) => {
     const str_Title = String(roadshow.title || '').toLowerCase()
-    const str_Organization = String(roadshow.organization || '').toLowerCase()
+    const str_Organization = String(
+      currentLanguage.value === 'TH'
+        ? roadshow.organization_th || roadshow.organization_en
+        : roadshow.organization_en || roadshow.organization_th
+    ).toLowerCase()
     return str_Title.includes(str_Query) || str_Organization.includes(str_Query)
   })
 })
@@ -363,15 +464,25 @@ watch(bln_Show_Edit_Modal, (bln_Is_Open) => {
   if (!bln_Is_Open) Reset_Form()
 })
 
+const Open_Create_Roadshow = (): void => {
+  Reset_Form()
+  bln_Show_Create_Modal.value = true
+}
+
 // ===========================
 // FORM DATA OBJECT
 // ===========================
 const obj_Form_Data = reactive({
   topic: '',
+  title_en: '',
+  title_th: '',
   details: '',
-  organization_id: '',
+  organization_en: '',
+  organization_th: '',
   location: '',
   time: '',
+  start_time: '',
+  end_time: '',
   event_date: '',
   posted_date: '',
   deleted_date: '',
@@ -482,11 +593,17 @@ const Edit_Roadshow = (obj_Roadshow: any) => {
     
     // Load roadshow data into form
     str_Editing_Roadshow_ID.value = obj_Roadshow.id
-    obj_Form_Data.topic = obj_Roadshow.title || ''
+    obj_Form_Data.title_en = obj_Roadshow.title_en || obj_Roadshow.title || ''
+    obj_Form_Data.title_th = obj_Roadshow.title_th || ''
+    obj_Form_Data.topic = obj_Form_Data.title_en || obj_Form_Data.title_th
     obj_Form_Data.details = obj_Roadshow.description || ''
-    obj_Form_Data.organization_id = obj_Roadshow.organization_id || ''
+    obj_Form_Data.organization_en = obj_Roadshow.organization_en || obj_Roadshow.organization || ''
+    obj_Form_Data.organization_th = obj_Roadshow.organization_th || ''
     obj_Form_Data.location = obj_Roadshow.location || ''
     obj_Form_Data.time = formatRoadshowTime(obj_Roadshow.time || '')
+    const obj_Time = Split_Roadshow_Time(obj_Form_Data.time)
+    obj_Form_Data.start_time = obj_Time.start
+    obj_Form_Data.end_time = obj_Time.end
     obj_Form_Data.event_date = obj_Roadshow.event_date || obj_Roadshow.posted_date || ''
     // Store dates in YYYY-MM-DD format internally
     obj_Form_Data.posted_date = obj_Roadshow.posted_date || ''
@@ -685,10 +802,15 @@ const Close_Modals = () => {
 const Reset_Form = () => {
   try {
     obj_Form_Data.topic = ''
+    obj_Form_Data.title_en = ''
+    obj_Form_Data.title_th = ''
     obj_Form_Data.details = ''
-    obj_Form_Data.organization_id = ''
+    obj_Form_Data.organization_en = ''
+    obj_Form_Data.organization_th = ''
     obj_Form_Data.location = ''
     obj_Form_Data.time = ''
+    obj_Form_Data.start_time = ''
+    obj_Form_Data.end_time = ''
     obj_Form_Data.event_date = ''
     obj_Form_Data.posted_date = ''
     obj_Form_Data.deleted_date = ''
@@ -745,6 +867,46 @@ const Get_Table_Status = (obj_Roadshow: any): string => {
 
 const Get_Table_Status_Class = (obj_Roadshow: any): string => {
   const str_Status = Get_Table_Status(obj_Roadshow)
+  if (str_Status === 'Completed') return 'status_completed'
+  if (str_Status === 'Active') return 'status_active'
+  return 'status_upcoming'
+}
+
+/**
+ * Date Status for the Roadshow table.
+ *
+ * Event Date < today  -> Completed
+ * Event Date = today  -> Active
+ * Event Date > today  -> Upcoming
+ *
+ * This is intentionally calculated from event_date so the status updates
+ * automatically as the calendar date changes.
+ */
+const Get_Date_Status = (obj_Roadshow: any): string => {
+  const str_Event_Date = obj_Roadshow?.event_date || obj_Roadshow?.posted_date || ''
+
+  if (!str_Event_Date) return 'Upcoming'
+
+  const obj_Event_Date = new Date(`${str_Event_Date}T00:00:00`)
+  if (Number.isNaN(obj_Event_Date.getTime())) return 'Upcoming'
+
+  const obj_Today = new Date()
+  obj_Today.setHours(0, 0, 0, 0)
+
+  if (obj_Event_Date.getTime() < obj_Today.getTime()) {
+    return 'Completed'
+  }
+
+  if (obj_Event_Date.getTime() === obj_Today.getTime()) {
+    return 'Active'
+  }
+
+  return 'Upcoming'
+}
+
+const Get_Date_Status_Class = (obj_Roadshow: any): string => {
+  const str_Status = Get_Date_Status(obj_Roadshow)
+
   if (str_Status === 'Completed') return 'status_completed'
   if (str_Status === 'Active') return 'status_active'
   return 'status_upcoming'
@@ -947,7 +1109,11 @@ const Obj_Create_Roadshow_From_Response = (obj_Response_Data: any): any => {
   const str_Poster_Path = obj_Response_Data.poster_path || ''
   const obj_Result = {
     id: obj_Response_Data._id,
-    title: obj_Response_Data.topic,
+    title_en: obj_Response_Data.title_en || obj_Response_Data.topic || '',
+    title_th: obj_Response_Data.title_th || '',
+    title: currentLanguage.value === 'TH'
+      ? obj_Response_Data.title_th || obj_Response_Data.title_en || obj_Response_Data.topic
+      : obj_Response_Data.title_en || obj_Response_Data.title_th || obj_Response_Data.topic,
     description: obj_Response_Data.details,
     image: Str_Get_Image_URL(str_Poster_Path),
     imageName: str_Poster_Path ? String(str_Poster_Path).replace(/\\/g, '/').split('/').pop() || 'Poster' : '—',
@@ -956,14 +1122,19 @@ const Obj_Create_Roadshow_From_Response = (obj_Response_Data: any): any => {
     posted_date: Extract_Date_Part(obj_Response_Data.posted_date),
     deleted_date: Extract_Date_Part(obj_Response_Data.deleted_date),
     activityImagePaths: obj_Response_Data.activity_image_paths || [],
-    organization_id: typeof obj_Response_Data.organization_id === 'object'
-      ? obj_Response_Data.organization_id?._id
-      : obj_Response_Data.organization_id || '',
-    organization: obj_Response_Data.organization_name
-      || obj_Response_Data.organization_id?.name_en
-      || obj_Response_Data.organization_id?.name_th
+    organization_en: obj_Response_Data.organization_en
       || obj_Response_Data.organization
+      || obj_Response_Data.organization_name
+      || obj_Response_Data.organization_id?.organization_name_en
+      || obj_Response_Data.organization_id?.name_en
       || '',
+    organization_th: obj_Response_Data.organization_th
+      || obj_Response_Data.organization_id?.organization_name_th
+      || obj_Response_Data.organization_id?.name_th
+      || '',
+    organization: currentLanguage.value === 'TH'
+      ? obj_Response_Data.organization_th || obj_Response_Data.organization_en || obj_Response_Data.organization
+      : obj_Response_Data.organization_en || obj_Response_Data.organization_th || obj_Response_Data.organization,
     time: formatRoadshowTime(obj_Response_Data.time || obj_Response_Data.roadshow_time || ''),
     location: obj_Response_Data.location || obj_Response_Data.venue || ''
   }
@@ -988,21 +1159,23 @@ const Obj_Create_Roadshow_From_Response = (obj_Response_Data: any): any => {
 const Submit_Form = async () => {
   try {
     // Step 1: Input validation - check required fields
-    if (!obj_Form_Data.topic.trim()) {
-      throw new Error('Topic is required')
+    if (!obj_Form_Data.title_en.trim() && !obj_Form_Data.title_th.trim()) {
+      throw new Error('Roadshow title is required in at least one language')
     }
     if (!obj_Form_Data.details.trim()) {
       throw new Error('Details are required')
     }
-    const str_Normalized_Time = normalizeRoadshowTime(obj_Form_Data.time)
+    if (!obj_Form_Data.start_time || !obj_Form_Data.end_time) {
+      throw new Error('Start Time and End Time are required')
+    }
+    const str_Normalized_Time = normalizeRoadshowTime(
+      `${obj_Form_Data.start_time.replace(':', '.')} - ${obj_Form_Data.end_time.replace(':', '.')}`
+    )
     if (!str_Normalized_Time) {
       throw new Error('Time must use HH.MM - HH.MM format')
     }
     if (!obj_Form_Data.event_date) {
       throw new Error('Event Date is required')
-    }
-    if (!obj_Form_Data.organization_id) {
-      throw new Error('Organization is required')
     }
     if (!obj_Form_Data.location.trim()) {
       throw new Error('Location is required')
@@ -1012,9 +1185,19 @@ const Submit_Form = async () => {
     
     // Step 2: Build FormData with all fields
     const obj_FormData_To_Send = new FormData()
-    obj_FormData_To_Send.append('topic', obj_Form_Data.topic.trim())
+    const str_Title_EN = obj_Form_Data.title_en.trim()
+    const str_Title_TH = obj_Form_Data.title_th.trim()
+    obj_FormData_To_Send.append('topic', str_Title_EN || str_Title_TH)
+    if (str_Title_EN) obj_FormData_To_Send.append('title_en', str_Title_EN)
+    if (str_Title_TH) obj_FormData_To_Send.append('title_th', str_Title_TH)
     obj_FormData_To_Send.append('details', obj_Form_Data.details.trim())
-    obj_FormData_To_Send.append('organization_id', obj_Form_Data.organization_id)
+    if (obj_Form_Data.organization_en.trim()) {
+      obj_FormData_To_Send.append('organization_en', obj_Form_Data.organization_en.trim())
+      obj_FormData_To_Send.append('organization', obj_Form_Data.organization_en.trim())
+    }
+    if (obj_Form_Data.organization_th.trim()) {
+      obj_FormData_To_Send.append('organization_th', obj_Form_Data.organization_th.trim())
+    }
     obj_FormData_To_Send.append('location', obj_Form_Data.location.trim())
     obj_FormData_To_Send.append('time', str_Normalized_Time)
     obj_FormData_To_Send.append('event_date', obj_Form_Data.event_date)
@@ -1190,8 +1373,6 @@ const Setup_Auto_Refresh = (): void => {
       try {
         console.log('Auto-refresh roadshows...')
         await Load_Roadshows_From_API()
-        const organizationResponse = await organizationAPI.getAll({ limit: 10000, public: 'false' })
-        arr_Organizations.value = organizationResponse.data.data || []
       } catch (error) {
         console.error('Auto-refresh error:', error)
       }
@@ -1213,10 +1394,8 @@ onMounted(async () => {
     console.log('AdminRoadshow component mounted')
     obj_state.loading = true
     
-    // Step 1: Load initial roadshows
     await Load_Roadshows_From_API()
-    
-    // Step 2: Setup auto-refresh interval
+    // Setup auto-refresh interval
     Setup_Auto_Refresh()
     
     obj_state.error = null
@@ -1421,10 +1600,11 @@ onBeforeUnmount(() => {
   transform-origin: left center;
 }
 
-/* Figma table: 1090 × 277. Scroll belongs to the table wrapper only. */
+/* Figma table: 1090 × 277. Eight columns + date-driven status. Scroll belongs to the table wrapper only. */
 .roadshow_table_wrapper {
   width: min(var(--table-width), calc(100% - 102px));
-  min-height: 277px;
+  height: auto;
+  min-height: 0;
   margin: 0 auto;
   background: #FFFFFF;
   border: 1px solid #D1D1D2;
@@ -1438,7 +1618,7 @@ onBeforeUnmount(() => {
 .roadshow_table {
   width: var(--table-width);
   min-width: var(--table-width);
-  height: 277px;
+  height: auto;
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
@@ -1489,12 +1669,31 @@ onBeforeUnmount(() => {
 
 .roadshow_table td:last-child { border-right: 0; }
 
-/* Exactly 5 columns: Organization | Roadshow title | Time | Location | Actions */
-.col_organization { width: 300px; padding-left: 20px !important; }
-.col_title { width: 320px; }
-.col_time { width: 160px; }
-.col_location { width: 170px; }
-.col_actions { width: 140px; }
+/* Figma column separators */
+.roadshow_table th:nth-child(1),
+.roadshow_table th:nth-child(2),
+.roadshow_table th:nth-child(3),
+.roadshow_table th:nth-child(4),
+.roadshow_table th:nth-child(5),
+.roadshow_table th:nth-child(6),
+.roadshow_table td:nth-child(1),
+.roadshow_table td:nth-child(2),
+.roadshow_table td:nth-child(3),
+.roadshow_table td:nth-child(4),
+.roadshow_table td:nth-child(5),
+.roadshow_table td:nth-child(6) {
+  border-right: 1px solid #BCBCBE;
+}
+
+/* Figma table columns:
+   Organization | Roadshow title | Date | Time | Location | Status | Actions */
+.col_organization { width: 209px; padding-left: 20px !important; }
+.col_title { width: 311px; }
+.col_date { width: 110px; }
+.col_time { width: 110px; }
+.col_location { width: 100px; }
+.col_status { width: 111px; }
+.col_actions { width: 139px; }
 
 .organization_cell {
   padding-left: 20px !important;
@@ -1505,6 +1704,50 @@ onBeforeUnmount(() => {
   white-space: normal;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding-left: 9px !important;
+}
+
+.date_cell,
+.time_cell,
+.location_cell {
+  white-space: nowrap;
+}
+
+.status_cell {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+
+.status_pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 47px;
+  height: 18px;
+  box-sizing: border-box;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.status_pill.status_upcoming {
+  min-width: 66px;
+  background: #0A48A6;
+}
+
+.status_pill.status_active {
+  min-width: 47px;
+  background: #F11408;
+}
+
+.status_pill.status_completed {
+  min-width: 70px;
+  background: #22C55E;
 }
 
 .actions_cell {
@@ -1676,26 +1919,530 @@ onBeforeUnmount(() => {
   }
 }
 
-/* Keep modal responsive without changing its existing functionality. */
+/* =========================================================
+   Add / Edit Roadshow Modal
+   Fixes the form layout shown in the screenshot:
+   - clear label/input alignment
+   - 2-column desktop form
+   - full-width details and upload sections
+   - consistent input sizing
+   - responsive mobile layout
+   ========================================================= */
+
 .modal_overlay {
-  padding: 16px;
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
   box-sizing: border-box;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(2px);
   overflow-y: auto;
 }
 
 .add_roadshow_modal,
 .delete_confirmation_modal {
-  max-width: min(760px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
+  position: relative;
+  width: min(900px, calc(100vw - 48px));
+  max-width: 900px;
+  max-height: calc(100dvh - 48px);
+  padding: 28px 32px 30px;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  background: #FFFFFF;
+  color: #1F2937;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.22);
   overflow-y: auto;
   box-sizing: border-box;
 }
 
-@media (max-width: 640px) {
+/* Modal heading */
+.modal_title {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.form_divider {
+  width: 100%;
+  height: 1px;
+  margin: 18px 0 22px;
+  background: #E5E7EB;
+}
+
+/* Main form grid */
+.add_roadshow_modal {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 18px;
+  align-content: start;
+}
+
+/* Heading/divider/action rows span the modal */
+.add_roadshow_modal > .modal_title,
+.add_roadshow_modal > .form_divider,
+.add_roadshow_modal > .modal_actions {
+  grid-column: 1 / -1;
+}
+
+.form_group {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form_group.full_width {
+  grid-column: 1 / -1;
+}
+
+.form_group label,
+.upload_section > label,
+.public_toggle > label {
+  display: block;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form_group input[type="text"],
+.form_group input[type="time"],
+.form_group input[type="date"],
+.form_group textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #1F2937;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form_group input[type="text"],
+.form_group input[type="time"],
+.form_group input[type="date"] {
+  height: 40px;
+  padding: 0 12px;
+}
+
+.form_group textarea {
+  min-height: 112px;
+  padding: 11px 12px;
+  resize: vertical;
+}
+
+.form_group input::placeholder,
+.form_group textarea::placeholder {
+  color: #9CA3AF;
+}
+
+.form_group input:focus,
+.form_group textarea:focus {
+  border-color: #8B0000;
+  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.08);
+}
+
+.form_hint {
+  margin-top: -2px;
+  color: #6B7280;
+  font-size: 11px;
+  line-height: 15px;
+}
+
+/* Date controls */
+.date_input_wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.date_input_wrapper input {
+  padding-right: 42px !important;
+}
+
+.calendar_icon {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  font-size: 15px;
+}
+
+/* Upload sections */
+.upload_section {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.upload_btn {
+  min-height: 42px;
+  width: 100%;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px dashed #B8B8BD;
+  border-radius: 8px;
+  background: #FAFAFA;
+  color: #4B5563;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.upload_btn:hover {
+  border-color: #8B0000;
+  background: #FFF9F9;
+}
+
+.upload_icon {
+  font-size: 15px;
+}
+
+.image_preview {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #F9FAFB;
+}
+
+.image_preview img {
+  width: 72px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #E5E7EB;
+}
+
+.remove_preview_btn,
+.remove_btn,
+.delete_image_btn,
+.undo_all_btn {
+  border: 0;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+
+.remove_preview_btn,
+.remove_btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #F3F4F6;
+  color: #6B7280;
+  font-size: 11px;
+}
+
+.remove_preview_btn:hover,
+.remove_btn:hover {
+  background: #FEE2E2;
+  color: #B91C1C;
+}
+
+.file_list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.file_item,
+.file_selected {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 9px;
+  box-sizing: border-box;
+  border: 1px solid #E5E7EB;
+  border-radius: 6px;
+  background: #FAFAFA;
+}
+
+.file_name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #4B5563;
+  font-size: 11px;
+}
+
+.existing_images_section {
+  padding: 10px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #FAFAFA;
+}
+
+.existing_label {
+  margin: 0 0 9px;
+  color: #6B7280;
+  font-size: 11px;
+}
+
+.existing_images_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 9px;
+}
+
+.existing_image_card {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 7px;
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+}
+
+.existing_image_card img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.delete_image_btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 12px;
+}
+
+.deletion_summary {
+  margin-top: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #FFF7ED;
+}
+
+.deletion_summary p {
+  margin: 0;
+  color: #9A3412;
+  font-size: 11px;
+}
+
+.undo_all_btn {
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: #FFFFFF;
+  color: #9A3412;
+  font-size: 10px;
+}
+
+/* Public toggle */
+.public_toggle {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  padding: 10px 0;
+  border-top: 1px solid #E5E7EB;
+}
+
+.toggle_switch {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #D1D5DB;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.toggle_switch.active {
+  background: #8B0000;
+}
+
+.toggle_slider {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.toggle_switch.active .toggle_slider {
+  transform: translateX(18px);
+}
+
+/* Modal buttons */
+.modal_actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.btn_cancel,
+.btn_save,
+.btn_delete {
+  min-width: 88px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 7px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn_cancel {
+  border: 1px solid #D1D5DB;
+  background: #FFFFFF;
+  color: #4B5563;
+}
+
+.btn_cancel:hover {
+  background: #F9FAFB;
+}
+
+.btn_save {
+  border: 1px solid #8B0000;
+  background: #8B0000;
+  color: #FFFFFF;
+}
+
+.btn_save:hover {
+  background: #760000;
+}
+
+.btn_delete {
+  border: 1px solid #DC2626;
+  background: #DC2626;
+  color: #FFFFFF;
+}
+
+.btn_delete:hover {
+  background: #B91C1C;
+}
+
+.delete_confirmation_modal .modal_actions {
+  margin-top: 20px;
+}
+
+/* Responsive modal */
+@media (max-width: 760px) {
+  .modal_overlay {
+    padding: 12px;
+    align-items: flex-start;
+  }
+
   .add_roadshow_modal,
   .delete_confirmation_modal {
     width: 100%;
     max-width: 100%;
+    max-height: calc(100dvh - 24px);
+    padding: 22px 20px 24px;
+    border-radius: 12px;
+  }
+
+  .add_roadshow_modal {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+    row-gap: 16px;
+  }
+
+  .form_group,
+  .form_group.full_width,
+  .upload_section,
+  .public_toggle,
+  .add_roadshow_modal > .modal_title,
+  .add_roadshow_modal > .form_divider,
+  .add_roadshow_modal > .modal_actions {
+    grid-column: 1;
+  }
+
+  .modal_title {
+    font-size: 21px;
+    line-height: 27px;
+  }
+
+  .modal_actions {
+    justify-content: stretch;
+  }
+
+  .btn_cancel,
+  .btn_save,
+  .btn_delete {
+    flex: 1;
   }
 }
+
+/* =========================================================
+   Table height follows the number of rows.
+   Header = 37px, each data row = 48px.
+   No artificial empty space below the last row.
+   ========================================================= */
+.roadshow_table_wrapper {
+  height: auto;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.roadshow_table {
+  height: auto !important;
+  min-height: 0 !important;
+  table-layout: fixed;
+}
+
+.roadshow_table tbody {
+  height: auto !important;
+}
+
+.roadshow_table tbody tr {
+  height: 48px !important;
+}
+
+.roadshow_table tbody td {
+  height: 48px !important;
+  min-height: 48px;
+  vertical-align: middle;
+}
+
 </style>

@@ -131,7 +131,7 @@ const createMOU = async (req, res, next) => {
                 deleteStoredFile(existingMOU.mou_file_path, 'old MOU file');
             }
 
-            req.body.mou_file_path = req.file.path;
+            req.body.mou_file_path = req.file.path.replace(/\\/g, '/');
             req.body.admin_id = req.user._id;
 
             // Convert is_published from string to boolean if needed
@@ -160,7 +160,7 @@ const createMOU = async (req, res, next) => {
             });
         }
 
-        req.body.mou_file_path = req.file.path;
+        req.body.mou_file_path = req.file.path.replace(/\\/g, '/');
 
         // Add admin ID from authenticated user
         req.body.admin_id = req.user._id;
@@ -233,7 +233,7 @@ const updateMOU = async (req, res, next) => {
                 deleteStoredFile(mou.mou_file_path, 'old MOU file');
             }
             
-            req.body.mou_file_path = req.file.path;
+            req.body.mou_file_path = req.file.path.replace(/\\/g, '/');
         }
 
         const updatedMOU = await MOU.findByIdAndUpdate(
