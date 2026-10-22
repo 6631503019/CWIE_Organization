@@ -1,5 +1,5 @@
 const Review = require('../models/Review');
-const Organization = require('../models/Organization');
+const InternshipRecord = require('../models/InternshipRecord');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 
 // @desc    Get all reviews
@@ -12,7 +12,7 @@ const getAllReviews = async (req, res, next) => {
         const skip = (page - 1) * limit;
 
         const reviews = await Review.find()
-            .populate('organization_id', 'name_en name_th')
+            .populate('organization_id', 'organization_name_en organization_name_th')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -47,13 +47,13 @@ const getReviews = async (req, res, next) => {
         const skip = (page - 1) * limit;
 
         // Check if organization exists
-        const organization = await Organization.findById(organizationId);
+        const organization = await InternshipRecord.findOne({ _id: organizationId, record_type: 'organization' });
         if (!organization) {
             throw createNotFoundError('organization', organizationId);
         }
 
         const reviews = await Review.find({ organization_id: organizationId })
-            .populate('organization_id', 'name_en name_th')
+            .populate('organization_id', 'organization_name_en organization_name_th')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -106,7 +106,7 @@ const createReview = async (req, res, next) => {
         }
 
         // Check if organization exists
-        const organization = await Organization.findById(organization_id);
+        const organization = await InternshipRecord.findOne({ _id: organization_id, record_type: 'organization' });
         if (!organization) {
             throw createNotFoundError('organization', organization_id);
         }

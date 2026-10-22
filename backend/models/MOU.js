@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const mouSchema = new mongoose.Schema({
     organization_id: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Organization',
+        ref: 'InternshipRecord',
         required: [true, 'Organization ID is required']
     },
     mou_file_path: {

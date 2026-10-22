@@ -3,74 +3,110 @@
     <AdminNavbar />
     <AdminTopBar
     />
-    
-    <!-- Roadshow Title -->
-    <h1 class="roadshow_title">Roadshow</h1>
-    
-    <!-- Add Roadshow Button -->
-    <button class="btn_add_roadshow" @click="bln_Show_Create_Modal = true">
-      <div class="plus_icon"></div>
-      <span class="button_text">Add Roadshow</span>
-    </button>
 
-    <!-- Roadshow Cards Container -->
-    <div class="roadshow_cards_container">
-      <div v-if="obj_state.error" class="error_message">
-        {{ obj_state.error }}
+    <main class="main_content">
+    <!-- Roadshow Header -->
+    <section class="roadshow_header_section">
+      <div class="roadshow_heading">
+        <h1 class="roadshow_page_title">Roadshow</h1>
+        <p class="roadshow_page_subtitle">Manage and view all roadshow events.</p>
       </div>
-      <div v-if="obj_state.loading && arr_Roadshows.length === 0" class="loading_message">
+
+
+      <button class="btn_add_roadshow" type="button" @click="Open_Create_Roadshow">
+        <span class="plus_icon">+</span>
+        <span class="button_text">Add Roadshow</span>
+      </button>
+    </section>
+
+    <!-- Search -->
+    <div class="roadshow_search_bar">
+      <span class="search_icon" aria-hidden="true"></span>
+      <input
+        v-model="str_Search_Query"
+        type="text"
+        placeholder="Search roadshow title or organization..."
+        aria-label="Search roadshow title or organization"
+      />
+    </div>
+
+    <!-- Roadshow Table -->
+    <section class="roadshow_table_wrapper">
+      <div v-if="obj_state.error" class="error_message">{{ obj_state.error }}</div>
+      <div v-else-if="obj_state.loading && arr_Roadshows.length === 0" class="loading_message">
         Loading roadshows...
       </div>
-      <div 
-        v-for="roadshow in Arr_Get_Paginated_Roadshows" 
-        :key="roadshow.id" 
-        class="roadshow_large_card"
-        @click="$router.push(`/admin/roadshow/${roadshow.id}`)"
-      >
-        <!-- Roadshow Image -->
-        <div class="roadshow_image_large">
-          <img 
-            :src="roadshow.image" 
-            :alt="roadshow.title"
-            @error="(e) => (e.target as HTMLImageElement).src = CONST_EMPTY_IMAGE_SVG"
-          />
-        </div>
-        
-        <!-- Roadshow Content -->
-        <div class="roadshow_content">
-          <h2 class="roadshow_title_large">{{ roadshow.title }}</h2>
-          <p class="roadshow_description">{{ roadshow.description }}</p>
-        </div>
-        
-        <!-- Edit Icon -->
-        <div class="edit_icon_large" @click.stop="Edit_Roadshow(roadshow)">
-          <div class="pencil_icon_large"></div>
-        </div>
-        
-        <!-- Delete Icon -->
-        <div class="delete_icon_large" @click.stop="Confirm_Delete_Roadshow(roadshow)">
-          <div class="trash_icon_large"></div>
-        </div>
 
-        <!-- Countdown Timer Badge -->
-        <div v-if="roadshow.deleted_date" class="countdown_badge" :class="Get_Countdown_Status(roadshow.deleted_date)">
-          <span class="countdown_number">{{ Get_Days_Until_Deletion(roadshow.deleted_date) }}</span>
-        </div>
-      </div>
-    </div>
+      <table v-else class="roadshow_table">
+        <thead>
+          <tr>
+            <th class="col_organization">{{ text('Organization', 'องค์กร') }}</th>
+            <th class="col_title">Roadshow title</th>
+            <th class="col_date">Date</th>
+            <th class="col_time">Time</th>
+            <th class="col_location">Location</th>
+            <th class="col_status">Status</th>
+            <th class="col_actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="roadshow in Arr_Get_Paginated_Roadshows" :key="roadshow.id">
+            <td class="organization_cell">{{ Get_Roadshow_Organization(roadshow) }}</td>
+
+            <td class="title_cell" :title="Get_Roadshow_Title(roadshow)">
+              {{ Get_Roadshow_Title(roadshow) }}
+            </td>
+
+            <td class="date_cell">
+              {{ Format_Table_Date(roadshow.event_date || roadshow.posted_date) }}
+            </td>
+
+            <td class="time_cell">
+              {{ formatRoadshowTime(roadshow.time || '') || '—' }}
+            </td>
+
+            <td class="location_cell">
+              {{ roadshow.location || '—' }}
+            </td>
+
+            <td class="status_cell">
+              <span
+                class="status_pill"
+                :class="Get_Date_Status_Class(roadshow)"
+              >
+                {{ Get_Date_Status(roadshow) }}
+              </span>
+            </td>
+
+            <td class="actions_cell">
+              <div class="table_actions">
+                <button type="button" class="table_action view_action" @click.stop="View_Roadshow(roadshow)">View</button>
+                <button type="button" class="table_action edit_action" @click.stop="Edit_Roadshow(roadshow)">Edit</button>
+                <button type="button" class="table_action delete_action" @click.stop="Confirm_Delete_Roadshow(roadshow)">Delete</button>
+              </div>
+            </td>
+          </tr>
+
+          <tr v-if="Arr_Get_Paginated_Roadshows.length === 0">
+            <td colspan="7" class="empty_table_cell">No roadshows found.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
 
     <!-- Pagination -->
     <div class="roadshow_pagination_container">
-      <Pagination 
+      <Pagination
         :current-page="obj_state.currentPage"
         :total-pages="i_Get_Total_Pages"
-        :total-items="arr_Roadshows.length"
+        :total-items="Arr_Get_Filtered_Roadshows.length"
         :loading="obj_state.loading"
         :show-info="false"
         @page-change="Handle_Page_Change"
       />
     </div>
-    
+    </main>
+
     <!-- Create/Edit Modal -->
     <div v-if="bln_Show_Create_Modal || bln_Show_Edit_Modal" class="modal_overlay" @mousedown.self="Handle_Overlay_Mouse_Down" @mouseup.self="Handle_Overlay_Mouse_Up">
       <div class="add_roadshow_modal">
@@ -79,11 +115,53 @@
 
         <!-- Topic Field -->
         <div class="form_group">
-          <label>Topic*</label>
+          <label>Roadshow Title (EN)*</label>
           <input 
             type="text" 
-            v-model="obj_Form_Data.topic" 
-            placeholder="Enter topic"
+            v-model="obj_Form_Data.title_en"
+            placeholder="Enter roadshow title in English"
+          />
+        </div>
+
+        <div class="form_group">
+          <label>Roadshow Title (TH)*</label>
+          <input
+            type="text"
+            v-model="obj_Form_Data.title_th"
+            placeholder="กรอกชื่อ Roadshow ภาษาไทย"
+          />
+        </div>
+
+        <!-- Organization Field -->
+        <div class="form_group">
+          <label for="roadshow-organization-en">Organization (EN)</label>
+          <input
+            id="roadshow-organization-en"
+            type="text"
+            v-model="obj_Form_Data.organization_en"
+            placeholder="Enter organization in English"
+            autocomplete="organization"
+          />
+        </div>
+
+        <div class="form_group">
+          <label for="roadshow-organization-th">Organization (TH)</label>
+          <input
+            id="roadshow-organization-th"
+            type="text"
+            v-model="obj_Form_Data.organization_th"
+            placeholder="กรอกชื่อองค์กรภาษาไทย"
+          />
+        </div>
+
+        <!-- Location Field -->
+        <div class="form_group">
+          <label for="roadshow-location">Location*</label>
+          <input
+            id="roadshow-location"
+            type="text"
+            v-model="obj_Form_Data.location"
+            placeholder="Enter location"
           />
         </div>
 
@@ -98,13 +176,33 @@
           ></textarea>
         </div>
 
-        <!-- Posted Date Field -->
+        <!-- Time Range Field -->
         <div class="form_group">
-          <label>Posted Date*</label>
+          <label for="roadshow-start-time">Start Time*</label>
+          <input
+            id="roadshow-start-time"
+            type="time"
+            v-model="obj_Form_Data.start_time"
+          />
+        </div>
+
+        <div class="form_group">
+          <label for="roadshow-end-time">End Time*</label>
+          <input
+            id="roadshow-end-time"
+            type="time"
+            v-model="obj_Form_Data.end_time"
+          />
+          <small class="form_hint">Select a 24-hour time range</small>
+        </div>
+
+        <!-- Event Date Field -->
+        <div class="form_group">
+          <label>Event Date*</label>
           <div class="date_input_wrapper">
             <input 
               type="date" 
-              v-model="obj_Form_Data.posted_date"
+              v-model="obj_Form_Data.event_date"
             />
             <span class="calendar_icon">📅</span>
           </div>
@@ -233,6 +331,8 @@ import AdminNavbar from '../components/AdminNavbar.vue'
 import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
+import { formatRoadshowTime, normalizeRoadshowTime } from '../utils/roadshowTime'
+import { useLanguage } from '../composables/useLanguage'
 
 // ===========================
 // CONSTANTS
@@ -242,7 +342,7 @@ const CONST_API_ROADSHOWS_ENDPOINT = '/api/roadshows'
 const CONST_AUTH_HEADER_KEY = 'Authorization'
 const CONST_AUTH_TOKEN_STORAGE_KEY = 'auth_token'
 const CONST_AUTO_REFRESH_INTERVAL_MS = 45000 // 45 seconds
-const CONST_ITEMS_PER_PAGE = 2
+const CONST_ITEMS_PER_PAGE = 5
 const CONST_EMPTY_IMAGE_SVG = "data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27271%27 height=%27272%27%3E%3Crect fill=%27%23ddd%27 width=%27271%27 height=%27272%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E"
 const CONST_API_LIMIT_QUERY = '?limit=100&public=false'
 
@@ -274,6 +374,30 @@ const str_Editing_Roadshow_ID = ref<string | null>(null)
 // ===========================
 // Roadshow data array - will be populated from backend
 const arr_Roadshows = ref<any[]>([])
+const str_Search_Query = ref('')
+const { currentLanguage, text } = useLanguage()
+
+const Get_Roadshow_Organization = (obj_Roadshow: any): string => {
+  const str_Organization = currentLanguage.value === 'TH'
+    ? obj_Roadshow.organization_th || obj_Roadshow.organization_en || obj_Roadshow.organization
+    : obj_Roadshow.organization_en || obj_Roadshow.organization_th || obj_Roadshow.organization
+  return str_Organization || '—'
+}
+
+const Get_Roadshow_Title = (obj_Roadshow: any): string => {
+  const str_Title = currentLanguage.value === 'TH'
+    ? obj_Roadshow.title_th || obj_Roadshow.title_en || obj_Roadshow.title
+    : obj_Roadshow.title_en || obj_Roadshow.title_th || obj_Roadshow.title
+  return str_Title || '—'
+}
+
+const Split_Roadshow_Time = (str_Time: string): { start: string; end: string } => {
+  const arr_Time = String(str_Time || '').replace(/:/g, '.').split('-').map((part) => part.trim())
+  return {
+    start: arr_Time[0] ? arr_Time[0].replace('.', ':') : '',
+    end: arr_Time[1] ? arr_Time[1].replace('.', ':') : ''
+  }
+}
 
 // ===========================
 // IMAGE PREVIEW URLS
@@ -291,9 +415,7 @@ const str_Poster_Preview_URL = ref<string | null>(null)
  * Output: Number representing total pages
  * Side effects: None
  */
-const i_Get_Total_Pages = computed(() => 
-  Math.ceil(arr_Roadshows.value.length / obj_state.itemsPerPage)
-)
+const i_Get_Total_Pages = computed(() => Math.max(1, Math.ceil(Arr_Get_Filtered_Roadshows.value.length / obj_state.itemsPerPage)))
 
 /**
  * Get paginated roadshows array for current page
@@ -302,39 +424,29 @@ const i_Get_Total_Pages = computed(() =>
  * Output: Array of roadshows for current page
  * Side effects: None
  */
+const Arr_Get_Filtered_Roadshows = computed(() => {
+  const str_Query = str_Search_Query.value.trim().toLowerCase()
+  if (!str_Query) return arr_Roadshows.value
+
+  return arr_Roadshows.value.filter((roadshow) => {
+    const str_Title = String(roadshow.title || '').toLowerCase()
+    const str_Organization = String(
+      currentLanguage.value === 'TH'
+        ? roadshow.organization_th || roadshow.organization_en
+        : roadshow.organization_en || roadshow.organization_th
+    ).toLowerCase()
+    return str_Title.includes(str_Query) || str_Organization.includes(str_Query)
+  })
+})
+
 const Arr_Get_Paginated_Roadshows = computed(() => {
   const i_Start = (obj_state.currentPage - 1) * obj_state.itemsPerPage
   const i_End = i_Start + obj_state.itemsPerPage
-  return arr_Roadshows.value.slice(i_Start, i_End)
+  return Arr_Get_Filtered_Roadshows.value.slice(i_Start, i_End)
 })
 
-/**
- * Computed property for Posted Date in display format (mm/dd/yyyy)
- * Purpose: Provide bidirectional sync between storage format and display format
- * Input: obj_Form_Data.posted_date (YYYY-MM-DD)
- * Output: Display as mm/dd/yyyy, accept input and convert to YYYY-MM-DD
- * Side effects: Updates obj_Form_Data.posted_date when changed
- */
-const str_Posted_Date_Display = computed({
-  get: () => Format_Date_To_Display(obj_Form_Data.posted_date),
-  set: (str_Value: string) => {
-    obj_Form_Data.posted_date = Format_Date_To_Storage(str_Value)
-  }
-})
+watch(str_Search_Query, () => { obj_state.currentPage = 1 })
 
-/**
- * Computed property for Deleted Date in display format (mm/dd/yyyy)
- * Purpose: Provide bidirectional sync between storage format and display format
- * Input: obj_Form_Data.deleted_date (YYYY-MM-DD)
- * Output: Display as mm/dd/yyyy, accept input and convert to YYYY-MM-DD
- * Side effects: Updates obj_Form_Data.deleted_date when changed
- */
-const str_Deleted_Date_Display = computed({
-  get: () => Format_Date_To_Display(obj_Form_Data.deleted_date),
-  set: (str_Value: string) => {
-    obj_Form_Data.deleted_date = Format_Date_To_Storage(str_Value)
-  }
-})
 
 // ===========================
 // WATCHERS FOR REACTIVE UPDATES
@@ -352,12 +464,26 @@ watch(bln_Show_Edit_Modal, (bln_Is_Open) => {
   if (!bln_Is_Open) Reset_Form()
 })
 
+const Open_Create_Roadshow = (): void => {
+  Reset_Form()
+  bln_Show_Create_Modal.value = true
+}
+
 // ===========================
 // FORM DATA OBJECT
 // ===========================
 const obj_Form_Data = reactive({
   topic: '',
+  title_en: '',
+  title_th: '',
   details: '',
+  organization_en: '',
+  organization_th: '',
+  location: '',
+  time: '',
+  start_time: '',
+  end_time: '',
+  event_date: '',
   posted_date: '',
   deleted_date: '',
   pictureFiles: [] as File[],
@@ -454,6 +580,10 @@ const Handle_Page_Change = async (i_Page: number) => {
  * Output: None (updates obj_Form_Data and opens modal)
  * Side effects: Modifies obj_Form_Data, updates bln_Show_Edit_Modal and str_Editing_Roadshow_ID
  */
+const View_Roadshow = (obj_Roadshow: any): void => {
+  if (obj_Roadshow?.id) window.location.href = `/admin/roadshow/${obj_Roadshow.id}`
+}
+
 const Edit_Roadshow = (obj_Roadshow: any) => {
   try {
     // Input validation
@@ -463,8 +593,18 @@ const Edit_Roadshow = (obj_Roadshow: any) => {
     
     // Load roadshow data into form
     str_Editing_Roadshow_ID.value = obj_Roadshow.id
-    obj_Form_Data.topic = obj_Roadshow.title || ''
+    obj_Form_Data.title_en = obj_Roadshow.title_en || obj_Roadshow.title || ''
+    obj_Form_Data.title_th = obj_Roadshow.title_th || ''
+    obj_Form_Data.topic = obj_Form_Data.title_en || obj_Form_Data.title_th
     obj_Form_Data.details = obj_Roadshow.description || ''
+    obj_Form_Data.organization_en = obj_Roadshow.organization_en || obj_Roadshow.organization || ''
+    obj_Form_Data.organization_th = obj_Roadshow.organization_th || ''
+    obj_Form_Data.location = obj_Roadshow.location || ''
+    obj_Form_Data.time = formatRoadshowTime(obj_Roadshow.time || '')
+    const obj_Time = Split_Roadshow_Time(obj_Form_Data.time)
+    obj_Form_Data.start_time = obj_Time.start
+    obj_Form_Data.end_time = obj_Time.end
+    obj_Form_Data.event_date = obj_Roadshow.event_date || obj_Roadshow.posted_date || ''
     // Store dates in YYYY-MM-DD format internally
     obj_Form_Data.posted_date = obj_Roadshow.posted_date || ''
     obj_Form_Data.deleted_date = obj_Roadshow.deleted_date || ''
@@ -662,7 +802,16 @@ const Close_Modals = () => {
 const Reset_Form = () => {
   try {
     obj_Form_Data.topic = ''
+    obj_Form_Data.title_en = ''
+    obj_Form_Data.title_th = ''
     obj_Form_Data.details = ''
+    obj_Form_Data.organization_en = ''
+    obj_Form_Data.organization_th = ''
+    obj_Form_Data.location = ''
+    obj_Form_Data.time = ''
+    obj_Form_Data.start_time = ''
+    obj_Form_Data.end_time = ''
+    obj_Form_Data.event_date = ''
     obj_Form_Data.posted_date = ''
     obj_Form_Data.deleted_date = ''
     obj_Form_Data.pictureFiles = []
@@ -694,6 +843,75 @@ const Reset_Form = () => {
  * Output: Number of days remaining (returns 0 if date is in past)
  * Side effects: None
  */
+const Format_Table_Date = (str_Date: string): string => {
+  if (!str_Date) return '—'
+  const obj_Date = new Date(str_Date)
+  if (Number.isNaN(obj_Date.getTime())) return str_Date
+  return obj_Date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+const Get_File_Name = (str_Path: string): string => {
+  const str_Normalized = String(str_Path || '').split('?')[0].replace(/\\/g, '/')
+  return str_Normalized.split('/').pop() || 'Image'
+}
+
+const Get_Table_Status = (obj_Roadshow: any): string => {
+  if (obj_Roadshow?.deleted_date) {
+    const obj_Deleted = new Date(obj_Roadshow.deleted_date)
+    if (!Number.isNaN(obj_Deleted.getTime()) && obj_Deleted.getTime() < new Date().setHours(0, 0, 0, 0)) {
+      return 'Completed'
+    }
+  }
+  return obj_Roadshow?.isPublic ? 'Active' : 'Upcoming'
+}
+
+const Get_Table_Status_Class = (obj_Roadshow: any): string => {
+  const str_Status = Get_Table_Status(obj_Roadshow)
+  if (str_Status === 'Completed') return 'status_completed'
+  if (str_Status === 'Active') return 'status_active'
+  return 'status_upcoming'
+}
+
+/**
+ * Date Status for the Roadshow table.
+ *
+ * Event Date < today  -> Completed
+ * Event Date = today  -> Active
+ * Event Date > today  -> Upcoming
+ *
+ * This is intentionally calculated from event_date so the status updates
+ * automatically as the calendar date changes.
+ */
+const Get_Date_Status = (obj_Roadshow: any): string => {
+  const str_Event_Date = obj_Roadshow?.event_date || obj_Roadshow?.posted_date || ''
+
+  if (!str_Event_Date) return 'Upcoming'
+
+  const obj_Event_Date = new Date(`${str_Event_Date}T00:00:00`)
+  if (Number.isNaN(obj_Event_Date.getTime())) return 'Upcoming'
+
+  const obj_Today = new Date()
+  obj_Today.setHours(0, 0, 0, 0)
+
+  if (obj_Event_Date.getTime() < obj_Today.getTime()) {
+    return 'Completed'
+  }
+
+  if (obj_Event_Date.getTime() === obj_Today.getTime()) {
+    return 'Active'
+  }
+
+  return 'Upcoming'
+}
+
+const Get_Date_Status_Class = (obj_Roadshow: any): string => {
+  const str_Status = Get_Date_Status(obj_Roadshow)
+
+  if (str_Status === 'Completed') return 'status_completed'
+  if (str_Status === 'Active') return 'status_active'
+  return 'status_upcoming'
+}
+
 const Get_Days_Until_Deletion = (str_Deleted_Date: string): number => {
   try {
     if (!str_Deleted_Date) return 0
@@ -888,15 +1106,37 @@ const Obj_Create_Roadshow_From_Response = (obj_Response_Data: any): any => {
     return str_Date
   }
   
+  const str_Poster_Path = obj_Response_Data.poster_path || ''
   const obj_Result = {
     id: obj_Response_Data._id,
-    title: obj_Response_Data.topic,
+    title_en: obj_Response_Data.title_en || obj_Response_Data.topic || '',
+    title_th: obj_Response_Data.title_th || '',
+    title: currentLanguage.value === 'TH'
+      ? obj_Response_Data.title_th || obj_Response_Data.title_en || obj_Response_Data.topic
+      : obj_Response_Data.title_en || obj_Response_Data.title_th || obj_Response_Data.topic,
     description: obj_Response_Data.details,
-    image: Str_Get_Image_URL(obj_Response_Data.poster_path),
+    image: Str_Get_Image_URL(str_Poster_Path),
+    imageName: str_Poster_Path ? String(str_Poster_Path).replace(/\\/g, '/').split('/').pop() || 'Poster' : '—',
     isPublic: obj_Response_Data.is_public,
+    event_date: Extract_Date_Part(obj_Response_Data.event_date),
     posted_date: Extract_Date_Part(obj_Response_Data.posted_date),
     deleted_date: Extract_Date_Part(obj_Response_Data.deleted_date),
-    activityImagePaths: obj_Response_Data.activity_image_paths || []
+    activityImagePaths: obj_Response_Data.activity_image_paths || [],
+    organization_en: obj_Response_Data.organization_en
+      || obj_Response_Data.organization
+      || obj_Response_Data.organization_name
+      || obj_Response_Data.organization_id?.organization_name_en
+      || obj_Response_Data.organization_id?.name_en
+      || '',
+    organization_th: obj_Response_Data.organization_th
+      || obj_Response_Data.organization_id?.organization_name_th
+      || obj_Response_Data.organization_id?.name_th
+      || '',
+    organization: currentLanguage.value === 'TH'
+      ? obj_Response_Data.organization_th || obj_Response_Data.organization_en || obj_Response_Data.organization
+      : obj_Response_Data.organization_en || obj_Response_Data.organization_th || obj_Response_Data.organization,
+    time: formatRoadshowTime(obj_Response_Data.time || obj_Response_Data.roadshow_time || ''),
+    location: obj_Response_Data.location || obj_Response_Data.venue || ''
   }
   
   // DEBUG: Log the mapping to see what fields are coming from API
@@ -919,23 +1159,49 @@ const Obj_Create_Roadshow_From_Response = (obj_Response_Data: any): any => {
 const Submit_Form = async () => {
   try {
     // Step 1: Input validation - check required fields
-    if (!obj_Form_Data.topic.trim()) {
-      throw new Error('Topic is required')
+    if (!obj_Form_Data.title_en.trim() && !obj_Form_Data.title_th.trim()) {
+      throw new Error('Roadshow title is required in at least one language')
     }
     if (!obj_Form_Data.details.trim()) {
       throw new Error('Details are required')
     }
-    if (!obj_Form_Data.posted_date) {
-      throw new Error('Posted Date is required')
+    if (!obj_Form_Data.start_time || !obj_Form_Data.end_time) {
+      throw new Error('Start Time and End Time are required')
+    }
+    const str_Normalized_Time = normalizeRoadshowTime(
+      `${obj_Form_Data.start_time.replace(':', '.')} - ${obj_Form_Data.end_time.replace(':', '.')}`
+    )
+    if (!str_Normalized_Time) {
+      throw new Error('Time must use HH.MM - HH.MM format')
+    }
+    if (!obj_Form_Data.event_date) {
+      throw new Error('Event Date is required')
+    }
+    if (!obj_Form_Data.location.trim()) {
+      throw new Error('Location is required')
     }
 
     obj_state.loading = true
     
     // Step 2: Build FormData with all fields
     const obj_FormData_To_Send = new FormData()
-    obj_FormData_To_Send.append('topic', obj_Form_Data.topic.trim())
+    const str_Title_EN = obj_Form_Data.title_en.trim()
+    const str_Title_TH = obj_Form_Data.title_th.trim()
+    obj_FormData_To_Send.append('topic', str_Title_EN || str_Title_TH)
+    if (str_Title_EN) obj_FormData_To_Send.append('title_en', str_Title_EN)
+    if (str_Title_TH) obj_FormData_To_Send.append('title_th', str_Title_TH)
     obj_FormData_To_Send.append('details', obj_Form_Data.details.trim())
-    obj_FormData_To_Send.append('posted_date', obj_Form_Data.posted_date)
+    if (obj_Form_Data.organization_en.trim()) {
+      obj_FormData_To_Send.append('organization_en', obj_Form_Data.organization_en.trim())
+      obj_FormData_To_Send.append('organization', obj_Form_Data.organization_en.trim())
+    }
+    if (obj_Form_Data.organization_th.trim()) {
+      obj_FormData_To_Send.append('organization_th', obj_Form_Data.organization_th.trim())
+    }
+    obj_FormData_To_Send.append('location', obj_Form_Data.location.trim())
+    obj_FormData_To_Send.append('time', str_Normalized_Time)
+    obj_FormData_To_Send.append('event_date', obj_Form_Data.event_date)
+    obj_FormData_To_Send.append('posted_date', obj_Form_Data.event_date)
     if (obj_Form_Data.deleted_date) {
       obj_FormData_To_Send.append('deleted_date', obj_Form_Data.deleted_date)
     }
@@ -1128,10 +1394,8 @@ onMounted(async () => {
     console.log('AdminRoadshow component mounted')
     obj_state.loading = true
     
-    // Step 1: Load initial roadshows
     await Load_Roadshows_From_API()
-    
-    // Step 2: Setup auto-refresh interval
+    // Setup auto-refresh interval
     Setup_Auto_Refresh()
     
     obj_state.error = null
@@ -1177,1291 +1441,1008 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+/* =========================================================
+   Admin Roadshow - Figma 1326 × 737 / Responsive Laptop + PC
+   UI-only styles. API / CRUD / modal logic is unchanged.
+   ========================================================= */
 
 .admin_roadshow {
-  position: relative;
-  width: 100vw;
-  height: 918px;
-  background: #F6F7F8;
-  overflow-x: auto;
-}
-
-.main_content {
-  margin-left: 232px;
-  padding: 20px;
-  height: calc(100vh - 40px);
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-/* Header Section */
-.header_section {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.page_title {
-  margin: 0;
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 40px;
-  line-height: 50px;
-  color: #000000;
-}
-
-.add_roadshow_btn {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 6px 10px;
-  gap: 6px;
-  width: 166px;
-  height: 32px;
-  background: #C70000;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #FFFFFF;
-}
-
-.plus_icon {
-  width: 20px;
-  height: 20px;
-  position: relative;
-  flex: none;
-  order: 0;
-  flex-grow: 0;
-}
-
-.plus_icon::before,
-.plus_icon::after {
-  content: '';
-  position: absolute;
-  background: #FFFFFF;
-  border-radius: 1px;
-}
-
-.plus_icon::before {
-  width: 12px;
-  height: 2px;
-  left: 4px;
-  top: 9px;
-}
-
-.plus_icon::after {
-  width: 2px;
-  height: 12px;
-  left: 9px;
-  top: 4px;
-}
-
-.button_text {
-  width: 99px;
-  height: 20px;
-  
-  font-family: 'DM Sans', sans-serif;
-  font-style: normal;
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 20px;
-  color: #FFFFFF;
-  
-  flex: none;
-  order: 1;
-  flex-grow: 0;
-}
-
-/* Roadshow Cards Grid */
-.roadshow_cards_grid {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  padding: 0px;
-  gap: 42px;
-  flex-wrap: wrap;
-  margin-bottom: 30px;
-}
-
-.roadshow_card {
-  position: relative;
-  width: 271px;
-  height: 350px;
-  background: #FFFFFF;
-  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.roadshow_card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.15);
-}
-
-.roadshow_image {
+  --sidebar-width: 66px;
+  --main-max-width: 1244px;
+  --table-width: 1090px;
+  --search-width: 1053px;
   width: 100%;
-  height: 180px;
-  overflow: hidden;
-  background: #f5f5f5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.roadshow_image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease;
-}
-
-.roadshow_card:hover .roadshow_image img {
-  transform: scale(1.05);
-}
-
-/* Main Roadshow Title */
-.roadshow_title {
-  position: absolute;
-  width: 188px;
-  height: 50px;
-  left: 251px;
-  top: 58px;
-  margin: 0;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 40px;
-  line-height: 50px;
-  color: #000000;
-}
-
-/* Add Roadshow Button */
-.btn_add_roadshow {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  padding: 6px 10px;
-  gap: 6px;
-  
-  position: absolute;
-  width: 145px;
-  height: 32px;
-  left: 1156px;
-  top: 66px;
-  
-  background: #C70000;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.btn_add_roadshow:hover {
-  background: #A50000;
-}
-
-.plus_icon {
-  width: 20px;
-  height: 20px;
-  position: relative;
-  flex: none;
-  order: 0;
-  flex-grow: 0;
-}
-
-.plus_icon::before,
-.plus_icon::after {
-  content: '';
-  position: absolute;
-  background: #FFFFFF;
-  border-radius: 1px;
-}
-
-.plus_icon::before {
-  width: 12px;
-  height: 2px;
-  left: 4px;
-  top: 9px;
-}
-
-.plus_icon::after {
-  width: 2px;
-  height: 12px;
-  left: 9px;
-  top: 4px;
-}
-
-.button_text {
-  width: 99px;
-  height: 20px;
-  
-  font-family: 'DM Sans', sans-serif;
-  font-style: normal;
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 20px;
-  color: #FFFFFF;
-  
-  flex: none;
-  order: 1;
-  flex-grow: 0;
-}
-
-/* Roadshow Cards Container */
-.roadshow_cards_container {
-  position: absolute;
-  left: 273px;
-  top: 152px;
-  width: 1035px;
-}
-
-.error_message {
-  background: #FEE2E2;
-  border: 1px solid #FECACA;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  color: #DC2626;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-}
-
-.loading_message {
-  text-align: center;
-  padding: 20px;
-  color: #6B7280;
-  font-family: 'Inter', sans-serif;
-  font-size: 16px;
-}
-
-/* Large Roadshow Card */
-.roadshow_large_card {
-  position: relative;
-  width: 1035px;
-  height: 287px;
-  margin-bottom: 25px;
-  
-  background: #FFFFFF;
-  border: 1px solid #000000;
-  border-radius: 15px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-  
-  display: flex;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.roadshow_large_card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.15);
-}
-
-/* Large Roadshow Image */
-.roadshow_image_large {
-  width: 270.72px;
-  height: 271.7px;
-  margin: 8px 0 0 37px;
-  overflow: hidden;
-  border-radius: 8px;
-  background: #f5f5f5;
-}
-
-.roadshow_image_large img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Roadshow Content */
-.roadshow_content {
-  flex: 1;
-  padding: 17px 20px 20px 40px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Large Roadshow Title */
-.roadshow_title_large {
-  margin: 0 0 15px 0;
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 32px;
-  line-height: 40px;
-  color: #000000;
-}
-
-/* Roadshow Description */
-.roadshow_description {
-  margin: 0;
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 25px;
-  color: #000000;
-  flex: 1;
-}
-
-/* Countdown Badge */
-.countdown_badge {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 16px;
-  font-weight: 700;
-  background: #E5E7EB;
-  color: #374151;
-  border: 2px solid #D1D5DB;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  z-index: 10;
-  transition: all 0.3s ease;
-}
-
-.countdown_number {
-  margin: 0;
-  line-height: 1;
-  display: inline-block;
-  min-width: 24px;
-  text-align: center;
-}
-
-/* Status: Safe (more than 7 days) */
-.countdown_badge.status_safe {
-  background: #D1FAE5;
-  color: #047857;
-  border-color: #6EE7B7;
-}
-
-/* Status: Warning (3-7 days) */
-.countdown_badge.status_warning {
-  background: #FEF3C7;
-  color: #92400E;
-  border-color: #FCD34D;
-}
-
-/* Status: Critical (0-3 days) */
-.countdown_badge.status_critical {
-  background: #FEE2E2;
-  color: #991B1B;
-  border-color: #FCA5A5;
-  animation: pulse_critical 2s ease-in-out infinite;
-}
-
-/* Status: Expired (past date) */
-.countdown_badge.status_expired {
+  min-height: 100dvh;
   background: #F3F4F6;
-  color: #6B7280;
-  border-color: #D1D5DB;
-  opacity: 0.6;
+  overflow-x: hidden;
+  font-family: 'Inter', sans-serif;
 }
 
-/* Pulse animation for critical status */
-@keyframes pulse_critical {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.05);
-  }
+/* Main area starts after the existing AdminNavbar/sidebar. */
+.admin_roadshow > .main_content {
+  width: min(var(--main-max-width), calc(100% - var(--sidebar-width)));
+  min-height: calc(100dvh - 67px);
+  margin-left: var(--sidebar-width);
+  margin-right: 0;
+  padding: 0 0 32px;
+  box-sizing: border-box;
+  background: #F3F4F6;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
-/* Large Edit Icon */
-.edit_icon_large {
+/* Figma Content starts immediately below the 67px AdminTopBar. */
+.roadshow_header_section {
+  position: relative;
+  width: 100%;
+  height: 67px;
+  margin: 0;
+  background: #F3F4F6;
+}
+
+.roadshow_heading {
   position: absolute;
-  width: 29.17px;
-  height: 26.5px;
-  right: 20px;
-  top: 20px;
-  
-  background: #FFFFFF;
-  border: 1px solid #000000;
-  border-radius: 6px;
-  
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  left: 59px;
+  top: 0;
+  width: 349px;
 }
 
-.edit_icon_large:hover {
-  background: #f5f5f5;
-  transform: scale(1.05);
+.roadshow_page_title {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 24px;
+  line-height: 29px;
+  font-weight: 700;
+  color: #1F2937;
 }
 
-/* Large Delete Icon */
-.delete_icon_large {
-  position: absolute;
-  width: 29.17px;
-  height: 26.5px;
-  right: 20px;
-  top: 56px;
-  
-  background: #FFFFFF;
-  border: 1px solid #DC2626;
-  border-radius: 6px;
-  
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.delete_icon_large:hover {
-  background: #FEE2E2;
-  transform: scale(1.05);
-}
-
-/* Large Pencil Icon */
-.pencil_icon_large {
-  width: 24.31px;
-  height: 22.08px;
-  background: #000;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") no-repeat;
-  mask-size: contain;
-}
-
-/* Large Trash Icon */
-.trash_icon_large {
-  width: 20px;
-  height: 20px;
-  background: #DC2626;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z'/%3E%3C/svg%3E") no-repeat;
-  mask-size: contain;
-}
-
-.roadshow_date {
-  padding: 0px 20px 15px 20px;
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
+.roadshow_page_subtitle {
+  margin: 2px 0 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 16px;
   font-weight: 400;
-  font-size: 12px;
-  line-height: 15px;
-  color: #767676;
-  text-align: left;
+  color: #73737A;
 }
 
-.edit_icon {
+.btn_add_roadshow {
   position: absolute;
-  width: 32px;
-  height: 32px;
-  right: 12px;
-  top: 12px;
-  z-index: 3;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 50%;
+  top: 14px;
+  right: 20px;
+  width: 131px;
+  height: 36px;
+  padding: 10px 16px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 8px;
+  background: #8B0000;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 5px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  opacity: 0;
-  transform: scale(0.8);
+  font-family: 'Inter', sans-serif;
 }
 
-.roadshow_card:hover .edit_icon {
-  opacity: 1;
-  transform: scale(1);
+.btn_add_roadshow:hover { background: #760000; }
+
+.btn_add_roadshow .plus_icon {
+  width: auto;
+  height: auto;
+  position: static;
+  background: transparent;
+  font-size: 16px;
+  line-height: 16px;
+  color: #FFFFFF;
 }
 
-.edit_icon:hover {
-  background: rgba(255, 255, 255, 1);
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+.btn_add_roadshow .button_text {
+  width: auto;
+  height: 16px;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 600;
+  color: #FFFFFF;
+  white-space: nowrap;
 }
 
-.pencil_icon {
+/* Figma search: 1053 × 40. At smaller widths it shrinks safely. */
+.roadshow_search_bar {
+  width: min(var(--search-width), calc(100% - 102px));
+  height: 40px;
+  margin: 45px auto 23px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border: 0.4px solid #A8A8AC;
+  border-radius: 8px;
+  background: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+}
+
+.roadshow_search_bar input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 16px;
+  color: #1F2937;
+}
+
+.roadshow_search_bar input::placeholder { color: #73737A; }
+
+.search_icon {
   width: 14px;
   height: 14px;
-  background: #666;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") no-repeat;
-  mask-size: contain;
-  transition: background 0.2s ease;
-}
-
-.edit_icon:hover .pencil_icon {
-  background: #333;
-}
-
-/* Roadshow Pagination Container */
-.roadshow_pagination_container {
-  position: absolute;
-  left: 1090px;
-  top: 780px;
-  width: 218px;
-  height: 28px;
-}
-
-.plus_line_h, .plus_line_v {
-  position: absolute;
-  background: #FFFFFF;
-}
-
-.plus_line_h {
-  width: 12px;
-  height: 2px;
-  left: 4px;
-  top: 9px;
-}
-
-.plus_line_v {
-  width: 2px;
-  height: 12px;
-  left: 9px;
-  top: 4px;
-}
-
-.button_text {
-  width: 99px;
-  height: 20px;
-  
-  font-family: 'DM Sans', sans-serif;
-  font-style: normal;
-  font-weight: 500;
-  font-size: 14px;
-  line-height: 20px;
-  color: #FFFFFF;
-}
-
-.roadshow_card {
-  position: absolute;
-  width: 1035px;
-  height: 287px;
-  left: 273px;
-  top: 152px;
-  
-  background: #FFFFFF;
-  border: 1px solid #000000;
-  border-radius: 15px;
-  display: flex;
-}
-
-.roadshow_image {
-  width: 350px;
-  height: 272px;
-  flex-shrink: 0;
-}
-
-.roadshow_image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 8px;
-  background: #e0e0e0;
-}
-
-.roadshow_content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: 20px;
-}
-
-.roadshow_title {
-  margin: 0 0 24px 0;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 32px;
-  line-height: 40px;
-  color: #000000;
-}
-
-.roadshow_description {
-  margin: 0;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 25px;
-  color: #000000;
-  max-width: 600px;
-}
-
-.edit_icon {
-  position: absolute;
-  width: 29.17px;
-  height: 26.5px;
-  
-  background: #FFFFFF;
-  border: 1px solid #000000;
-  border-radius: 6px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.bottom_edit {
-  right: 77px;
-  top: 248px;
-}
-
-.pencil_icon {
-  width: 24.31px;
-  height: 22.08px;
-  background: #666;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='currentColor'%3E%3Cpath d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z'/%3E%3C/svg%3E") no-repeat;
-  mask-size: contain;
-}
-
-/* Modal Styles */
-.modal_overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.add_roadshow_modal {
-  background: #FFFFFF;
-  border-radius: 12px;
-  width: 850px;
-  height: 689px;
-  overflow-y: auto;
-  padding: 40px;
+  flex: 0 0 14px;
+  border: 1.5px solid #73737A;
+  border-radius: 50%;
+  position: relative;
   box-sizing: border-box;
 }
 
+.search_icon::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 1.5px;
+  background: #73737A;
+  right: -4px;
+  bottom: -2px;
+  transform: rotate(45deg);
+  transform-origin: left center;
+}
+
+/* Figma table: 1090 × 277. Eight columns + date-driven status. Scroll belongs to the table wrapper only. */
+.roadshow_table_wrapper {
+  width: min(var(--table-width), calc(100% - 102px));
+  height: auto;
+  min-height: 0;
+  margin: 0 auto;
+  background: #FFFFFF;
+  border: 1px solid #D1D1D2;
+  border-radius: 12px;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.roadshow_table {
+  width: var(--table-width);
+  min-width: var(--table-width);
+  height: auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  background: #FFFFFF;
+  font-family: 'Inter', sans-serif;
+}
+
+.roadshow_table thead tr {
+  height: 37px;
+  background: #8B0000;
+}
+
+.roadshow_table th {
+  height: 37px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  text-align: left;
+  color: #FFFFFF;
+  font-size: 11px;
+  line-height: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  border-right: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.roadshow_table th:last-child { border-right: 0; }
+
+.roadshow_table tbody tr {
+  height: 48px;
+  background: #FFFFFF;
+}
+
+.roadshow_table td {
+  height: 48px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  color: #1F2937;
+  font-size: 12px;
+  line-height: 15px;
+  font-weight: 400;
+  vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-top: 1px solid #BCBCBE;
+  border-right: 1px solid #D1D1D2;
+}
+
+.roadshow_table td:last-child { border-right: 0; }
+
+/* Figma column separators */
+.roadshow_table th:nth-child(1),
+.roadshow_table th:nth-child(2),
+.roadshow_table th:nth-child(3),
+.roadshow_table th:nth-child(4),
+.roadshow_table th:nth-child(5),
+.roadshow_table th:nth-child(6),
+.roadshow_table td:nth-child(1),
+.roadshow_table td:nth-child(2),
+.roadshow_table td:nth-child(3),
+.roadshow_table td:nth-child(4),
+.roadshow_table td:nth-child(5),
+.roadshow_table td:nth-child(6) {
+  border-right: 1px solid #BCBCBE;
+}
+
+/* Figma table columns:
+   Organization | Roadshow title | Date | Time | Location | Status | Actions */
+.col_organization { width: 209px; padding-left: 20px !important; }
+.col_title { width: 311px; }
+.col_date { width: 110px; }
+.col_time { width: 110px; }
+.col_location { width: 100px; }
+.col_status { width: 111px; }
+.col_actions { width: 139px; }
+
+.organization_cell {
+  padding-left: 20px !important;
+  font-weight: 600 !important;
+}
+
+.title_cell {
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 9px !important;
+}
+
+.date_cell,
+.time_cell,
+.location_cell {
+  white-space: nowrap;
+}
+
+.status_cell {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+
+.status_pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 47px;
+  height: 18px;
+  box-sizing: border-box;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  line-height: 12px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.status_pill.status_upcoming {
+  min-width: 66px;
+  background: #0A48A6;
+}
+
+.status_pill.status_active {
+  min-width: 47px;
+  background: #F11408;
+}
+
+.status_pill.status_completed {
+  min-width: 70px;
+  background: #22C55E;
+}
+
+.actions_cell {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+  padding-left: 10px !important;
+  padding-right: 8px !important;
+}
+
+.actions_cell .table_actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  width: max-content;
+  min-width: 100%;
+}
+
+.table_action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  line-height: 13px;
+  font-weight: 400;
+  color: #73737A;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.table_action:hover { text-decoration: underline; }
+.delete_action:hover { color: #DC2626; }
+
+.empty_table_cell {
+  height: 48px;
+  text-align: center !important;
+  color: #73737A !important;
+}
+
+/* Align pagination to the table's right edge. */
+.roadshow_pagination_container {
+  width: 218px;
+  min-height: 28px;
+  margin: 18px max(51px, calc((100% - var(--table-width)) / 2)) 0 auto;
+}
+
+.error_message,
+.loading_message {
+  min-height: 275px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  color: #73737A;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* =========================================================
+   Laptop: preserve Figma proportions while shrinking safely.
+   ========================================================= */
+@media (max-width: 1200px) {
+  .admin_roadshow > .main_content {
+    width: calc(100% - var(--sidebar-width));
+  }
+
+  .roadshow_heading {
+    left: 32px;
+  }
+
+  .btn_add_roadshow {
+    right: 20px;
+  }
+
+  .roadshow_search_bar,
+  .roadshow_table_wrapper {
+    width: calc(100% - 64px);
+  }
+
+  .roadshow_pagination_container {
+    margin-right: 32px;
+  }
+}
+
+@media (max-width: 900px) {
+  .roadshow_header_section {
+    height: auto;
+    min-height: 112px;
+    padding: 20px 24px 14px;
+    box-sizing: border-box;
+  }
+
+  .roadshow_heading {
+    position: static;
+    width: calc(100% - 155px);
+  }
+
+  .btn_add_roadshow {
+    top: 20px;
+    right: 24px;
+  }
+
+  .roadshow_search_bar {
+    width: calc(100% - 48px);
+    margin: 20px 24px 23px;
+  }
+
+  .roadshow_table_wrapper {
+    width: calc(100% - 48px);
+    margin-inline: 24px;
+  }
+
+  .roadshow_pagination_container {
+    margin-right: 24px;
+  }
+}
+
+@media (max-width: 700px) {
+  .admin_roadshow > .main_content {
+    width: calc(100% - var(--sidebar-width));
+  }
+
+  .roadshow_header_section {
+    min-height: 146px;
+    padding: 18px 16px 14px;
+  }
+
+  .roadshow_heading {
+    width: 100%;
+  }
+
+  .roadshow_page_title {
+    font-size: 22px;
+    line-height: 27px;
+  }
+
+  .roadshow_page_subtitle {
+    font-size: 12px;
+    line-height: 15px;
+  }
+
+  .btn_add_roadshow {
+    position: static;
+    margin-top: 14px;
+  }
+
+  .roadshow_search_bar {
+    width: calc(100% - 32px);
+    margin: 16px 16px 20px;
+  }
+
+  .roadshow_table_wrapper {
+    width: calc(100% - 24px);
+    margin-inline: 12px;
+  }
+
+  .roadshow_pagination_container {
+    width: 218px;
+    max-width: calc(100% - 24px);
+    margin-right: 12px;
+  }
+}
+
+/* =========================================================
+   Add / Edit Roadshow Modal
+   Fixes the form layout shown in the screenshot:
+   - clear label/input alignment
+   - 2-column desktop form
+   - full-width details and upload sections
+   - consistent input sizing
+   - responsive mobile layout
+   ========================================================= */
+
+.modal_overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(2px);
+  overflow-y: auto;
+}
+
+.add_roadshow_modal,
+.delete_confirmation_modal {
+  position: relative;
+  width: min(900px, calc(100vw - 48px));
+  max-width: 900px;
+  max-height: calc(100dvh - 48px);
+  padding: 28px 32px 30px;
+  border: 1px solid #E5E7EB;
+  border-radius: 16px;
+  background: #FFFFFF;
+  color: #1F2937;
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.22);
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+/* Modal heading */
 .modal_title {
   margin: 0;
-  font-family: 'Outfit', sans-serif;
-  font-size: 28px;
-  font-weight: 600;
-  color: #000000;
-  margin-bottom: 24px;
+  font-family: 'Inter', sans-serif;
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+  color: #1F2937;
 }
 
 .form_divider {
+  width: 100%;
   height: 1px;
-  background-color: #767676;
-  margin-bottom: 24px;
+  margin: 18px 0 22px;
+  background: #E5E7EB;
 }
 
+/* Main form grid */
+.add_roadshow_modal {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 24px;
+  row-gap: 18px;
+  align-content: start;
+}
+
+/* Heading/divider/action rows span the modal */
+.add_roadshow_modal > .modal_title,
+.add_roadshow_modal > .form_divider,
+.add_roadshow_modal > .modal_actions {
+  grid-column: 1 / -1;
+}
+
+.form_group {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form_group.full_width {
+  grid-column: 1 / -1;
+}
+
+.form_group label,
+.upload_section > label,
+.public_toggle > label {
+  display: block;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.form_group input[type="text"],
+.form_group input[type="time"],
+.form_group input[type="date"],
+.form_group textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #D1D5DB;
+  border-radius: 8px;
+  background: #FFFFFF;
+  color: #1F2937;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form_group input[type="text"],
+.form_group input[type="time"],
+.form_group input[type="date"] {
+  height: 40px;
+  padding: 0 12px;
+}
+
+.form_group textarea {
+  min-height: 112px;
+  padding: 11px 12px;
+  resize: vertical;
+}
+
+.form_group input::placeholder,
+.form_group textarea::placeholder {
+  color: #9CA3AF;
+}
+
+.form_group input:focus,
+.form_group textarea:focus {
+  border-color: #8B0000;
+  box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.08);
+}
+
+.form_hint {
+  margin-top: -2px;
+  color: #6B7280;
+  font-size: 11px;
+  line-height: 15px;
+}
+
+/* Date controls */
 .date_input_wrapper {
   position: relative;
-  display: flex;
-  align-items: center;
+  width: 100%;
 }
 
 .date_input_wrapper input {
-  width: 100%;
-  padding: 10px 12px;
-  padding-right: 36px;
-  border: 1px solid #D1D5DB;
-  border-radius: 6px;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  box-sizing: border-box;
-  background-color: #FFFFFF;
-  color: #000000;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.date_input_wrapper input:hover {
-  border-color: #9CA3AF;
-  background-color: #F9FAFB;
-}
-
-.date_input_wrapper input:focus {
-  outline: none;
-  border-color: #C70000;
-  box-shadow: 0 0 0 3px rgba(199, 0, 0, 0.1);
-  background-color: #FFFFFF;
-}
-
-/* Chrome/Edge calendar picker styling */
-.date_input_wrapper input::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.6;
-  transition: opacity 0.2s ease;
-}
-
-.date_input_wrapper input::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
+  padding-right: 42px !important;
 }
 
 .calendar_icon {
   position: absolute;
-  right: 12px;
   top: 50%;
+  right: 12px;
   transform: translateY(-50%);
   pointer-events: none;
-  font-size: 18px;
-  color: #6B7280;
-  opacity: 0.6;
+  font-size: 15px;
 }
 
+/* Upload sections */
 .upload_section {
+  grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.upload_section label {
-  display: block;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 13px;
-  color: #6B7280;
+  gap: 9px;
+  min-width: 0;
+  padding-top: 2px;
 }
 
 .upload_btn {
-  display: flex;
+  min-height: 42px;
+  width: 100%;
+  box-sizing: border-box;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
-  padding: 12px;
-  background: #F3F4F6;
-  border: 2px dashed #D1D5DB;
-  border-radius: 6px;
-  cursor: pointer;
+  padding: 9px 14px;
+  border: 1px dashed #B8B8BD;
+  border-radius: 8px;
+  background: #FAFAFA;
+  color: #4B5563;
   font-family: 'Inter', sans-serif;
+  font-size: 13px;
   font-weight: 500;
-  font-size: 14px;
-  color: #6B7280;
-  transition: all 0.3s ease;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
 .upload_btn:hover {
-  border-color: #AB1C03;
-  background: #FEF2F2;
-  color: #AB1C03;
+  border-color: #8B0000;
+  background: #FFF9F9;
 }
 
 .upload_icon {
-  font-size: 18px;
-}
-
-.upload_btn input[type="file"] {
-  display: none;
+  font-size: 15px;
 }
 
 .image_preview {
   position: relative;
-  width: 100%;
-  height: 200px;
-  border: 1px solid #D1D5DB;
-  border-radius: 6px;
-  overflow: hidden;
-  margin-top: 8px;
-  background: #F3F4F6;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #F9FAFB;
 }
 
 .image_preview img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.remove_preview_btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  padding: 6px 12px;
-  background: #DC2626;
-  border: none;
-  border-radius: 4px;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.remove_preview_btn:hover {
-  background: #B91C1C;
-}
-
-.file_selected {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  background: #F0F9FF;
-  border: 1px solid #92CDF0;
+  width: 72px;
+  height: 56px;
+  object-fit: cover;
   border-radius: 6px;
-  margin-top: 8px;
-  gap: 8px;
+  border: 1px solid #E5E7EB;
+}
+
+.remove_preview_btn,
+.remove_btn,
+.delete_image_btn,
+.undo_all_btn {
+  border: 0;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+}
+
+.remove_preview_btn,
+.remove_btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #F3F4F6;
+  color: #6B7280;
+  font-size: 11px;
+}
+
+.remove_preview_btn:hover,
+.remove_btn:hover {
+  background: #FEE2E2;
+  color: #B91C1C;
 }
 
 .file_list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
-  max-height: 200px;
-  overflow-y: auto;
+  gap: 6px;
 }
 
-.file_item {
+.file_item,
+.file_selected {
+  min-height: 34px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  background: #F0F9FF;
-  border: 1px solid #92CDF0;
+  gap: 12px;
+  padding: 6px 9px;
+  box-sizing: border-box;
+  border: 1px solid #E5E7EB;
   border-radius: 6px;
-  gap: 8px;
+  background: #FAFAFA;
 }
 
 .file_name {
-  font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  color: #0369A1;
-  font-weight: 500;
-  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #4B5563;
+  font-size: 11px;
 }
 
-.remove_btn {
-  padding: 4px 12px;
-  background: #FEE2E2;
-  border: 1px solid #FECACA;
-  border-radius: 4px;
-  color: #DC2626;
-  font-family: 'Inter', sans-serif;
+.existing_images_section {
+  padding: 10px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #FAFAFA;
+}
+
+.existing_label {
+  margin: 0 0 9px;
+  color: #6B7280;
+  font-size: 11px;
+}
+
+.existing_images_grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 9px;
+}
+
+.existing_image_card {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border-radius: 7px;
+  border: 1px solid #E5E7EB;
+  background: #FFFFFF;
+}
+
+.existing_image_card img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.delete_image_btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
   font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  flex-shrink: 0;
 }
 
-.remove_btn:hover {
-  background: #FCA5A5;
-  border-color: #DC2626;
-}
-
-.public_toggle {
+.deletion_summary {
+  margin-top: 9px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 24px;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #FFF7ED;
 }
 
-.public_toggle label {
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 14px;
-  color: #374151;
+.deletion_summary p {
+  margin: 0;
+  color: #9A3412;
+  font-size: 11px;
+}
+
+.undo_all_btn {
+  padding: 5px 8px;
+  border-radius: 5px;
+  background: #FFFFFF;
+  color: #9A3412;
+  font-size: 10px;
+}
+
+/* Public toggle */
+.public_toggle {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  padding: 10px 0;
+  border-top: 1px solid #E5E7EB;
 }
 
 .toggle_switch {
-  width: 44px;
-  height: 24px;
-  background: #D1D5DB;
-  border-radius: 12px;
   position: relative;
+  width: 42px;
+  height: 24px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #D1D5DB;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background 0.2s ease;
 }
 
 .toggle_switch.active {
-  background: #AB1C03;
+  background: #8B0000;
 }
 
 .toggle_slider {
-  width: 20px;
-  height: 20px;
-  background: #FFFFFF;
-  border-radius: 50%;
   position: absolute;
-  top: 2px;
-  left: 2px;
-  transition: left 0.3s ease;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
 }
 
 .toggle_switch.active .toggle_slider {
-  left: 22px;
+  transform: translateX(18px);
 }
 
+/* Modal buttons */
 .modal_actions {
   display: flex;
-  gap: 12px;
   justify-content: flex-end;
-  margin-top: 24px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 18px;
+  border-top: 1px solid #E5E7EB;
+}
+
+.btn_cancel,
+.btn_save,
+.btn_delete {
+  min-width: 88px;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 7px;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .btn_cancel {
-  padding: 8px 20px;
-  background: #FFFFFF;
   border: 1px solid #D1D5DB;
-  border-radius: 20px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 13px;
-  color: #374151;
-  cursor: pointer;
-  width: 77px;
-  height: 23px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
+  background: #FFFFFF;
+  color: #4B5563;
 }
 
 .btn_cancel:hover {
   background: #F9FAFB;
-  border-color: #9CA3AF;
 }
 
 .btn_save {
-  padding: 8px 20px;
-  background: #AB1C03;
-  border: none;
-  border-radius: 20px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 500;
-  font-size: 13px;
+  border: 1px solid #8B0000;
+  background: #8B0000;
   color: #FFFFFF;
-  cursor: pointer;
-  width: 77px;
-  height: 23px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
 }
 
 .btn_save:hover {
-  background: #8B1600;
-}
-
-.form_group {
-  margin-bottom: 20px;
-}
-
-.form_group.full_width {
-  width: 100%;
-}
-
-.form_group label {
-  display: block;
-  margin-bottom: 8px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  color: #374151;
-}
-
-.form_group input,
-.form_group textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #D1D5DB;
-  border-radius: 6px;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.form_group input:focus,
-.form_group textarea:focus {
-  outline: none;
-  border-color: #AB1C03;
-  box-shadow: 0 0 0 3px rgba(171, 28, 3, 0.1);
-}
-
-.textarea_lg {
-  min-height: 128px;
-  resize: vertical;
-}
-
-/* Delete Confirmation Modal */
-.delete_confirmation_modal {
-  background: #FFFFFF;
-  border-radius: 12px;
-  padding: 24px;
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.delete_message {
-  font-family: 'Inter', sans-serif;
-  font-size: 16px;
-  color: #374151;
-  margin: 20px 0;
-  line-height: 1.5;
+  background: #760000;
 }
 
 .btn_delete {
-  padding: 8px 20px;
+  border: 1px solid #DC2626;
   background: #DC2626;
-  border: none;
-  border-radius: 20px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  font-size: 13px;
   color: #FFFFFF;
-  cursor: pointer;
-  width: 77px;
-  height: 23px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s ease;
 }
 
 .btn_delete:hover {
   background: #B91C1C;
 }
 
-/* Existing Image Section */
-.existing_image_section {
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #F0FDF4;
-  border: 2px solid #86EFAC;
-  border-radius: 8px;
+.delete_confirmation_modal .modal_actions {
+  margin-top: 20px;
 }
 
-.existing_label {
-  font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 600;
-  color: #15803D;
-  margin: 0 0 12px 0;
+/* Responsive modal */
+@media (max-width: 760px) {
+  .modal_overlay {
+    padding: 12px;
+    align-items: flex-start;
+  }
+
+  .add_roadshow_modal,
+  .delete_confirmation_modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100dvh - 24px);
+    padding: 22px 20px 24px;
+    border-radius: 12px;
+  }
+
+  .add_roadshow_modal {
+    grid-template-columns: 1fr;
+    column-gap: 0;
+    row-gap: 16px;
+  }
+
+  .form_group,
+  .form_group.full_width,
+  .upload_section,
+  .public_toggle,
+  .add_roadshow_modal > .modal_title,
+  .add_roadshow_modal > .form_divider,
+  .add_roadshow_modal > .modal_actions {
+    grid-column: 1;
+  }
+
+  .modal_title {
+    font-size: 21px;
+    line-height: 27px;
+  }
+
+  .modal_actions {
+    justify-content: stretch;
+  }
+
+  .btn_cancel,
+  .btn_save,
+  .btn_delete {
+    flex: 1;
+  }
 }
 
-.existing_image_preview {
-  position: relative;
-  width: 150px;
-  height: 150px;
-  background: #F3F4F6;
-  border-radius: 6px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* =========================================================
+   Table height follows the number of rows.
+   Header = 37px, each data row = 48px.
+   No artificial empty space below the last row.
+   ========================================================= */
+.roadshow_table_wrapper {
+  height: auto;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
-.existing_image_preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+.roadshow_table {
+  height: auto !important;
+  min-height: 0 !important;
+  table-layout: fixed;
 }
 
-.delete_existing_btn {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  padding: 6px 10px;
-  background: #DC2626;
-  border: none;
-  border-radius: 4px;
-  color: #FFFFFF;
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.roadshow_table tbody {
+  height: auto !important;
 }
 
-.delete_existing_btn:hover {
-  background: #B91C1C;
+.roadshow_table tbody tr {
+  height: 48px !important;
 }
 
-/* Deletion Notice */
-.deletion_notice {
-  margin-bottom: 20px;
-  padding: 12px 16px;
-  background: #FEF2F2;
-  border: 2px solid #FECACA;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.deletion_notice p {
-  font-family: 'Inter', sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  color: #DC2626;
-  margin: 0;
-}
-
-.undo_delete_btn {
-  padding: 6px 12px;
-  background: #FFFFFF;
-  border: 1px solid #FECACA;
-  border-radius: 4px;
-  color: #DC2626;
-  font-family: 'Inter', sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.undo_delete_btn:hover {
-  background: #FEE2E2;
-  border-color: #DC2626;
-}
-
-/* Existing Images Section (Multiple) */
-.existing_images_section {
-  margin-bottom: 20px;
-  padding: 16px;
-  background: #F0FDF4;
-  border: 2px solid #86EFAC;
-  border-radius: 8px;
-}
-
-.existing_images_grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.existing_image_card {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  background: #F3F4F6;
-  border-radius: 6px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #D1D5DB;
-}
-
-.existing_image_card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.delete_image_btn {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 28px;
-  height: 28px;
-  background: #DC2626;
-  border: none;
-  border-radius: 50%;
-  color: #FFFFFF;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-}
-
-.existing_image_card:hover .delete_image_btn {
-  opacity: 1;
-}
-
-.delete_image_btn:hover {
-  background: #B91C1C;
-  transform: scale(1.1);
-}
-
-.deletion_summary {
-  padding: 12px;
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.deletion_summary p {
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  font-weight: 500;
-  color: #DC2626;
-  margin: 0;
-}
-
-.undo_all_btn {
-  padding: 6px 12px;
-  background: #FFFFFF;
-  border: 1px solid #FECACA;
-  border-radius: 4px;
-  color: #DC2626;
-  font-family: 'Inter', sans-serif;
-  font-size: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-}
-
-.undo_all_btn:hover {
-  background: #FEE2E2;
-  border-color: #DC2626;
-}
-
-.admin_roadshow { width: 100%; min-height: 100dvh; height: 100dvh; overflow-x: hidden; background: #F6F7F8; }
-.admin_roadshow > .main_content { width: calc(100% - 66px); min-width: 0; min-height: calc(100dvh - 50px); height: auto; margin-left: 66px; padding: 24px clamp(16px, 3vw, 50px); box-sizing: border-box; overflow-x: hidden; overflow-y: auto; }
-.admin_roadshow .roadshow_title, .admin_roadshow .btn_add_roadshow, .admin_roadshow .roadshow_cards_container { position: static; left: auto; right: auto; top: auto; }
-.admin_roadshow .roadshow_title { width: auto; height: auto; margin: 0 0 8px; }
-.admin_roadshow .btn_add_roadshow { margin: 0 0 20px auto; }
-.admin_roadshow .roadshow_cards_container { width: min(1035px, 100%); max-width: none; margin: 0 auto; }
-.admin_roadshow .roadshow_large_card { width: 100%; max-width: none; box-sizing: border-box; }
-.admin_roadshow .roadshow_image_large { flex: 0 1 270px; max-width: 270px; }
-
-@media (max-width: 900px) {
-  .admin_roadshow .roadshow_large_card { height: auto; min-height: 287px; }
-  .admin_roadshow .roadshow_image_large { flex-basis: 220px; max-width: 220px; }
-  .admin_roadshow .roadshow_content { padding-left: 24px; }
-}
-
-@media (max-width: 640px) {
-  .admin_roadshow > .main_content { width: calc(100% - 66px); padding-inline: 12px; }
-  .admin_roadshow .roadshow_large_card { flex-direction: column; }
-  .admin_roadshow .roadshow_image_large { width: calc(100% - 24px); max-width: none; height: 180px; margin: 12px; flex-basis: auto; }
-  .admin_roadshow .roadshow_content { padding: 8px 16px 20px; }
+.roadshow_table tbody td {
+  height: 48px !important;
+  min-height: 48px;
+  vertical-align: middle;
 }
 
 </style>
-

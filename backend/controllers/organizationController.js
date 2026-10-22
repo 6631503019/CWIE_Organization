@@ -1,63 +1,47 @@
-const Organization = require('../models/Organization');
+const InternshipRecord = require('../models/InternshipRecord');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 const { deleteStoredFile } = require('../utils/fileCleanup');
+const {
+    getOrganizationKey,
+    toOrganizationRecord,
+    toOrganizationResponse
+} = require('../utils/organizationRecord');
 
-// @desc    Get all organizations
-// @route   GET /api/organizations
-// @access  Public
+const ORGANIZATION_FILTER = { record_type: 'organization' };
+const VALID_TYPES = ['MFU', 'private company', 'Government', 'Oversea'];
+
 const getOrganizations = async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
-        const skip = (page - 1) * limit;
-
-        // Validate pagination parameters
         if (page < 1 || limit < 1 || limit > 10000) {
-            throw new CustomError(
-                ERROR_CODES.VALIDATION_INVALID_RANGE,
-                'Invalid pagination parameters. Page must be >= 1 and limit between 1-10000'
-            );
+            throw new CustomError(ERROR_CODES.VALIDATION_INVALID_RANGE, 'Invalid pagination parameters');
         }
 
-        const filter = req.query.public !== 'false' ? { is_public: true } : {};
-
-        if (req.query.type) {
-            const validTypes = ['government', 'private', 'ngo', 'education', 'other'];
-            if (!validTypes.includes(req.query.type)) {
-                throw new CustomError(
-                    ERROR_CODES.VALIDATION_INVALID_TYPE,
-                    'Invalid organization type',
-                    { allowedTypes: validTypes }
-                );
-            }
-            filter.organization_type = req.query.type;
-        }
-
-        // Search functionality
+        const filter = { ...ORGANIZATION_FILTER };
+        if (req.query.public !== 'false') filter.is_public = true;
+        if (req.query.type) filter.organization_type = req.query.type;
         if (req.query.search) {
-            const searchRegex = new RegExp(req.query.search, 'i');
+            const search = new RegExp(req.query.search, 'i');
             filter.$or = [
-                { name_th: searchRegex },
-                { name_en: searchRegex },
-                { email: searchRegex }
+                { organization_name_th: search },
+                { organization_name_en: search },
+                { organization_email: search }
             ];
         }
 
-        const organizations = await Organization.find(filter)
-            .populate('industry_category_id', 'name')
-            .populate('country_id', 'name_th name_en')
-            .populate('geography_id', 'name_th name_en')
-            .populate('province_id', 'name_th name_en')
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
-
-        const total = await Organization.countDocuments(filter);
+        const [records, total] = await Promise.all([
+            InternshipRecord.find(filter)
+                .sort({ createdAt: -1 })
+                .skip((page - 1) * limit)
+                .limit(limit),
+            InternshipRecord.countDocuments(filter)
+        ]);
 
         res.status(200).json({
             success: true,
             message: 'Organizations retrieved successfully',
-            data: organizations,
+            data: records.map(toOrganizationResponse),
             pagination: {
                 page,
                 pages: Math.ceil(total / limit),
@@ -71,239 +55,117 @@ const getOrganizations = async (req, res, next) => {
     }
 };
 
-// @desc    Get single organization
-// @route   GET /api/organizations/:id
-// @access  Public
 const getOrganization = async (req, res, next) => {
     try {
-        const organization = await Organization.findById(req.params.id)
-            .populate('industry_category_id', 'name')
-            .populate('country_id', 'name_th name_en')
-            .populate('geography_id', 'name_th name_en')
-            .populate('province_id', 'name_th name_en');
-
-        if (!organization) {
-            throw createNotFoundError('organization', req.params.id);
-        }
-
-        // Check if organization is public or user has permission
+        const organization = await InternshipRecord.findOne({
+            _id: req.params.id,
+            ...ORGANIZATION_FILTER
+        });
+        if (!organization) throw createNotFoundError('organization', req.params.id);
         if (!organization.is_public && (!req.user || req.user.role !== 'admin')) {
-            throw new CustomError(
-                ERROR_CODES.FORBIDDEN_RESOURCE_ACCESS_DENIED,
-                'This organization is private',
-                { organizationId: req.params.id }
-            );
+            throw new CustomError(ERROR_CODES.FORBIDDEN_RESOURCE_ACCESS_DENIED, 'This organization is private');
         }
-
         res.status(200).json({
             success: true,
             message: 'Organization retrieved successfully',
-            data: organization
+            data: toOrganizationResponse(organization)
         });
     } catch (error) {
         next(error);
     }
 };
 
-// @desc    Create organization
-// @route   POST /api/organizations
-// @access  Private (Admin)
+const validateOrganizationBody = body => {
+    const required = ['name_th', 'name_en', 'email', 'organization_type'];
+    const missing = required.filter(field => !body[field]);
+    if (missing.length) {
+        throw new CustomError(ERROR_CODES.VALIDATION_MISSING_REQUIRED_FIELD, 'Missing required fields', { missingFields: missing });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email)) {
+        throw new CustomError(ERROR_CODES.VALIDATION_EMAIL_INVALID, 'Invalid email format');
+    }
+    if (!VALID_TYPES.includes(body.organization_type)) {
+        throw new CustomError(ERROR_CODES.VALIDATION_INVALID_TYPE, 'Invalid organization type', { allowedValues: VALID_TYPES });
+    }
+};
+
+const normalizeBoolean = value => {
+    if (typeof value !== 'string') return value;
+    return value === 'true' || value === '1';
+};
+
 const createOrganization = async (req, res, next) => {
     try {
-        // Check required fields
-        const requiredFields = ['name_th', 'name_en', 'email', 'organization_type'];
-        const missingFields = requiredFields.filter(field => !req.body[field]);
-
-        if (missingFields.length > 0) {
-            throw new CustomError(
-                ERROR_CODES.VALIDATION_MISSING_REQUIRED_FIELD,
-                'Missing required fields',
-                { missingFields }
-            );
-        }
-
-        // Validate email format
-        const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-        if (!emailRegex.test(req.body.email)) {
-            throw new CustomError(
-                ERROR_CODES.VALIDATION_EMAIL_INVALID,
-                'Invalid email format',
-                { field: 'email', value: req.body.email }
-            );
-        }
-
-        // Check if organization exists
-        const existingOrg = await Organization.findOne({ email: req.body.email });
-        if (existingOrg) {
-            throw new CustomError(
-                ERROR_CODES.CONFLICT_ORGANIZATION_ALREADY_EXISTS,
-                'Organization with this email already exists',
-                { email: req.body.email }
-            );
-        }
-
-        // Validate organization type
-        const validTypes = ['MFU', 'private company', 'Government', 'Oversea'];
-        if (!validTypes.includes(req.body.organization_type)) {
-            throw new CustomError(
-                ERROR_CODES.VALIDATION_INVALID_TYPE,
-                'Invalid organization type',
-                {
-                    field: 'organization_type',
-                    value: req.body.organization_type,
-                    allowedValues: validTypes
-                }
-            );
+        validateOrganizationBody(req.body);
+        const organizationKey = getOrganizationKey(req.body.name_th, req.body.name_en);
+        const existing = await InternshipRecord.findOne({ record_type: 'organization', organization_key: organizationKey });
+        if (existing) {
+            throw new CustomError(ERROR_CODES.CONFLICT_ORGANIZATION_ALREADY_EXISTS, 'Organization already exists');
         }
 
         if (req.file) {
-            // Validate file type
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-            if (!allowedTypes.includes(req.file.mimetype)) {
-                throw new CustomError(
-                    ERROR_CODES.VALIDATION_FILE_TYPE_INVALID,
-                    'Logo must be JPEG, PNG, or GIF',
-                    {
-                        field: 'logo',
-                        receivedType: req.file.mimetype,
-                        allowedTypes
-                    }
-                );
+            if (!['image/jpeg', 'image/png', 'image/gif'].includes(req.file.mimetype)) {
+                throw new CustomError(ERROR_CODES.VALIDATION_FILE_TYPE_INVALID, 'Logo must be JPEG, PNG, or GIF');
             }
-
-            // Normalize path for serving static files (ensure forward slashes and leading /)
-            req.body.logo_path = '/' + req.file.path.replace(/\\/g, '/').replace(/^\/+/, '')
+            req.body.logo_path = `/${req.file.path.replace(/\\/g, '/').replace(/^\/+/, '')}`;
         }
-
-        // Add admin ID from authenticated user
-        req.body.admin_id = req.user._id;
-
-        console.log('🟢 CREATE - Before conversion - is_public:', req.body.is_public, 'Type:', typeof req.body.is_public);
-
-        // Handle FormData boolean conversion for is_public
-        if (typeof req.body.is_public === 'string') {
-            req.body.is_public = req.body.is_public === 'true' || req.body.is_public === '1';
-        }
-
-        console.log('🟢 CREATE - After conversion - is_public:', req.body.is_public, 'Type:', typeof req.body.is_public);
-
-        const organization = await Organization.create(req.body);
-
-        console.log('🟢 CREATE - Saved to DB - is_public:', organization.is_public, 'Type:', typeof organization.is_public);
+        req.body.is_public = normalizeBoolean(req.body.is_public);
+        const organization = await InternshipRecord.create(toOrganizationRecord(req.body, req.user._id));
 
         res.status(201).json({
             success: true,
             message: 'Organization created successfully',
-            data: organization
+            data: toOrganizationResponse(organization)
         });
     } catch (error) {
         next(error);
     }
 };
 
-// @desc    Update organization
-// @route   PUT /api/organizations/:id
-// @access  Private (Admin)
 const updateOrganization = async (req, res, next) => {
     try {
-        // Check if organization exists
-        const existingOrg = await Organization.findById(req.params.id);
-        if (!existingOrg) {
-            throw createNotFoundError('organization', req.params.id);
-        }
+        const existing = await InternshipRecord.findOne({ _id: req.params.id, ...ORGANIZATION_FILTER });
+        if (!existing) throw createNotFoundError('organization', req.params.id);
 
-        // Check email uniqueness if email is being updated
-        if (req.body.email && req.body.email !== existingOrg.email) {
-            const emailExists = await Organization.findOne({
-                email: req.body.email,
+        if (req.body.email && req.body.email !== existing.organization_email) {
+            const emailExists = await InternshipRecord.findOne({
+                ...ORGANIZATION_FILTER,
+                organization_email: req.body.email,
                 _id: { $ne: req.params.id }
             });
-
-            if (emailExists) {
-                throw new CustomError(
-                    ERROR_CODES.VALIDATION_EMAIL_DUPLICATE,
-                    'Email already in use by another organization',
-                    { email: req.body.email }
-                );
-            }
+            if (emailExists) throw new CustomError(ERROR_CODES.VALIDATION_EMAIL_DUPLICATE, 'Email already in use');
         }
-
-        // Validate organization type if provided
-        if (req.body.organization_type) {
-            const validTypes = ['MFU', 'private company', 'Government', 'Oversea'];
-            if (!validTypes.includes(req.body.organization_type)) {
-                throw new CustomError(
-                    ERROR_CODES.VALIDATION_INVALID_TYPE,
-                    'Invalid organization type',
-                    {
-                        field: 'organization_type',
-                        value: req.body.organization_type,
-                        allowedValues: validTypes
-                    }
-                );
-            }
+        if (req.body.organization_type && !VALID_TYPES.includes(req.body.organization_type)) {
+            throw new CustomError(ERROR_CODES.VALIDATION_INVALID_TYPE, 'Invalid organization type');
         }
-
         if (req.file) {
-            // Delete old logo file if exists
-            if (existingOrg.logo_path) {
-                deleteStoredFile(existingOrg.logo_path, 'old logo file');
-            }
-
-            // Normalize path for serving static files (ensure forward slashes and leading /)
-            req.body.logo_path = '/' + req.file.path.replace(/\\/g, '/').replace(/^\/+/, '')
+            if (existing.logo_path) deleteStoredFile(existing.logo_path, 'old logo file');
+            req.body.logo_path = `/${req.file.path.replace(/\\/g, '/').replace(/^\/+/, '')}`;
         }
-
-        console.log('🟡 UPDATE - Before conversion - is_public:', req.body.is_public, 'Type:', typeof req.body.is_public);
-
-        // Handle FormData boolean conversion for is_public
-        if (typeof req.body.is_public === 'string') {
-            req.body.is_public = req.body.is_public === 'true' || req.body.is_public === '1';
-        }
-
-        console.log('🟡 UPDATE - After conversion - is_public:', req.body.is_public, 'Type:', typeof req.body.is_public);
-
-        const organization = await Organization.findByIdAndUpdate(
+        req.body.is_public = normalizeBoolean(req.body.is_public);
+        const organization = await InternshipRecord.findByIdAndUpdate(
             req.params.id,
-            req.body,
+            toOrganizationRecord(req.body, existing.admin_id, existing),
             { new: true, runValidators: true }
         );
-
-        console.log('🟡 UPDATE - Saved to DB - is_public:', organization.is_public, 'Type:', typeof organization.is_public);
 
         res.status(200).json({
             success: true,
             message: 'Organization updated successfully',
-            data: organization
+            data: toOrganizationResponse(organization)
         });
     } catch (error) {
         next(error);
     }
 };
 
-// @desc    Delete organization
-// @route   DELETE /api/organizations/:id
-// @access  Private (Admin)
 const deleteOrganization = async (req, res, next) => {
     try {
-        const organization = await Organization.findById(req.params.id);
-
-        if (!organization) {
-            throw createNotFoundError('organization', req.params.id);
-        }
-
-        // Delete associated logo file if exists
-        if (organization.logo_path) {
-            deleteStoredFile(organization.logo_path, 'logo file');
-        }
-
-        await Organization.findByIdAndDelete(req.params.id);
-
-        res.status(200).json({
-            success: true,
-            message: 'Organization deleted successfully',
-            data: null
-        });
+        const organization = await InternshipRecord.findOne({ _id: req.params.id, ...ORGANIZATION_FILTER });
+        if (!organization) throw createNotFoundError('organization', req.params.id);
+        if (organization.logo_path) deleteStoredFile(organization.logo_path, 'logo file');
+        await InternshipRecord.findByIdAndDelete(req.params.id);
+        res.status(200).json({ success: true, message: 'Organization deleted successfully', data: null });
     } catch (error) {
         next(error);
     }

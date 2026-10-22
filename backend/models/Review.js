@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const reviewSchema = new mongoose.Schema({
     organization_id: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Organization',
+        ref: 'InternshipRecord',
         required: [true, 'Organization ID is required']
     },
     job_position: {

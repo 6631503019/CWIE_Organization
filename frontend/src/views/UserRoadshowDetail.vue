@@ -33,6 +33,10 @@
           {{ roadshow.details }}
         </div>
 
+        <div v-if="roadshow.time" class="roadshow_time_detail">
+          Time: {{ formatRoadshowTime(roadshow.time) }}
+        </div>
+
         <!-- Activity Images Grid -->
         <div v-if="roadshow.activity_image_paths && roadshow.activity_image_paths.length > 0" class="activity_images_grid">
           <div v-for="(str_Image_Path, index) in roadshow.activity_image_paths" :key="index" class="activity_image_card">
@@ -53,6 +57,7 @@ import { useRoute } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 
 import { BACKEND_URL, roadshowAPI } from '../services/api'
+import { formatRoadshowTime } from '../utils/roadshowTime'
 
 const route = useRoute()
 
@@ -190,6 +195,17 @@ onMounted(async () => {
   overflow-y: auto;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+.roadshow_time_detail {
+  position: absolute;
+  width: 978px;
+  left: 31px;
+  top: 1080px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 24px;
+  line-height: 30px;
+  color: #000000;
 }
 
 .loading_message {
