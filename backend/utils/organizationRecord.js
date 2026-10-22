@@ -50,6 +50,8 @@ const toOrganizationRecord = (body, adminId, current = {}) => ({
     business_type_en: body.business_type_en ?? current.business_type_en ?? '',
     business_category_th: body.business_category_th ?? current.business_category_th ?? '',
     business_category_en: body.business_category_en ?? current.business_category_en ?? '',
+    school_th: body.school_th ?? current.school_th ?? '',
+    school_en: body.school_en ?? current.school_en ?? '',
     multinational_corporation: body.multinational_corporation ?? current.multinational_corporation ?? '',
     industry_category_id: body.industry_category_id ?? current.industry_category_id ?? '',
     is_public: body.is_public ?? current.is_public ?? true,

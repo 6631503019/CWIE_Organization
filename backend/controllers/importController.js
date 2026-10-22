@@ -58,6 +58,7 @@ const mapRow = (row, sheetName, rowNumber) => {
     const internship = isBilingualInternshipRow(row);
     let name_th = '', name_en = '', address_th = '', address_en = '', email = '', phone = '';
     let province = '', province_en = '', country = '', country_en = '', region = '';
+    let school_th = '', school_en = '';
     let businessType = '', businessType_en = '', businessCategory = '', businessCategory_en = '';
     let multinational = '';
     if (internship) {
@@ -67,6 +68,7 @@ const mapRow = (row, sheetName, rowNumber) => {
         address_th = getPositionalValue(row, 9); address_en = getPositionalValue(row, 10); phone = getPositionalValue(row, 11); email = getPositionalValue(row, 12);
         businessType = getPositionalValue(row, 20); businessType_en = getPositionalValue(row, 21);
         businessCategory = getPositionalValue(row, 22); businessCategory_en = getPositionalValue(row, 23);
+        school_th = getPositionalValue(row, 18); school_en = getPositionalValue(row, 19);
         multinational = getPositionalValue(row, 24);
     } else {
         name_th = getCellValue(row, ['Name (TH)', 'name_th', 'organization_name_th', 'organization name th', 'ชื่อบริษัท', 'ชื่อองค์กร']) || getCellValueContaining(row, ['ชื่อบริษัท', 'ชื่อองค์กร']);
@@ -82,6 +84,8 @@ const mapRow = (row, sheetName, rowNumber) => {
         businessType_en = getCellValue(row, ['Organization Type (EN)', 'organization_type_en', 'Business Types (EN)', 'Business Types']);
         businessCategory = getCellValue(row, ['Industry Category (TH)', 'business_category_th', 'ลักษณะธุรกิจ']);
         businessCategory_en = getCellValue(row, ['Industry Category (EN)', 'business_category_en', 'Industry Category', 'Business Categories']);
+        school_th = getCellValue(row, ['School (TH)', 'school_th', 'School TH', 'สำนักวิชา', 'สำนักวิชาภาษาไทย']);
+        school_en = getCellValue(row, ['School (EN)', 'school_en', 'School EN', 'School', 'สำนักวิชาภาษาอังกฤษ']);
         multinational = getCellValue(row, ['Multinational Corporation', 'multinational_corporation', 'บริษัทข้ามชาติ']);
         const companyName = getCellValueContaining(row, ['ชื่อบริษัท']); if (!name_th && !name_en && companyName) { const value = splitBilingualValue(companyName); name_th = value.th; name_en = value.en; }
         const companyAddress = getCellValueContaining(row, ['ที่อยู่บริษัท']); if (!address_th && companyAddress) { const value = splitBilingualValue(companyAddress); address_th = value.th; address_en = value.en; }
@@ -103,6 +107,7 @@ const mapRow = (row, sheetName, rowNumber) => {
             geography_id: region || null, email, phone_number: phone,
             business_type_th: businessType || null, business_type_en: businessType_en || null,
             business_category_th: businessCategory || null, business_category_en: businessCategory_en || null,
+            school_th: school_th || null, school_en: school_en || null,
             multinational_corporation: multinational || null,
             details, is_public: true, admin_id: null
         }

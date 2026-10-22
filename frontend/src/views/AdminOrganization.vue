@@ -136,7 +136,7 @@
           <div v-for="org in paginatedOrganizations" :key="org.id" class="table_row">
             <div class="org_name" @click="viewOrganizationDetail(org.id)">{{ getLocalizedOrganizationName(org.rawData) }}</div>
             <div class="org_category">{{ getLocalizedOrganizationField(org.rawData, 'organization_type', 'business_type_en', 'business_type_th') }}</div>
-            <div class="org_school">{{ getLocalizedOrganizationField(org.rawData, 'industry_category_id', 'business_category_en', 'business_category_th') }}</div>
+            <div class="org_school">{{ getLocalizedOrganizationField(org.rawData, 'school_en', 'school_en', 'school_th') }}</div>
             <div class="org_province">{{ getLocalizedOrganizationField(org.rawData, 'province_id', 'province_en', 'province_th') }}</div>
             <div class="org_country">{{ getLocalizedOrganizationField(org.rawData, 'country_id', 'country_en', 'country_th') }}</div>
             <div><span class="status_pill" :class="org.status">{{ org.status === 'active' ? text('Active', 'ใช้งาน') : text('Inactive', 'ไม่ใช้งาน') }}</span></div>
