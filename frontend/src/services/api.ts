@@ -3,8 +3,8 @@ import axios from 'axios'
 // ============================================================================
 // CONSTANTS - API Configuration
 // ============================================================================
-const CONST_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
-const CONST_BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'
+const CONST_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://cwie-organization-backend.onrender.com/api'
+const CONST_BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://cwie-organization-backend.onrender.com'
 const CONST_API_TIMEOUT_MS = 10000
 const CONST_AUTH_HEADER_NAME = 'Authorization'
 const CONST_AUTH_TOKEN_STORAGE_KEY = 'auth_token'
