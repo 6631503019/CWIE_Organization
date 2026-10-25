@@ -92,6 +92,9 @@ const loginWithGoogle = async (req, res, next) => {
         });
     } catch (error) {
         if (error.code?.startsWith('auth/')) {
+            console.warn('Firebase ID token verification failed:', {
+                code: error.code
+            });
             return next(new CustomError(
                 ERROR_CODES.AUTH_TOKEN_INVALID,
                 'Invalid Google authentication token'

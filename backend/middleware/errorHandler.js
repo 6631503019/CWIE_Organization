@@ -2,13 +2,17 @@ const { CustomError, ERROR_CODES } = require('../utils/customError');
 const multer = require('multer');
 
 const errorHandler = (err, req, res, next) => {
+    const sanitizedBody = { ...req.body };
+    if (sanitizedBody.idToken) sanitizedBody.idToken = '[REDACTED]';
+    if (sanitizedBody.refreshToken) sanitizedBody.refreshToken = '[REDACTED]';
+
     console.error('Error Details:', {
         message: err.message,
         stack: err.stack,
         errorCode: err.errorCode,
         path: req.path,
         method: req.method,
-        body: req.body,
+        body: sanitizedBody,
         query: req.query,
         params: req.params,
         timestamp: new Date().toISOString(),

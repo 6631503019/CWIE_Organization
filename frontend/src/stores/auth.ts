@@ -139,7 +139,7 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
             try {
                 this.bln_Is_Loading = true
                 const credential = await signInWithPopup(firebaseAuth, googleProvider)
-                const idToken = await credential.user.getIdToken()
+                const idToken = await credential.user.getIdToken(true)
                 const response = await fetch(`${CONST_API_BASE_URL}${CONST_API_AUTH_GOOGLE_ENDPOINT}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
