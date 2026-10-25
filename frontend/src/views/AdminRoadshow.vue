@@ -229,7 +229,7 @@
             <p class="existing_label">📸 Currently Uploaded Photos ({{ obj_Form_Data.existingActivityImagePaths.length }}):</p>
             <div class="existing_images_grid">
               <div v-for="(imagePath, index) in obj_Form_Data.existingActivityImagePaths" :key="index" v-show="!obj_Form_Data.deleteActivityImageIndices.includes(index)" class="existing_image_card">
-                <img :src="`${CONST_API_BASE_URL}${imagePath}`" :alt="`Activity photo ${index + 1}`" />
+                <img :src="`${CONST_BACKEND_URL}${imagePath}`" :alt="`Activity photo ${index + 1}`" />
                 <button type="button" class="delete_image_btn" @click="obj_Form_Data.deleteActivityImageIndices.push(index)" :title="`Delete photo ${index + 1}`">🗑️</button>
               </div>
             </div>
@@ -337,8 +337,9 @@ import { useLanguage } from '../composables/useLanguage'
 // ===========================
 // CONSTANTS
 // ===========================
-const CONST_API_BASE_URL = 'http://localhost:5000'
-const CONST_API_ROADSHOWS_ENDPOINT = '/api/roadshows'
+const CONST_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
+const CONST_BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'
+const CONST_API_ROADSHOWS_ENDPOINT = '/roadshows'
 const CONST_AUTH_HEADER_KEY = 'Authorization'
 const CONST_AUTH_TOKEN_STORAGE_KEY = 'auth_token'
 const CONST_AUTO_REFRESH_INTERVAL_MS = 45000 // 45 seconds
@@ -1080,7 +1081,7 @@ const Remove_Poster_File = () => {
  * Side effects: None
  */
 const Str_Get_Image_URL = (str_Poster_Path: string | null): string => {
-  return str_Poster_Path ? `${CONST_API_BASE_URL}${str_Poster_Path}` : CONST_EMPTY_IMAGE_SVG
+  return str_Poster_Path ? `${CONST_BACKEND_URL}${str_Poster_Path}` : CONST_EMPTY_IMAGE_SVG
 }
 
 /**

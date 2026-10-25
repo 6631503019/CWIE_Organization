@@ -32,10 +32,11 @@ const app = express();
 // Security middleware
 app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
     contentSecurityPolicy: {
         directives: {
             ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-            "frame-ancestors": ["'self'", "http://localhost:5173"],
+            "frame-ancestors": ["'self'", process.env.FRONTEND_URL || "http://localhost:5173"],
         },
     },
 }));

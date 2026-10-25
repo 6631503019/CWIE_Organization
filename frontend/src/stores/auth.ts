@@ -31,8 +31,8 @@ type Login_Type = 'admin' | 'student'
 // CONSTANTS
 // ============================================================================
 const CONST_AUTH_STORE_NAME = 'auth'
-const CONST_BACKEND_URL = 'http://localhost:5000'
-const CONST_API_AUTH_GOOGLE_ENDPOINT = '/api/auth/google'
+const CONST_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
+const CONST_API_AUTH_GOOGLE_ENDPOINT = '/auth/google'
 const CONST_AUTH_TOKEN_STORAGE_KEY = 'auth_token'
 const CONST_AUTH_USER_STORAGE_KEY = 'auth_user'
 const CONST_AUTH_REFRESH_TOKEN_STORAGE_KEY = 'auth_refresh_token'
@@ -140,7 +140,7 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
                 this.bln_Is_Loading = true
                 const credential = await signInWithPopup(firebaseAuth, googleProvider)
                 const idToken = await credential.user.getIdToken()
-                const response = await fetch(`${CONST_BACKEND_URL}${CONST_API_AUTH_GOOGLE_ENDPOINT}`, {
+                const response = await fetch(`${CONST_API_BASE_URL}${CONST_API_AUTH_GOOGLE_ENDPOINT}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ idToken, loginType })

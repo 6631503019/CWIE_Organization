@@ -83,8 +83,9 @@ import { useLanguage } from '../composables/useLanguage'
 // ============================================================================
 // Constants (naming convention: ALL_CAPS)
 // ============================================================================
-const CONST_API_BASE_URL = 'http://localhost:5000'
-const CONST_API_ENDPOINT_ROADSHOWS = '/api/roadshows'
+const CONST_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'
+const CONST_BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'
+const CONST_API_ENDPOINT_ROADSHOWS = '/roadshows'
 const CONST_ERROR_LOAD_ROADSHOW = 'Failed to load roadshow details'
 const CONST_ERROR_INVALID_ID = 'Invalid roadshow ID'
 const CONST_ERROR_NETWORK = 'Network error occurred'
@@ -139,7 +140,7 @@ function Str_Get_Image_URL(str_Image_Path: string | null): string {
   
   // Return complete URL by combining base URL with image path
   const normalizedPath = str_Image_Path.replace(/\\/g, '/')
-  return `${CONST_API_BASE_URL}${normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`}`
+  return `${CONST_BACKEND_URL}${normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`}`
 }
 
 // ============================================================================

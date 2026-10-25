@@ -10,7 +10,7 @@ const CONST_AUTH_HEADER_NAME = 'Authorization'
 const CONST_AUTH_TOKEN_STORAGE_KEY = 'auth_token'
 const CONST_AUTH_REFRESH_TOKEN_KEY = 'auth_refresh_token'
 const CONST_AUTH_USER_STORAGE_KEY = 'auth_user'
-const CONST_AUTH_ENDPOINT_REFRESH = '/api/auth/refresh'
+const CONST_AUTH_ENDPOINT_REFRESH = '/auth/refresh'
 const CONST_REFRESH_TIMEOUT_MS = 5000
 const CONST_HTTP_UNAUTHORIZED = 401
 
@@ -176,7 +176,7 @@ obj_API_Client.interceptors.response.use(
 
                     // Step 5: Make refresh token request
                     const obj_Response = await axios.post(
-                        `${CONST_BACKEND_URL}${CONST_AUTH_ENDPOINT_REFRESH}`,
+                        `${CONST_API_BASE_URL}${CONST_AUTH_ENDPOINT_REFRESH}`,
                         { refreshToken: str_Refresh_Token },
                         { timeout: CONST_REFRESH_TIMEOUT_MS }
                     )

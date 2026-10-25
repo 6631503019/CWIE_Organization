@@ -146,9 +146,14 @@ Each page implements:
 
 ## API Base URL
 
-All requests use: `http://localhost:5000`
+Frontend API requests use `VITE_API_BASE_URL`, which includes the `/api` prefix:
 
-To change, update the fetch URLs in each component.
+```text
+VITE_API_BASE_URL=https://cwie-organization-backend.onrender.com/api
+```
+
+Endpoint paths must not add another `/api` prefix. `VITE_BACKEND_URL` is reserved for
+backend-hosted assets such as uploaded images and documents.
 
 ---
 
