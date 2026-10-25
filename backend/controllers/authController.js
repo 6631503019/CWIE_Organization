@@ -10,14 +10,22 @@ const loginWithGoogle = async (req, res, next) => {
     try {
         const { idToken, loginType } = req.body;
 
-        if (!idToken || !['admin', 'student'].includes(loginType)) {
+        const str_Id_Token = typeof idToken === 'string' ? idToken.trim() : '';
+
+        if (!str_Id_Token || !['admin', 'student'].includes(loginType)) {
             throw new CustomError(
                 ERROR_CODES.VALIDATION_MISSING_REQUIRED_FIELD,
                 'Google token and login type are required'
             );
         }
 
-        const decodedToken = await firebaseAdmin.verifyIdToken(idToken);
+        console.debug('Firebase ID token shape:', {
+            type: typeof idToken,
+            length: str_Id_Token.length,
+            segmentCount: str_Id_Token.split('.').length
+        });
+
+        const decodedToken = await firebaseAdmin.verifyIdToken(str_Id_Token);
         const email = decodedToken.email?.toLowerCase();
         const allowedDomains = (process.env.GOOGLE_WORKSPACE_DOMAINS || process.env.GOOGLE_WORKSPACE_DOMAIN || 'mfu.ac.th,lamduan.mfu.ac.th')
             .split(',')

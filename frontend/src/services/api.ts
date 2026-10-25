@@ -105,7 +105,7 @@ obj_API_Client.interceptors.request.use(
             const str_Token = Str_Get_Stored_Auth_Token()
             if (str_Token) {
                 config.headers[CONST_AUTH_HEADER_NAME] = `Bearer ${str_Token}`
-                console.debug('Token added to request:', str_Token.substring(0, 20) + '...')
+                console.debug('Authorization token added to request')
             }
             return config
         } catch (error) {
