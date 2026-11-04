@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const path = require('path');
 const { protect, authorize } = require('../middleware/auth');
 const { importOrganizations } = require('../controllers/importController');
 const { CustomError, ERROR_CODES } = require('../utils/customError');
