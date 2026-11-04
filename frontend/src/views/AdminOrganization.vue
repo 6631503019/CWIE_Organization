@@ -605,7 +605,7 @@ import AdminNavbar from '../components/AdminNavbar.vue'
 import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
-import { organizationAPI, mouAPI, reviewAPI, checkTokenValidity, BACKEND_URL } from '../services/api'
+import apiClient, { organizationAPI, mouAPI, BACKEND_URL } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
 
 // ===========================
@@ -675,6 +675,7 @@ const IMPORT_ALLOWED_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/octet-stream'
 ]
+let bln_Is_Fetching_Organizations = false
 const notificationMessage = ref('')
 const notificationType = ref<'success' | 'error' | 'warning'>('success')
 const selectedOrganization = ref<any>(null)
@@ -1529,12 +1530,12 @@ const saveOrganization = async () => {
 
 // Fetch organizations from backend
 const fetchOrganizations = async () => {  
+  if (bln_Is_Fetching_Organizations) {
+    return
+  }
+
+  bln_Is_Fetching_Organizations = true
   try {
-    // Check token validity before making request
-    if (!checkTokenValidity()) {
-      return
-    }
-    
     const response = await organizationAPI.getAll({ limit: 100, public: 'false' })
     
     // Fetch all MOUs
@@ -1583,6 +1584,8 @@ const fetchOrganizations = async () => {
   } catch (error: any) {
     state.error = error.response?.data?.message || 'Failed to load organizations'
     console.error('Loading error:', error)
+  } finally {
+    bln_Is_Fetching_Organizations = false
   }
 }
 
@@ -1896,14 +1899,6 @@ const submitImport = async () => {
     return
   }
 
-  // Check token validity before import
-  if (!checkTokenValidity()) {
-    notificationMessage.value = 'Session expired. Please login again.'
-    notificationType.value = 'error'
-    showNotificationModal.value = true
-    return
-  }
-
   state.loading = true
   try {
     console.log('Starting import for file:', importFile.value.name)
@@ -1911,21 +1906,13 @@ const submitImport = async () => {
     const formData = new FormData()
     formData.append('file', importFile.value)
 
-    const response = await fetch(`${BACKEND_URL}/api/import/organizations`, {
-      method: 'POST',
+    const response = await apiClient.post('/import/organizations', formData, {
+      timeout: 120000,
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-      },
-      body: formData
+        'Content-Type': 'multipart/form-data'
+      }
     })
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
-      console.error('Import failed:', response.status, errorData)
-      throw new Error(errorData.message || `Import failed (${response.status})`)
-    }
-    
-    const result = await response.json()
+    const result = response.data
     console.log('Import result:', result)
     console.log('Success count:', result.data.success.length)
     console.log('Failed count:', result.data.failed.length)
@@ -1959,7 +1946,7 @@ const submitImport = async () => {
     
   } catch (error: any) {
     console.error('Import error:', error)
-    notificationMessage.value = error.message || 'Failed to import file'
+    notificationMessage.value = error.response?.data?.message || error.message || 'Failed to import file'
     notificationType.value = 'error'
     showNotificationModal.value = true
   } finally {

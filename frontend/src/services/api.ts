@@ -126,6 +126,9 @@ obj_API_Client.interceptors.response.use(
     async (error) => {
         try {
             const obj_Original_Request = error.config
+            if (!obj_Original_Request) {
+                return Promise.reject(error)
+            }
             const str_Skip_Redirect = obj_Original_Request?._skipAuthRedirect
             const int_Status = error.response?.status
 
@@ -182,6 +185,9 @@ obj_API_Client.interceptors.response.use(
                     )
 
                     const str_New_Token = obj_Response.data.token
+                    if (!str_New_Token || typeof str_New_Token !== 'string') {
+                        throw new Error('Refresh response did not contain a valid access token')
+                    }
 
                     // Step 6: Update token in storage and headers
                     localStorage.setItem(CONST_AUTH_TOKEN_STORAGE_KEY, str_New_Token)
@@ -274,7 +280,17 @@ export const Bln_Is_Token_Expired = (str_Token: string): boolean => {
         }
 
         // Decode payload and check expiration
-        const obj_Payload = JSON.parse(atob(arr_Token_Parts[1]))
+        const str_Base64_Payload_Unpadded = arr_Token_Parts[1]
+            .replace(/-/g, '+')
+            .replace(/_/g, '/')
+        const str_Base64_Payload = str_Base64_Payload_Unpadded.padEnd(
+            Math.ceil(str_Base64_Payload_Unpadded.length / 4) * 4,
+            '='
+        )
+        const obj_Payload = JSON.parse(atob(str_Base64_Payload))
+        if (typeof obj_Payload.exp !== 'number') {
+            return true
+        }
         const i_Expiration_Time = obj_Payload.exp * 1000 // Convert to milliseconds
 
         return Date.now() >= i_Expiration_Time

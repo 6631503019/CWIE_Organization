@@ -1,21 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
 const { protect, authorize } = require('../middleware/auth');
 const { importOrganizations } = require('../controllers/importController');
 const { CustomError, ERROR_CODES } = require('../utils/customError');
-
-// Configure multer for file upload
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'uploads/imports/');
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'import-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
 
 const fileFilter = (req, file, cb) => {
     const fileExtension = path.extname(file.originalname || '').toLowerCase();
@@ -44,7 +32,7 @@ const fileFilter = (req, file, cb) => {
 };
 
 const upload = multer({
-    storage: storage,
+    storage: multer.memoryStorage(),
     fileFilter: fileFilter,
     limits: {
         fileSize: 25 * 1024 * 1024 // 25MB limit

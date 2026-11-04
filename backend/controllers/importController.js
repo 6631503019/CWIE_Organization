@@ -1,10 +1,8 @@
 const XLSX = require('xlsx');
-const fs = require('fs');
 const mongoose = require('mongoose');
 const InternshipRecord = require('../models/InternshipRecord');
 const Review = require('../models/Review');
 const { CustomError, ERROR_CODES } = require('../utils/customError');
-const { deleteStoredFile } = require('../utils/fileCleanup');
 const { getOrganizationKey, toOrganizationRecord } = require('../utils/organizationRecord');
 
 const IMPORT_BATCH_SIZE = 500;
@@ -133,12 +131,17 @@ const buildReviewOperations = async (workbook, organizationMap, results) => {
     }
     return operations;
 };
-const runBatches = async (model, operations) => { for (let index = 0; index < operations.length; index += IMPORT_BATCH_SIZE) await model.bulkWrite(operations.slice(index, index + IMPORT_BATCH_SIZE), { ordered: false }); };
+const runBatches = async (model, operations) => {
+    for (let index = 0; index < operations.length; index += IMPORT_BATCH_SIZE) {
+        await model.bulkWrite(operations.slice(index, index + IMPORT_BATCH_SIZE), { ordered: false });
+        await new Promise(resolve => setImmediate(resolve));
+    }
+};
 
 const importOrganizations = async (req, res, next) => {
     try {
         if (!req.file) throw new CustomError(ERROR_CODES.VALIDATION_MISSING_REQUIRED_FIELD, 'Please upload a file');
-        let workbook; try { workbook = XLSX.read(fs.readFileSync(req.file.path), { type: 'buffer' }); } catch (error) { throw new CustomError(ERROR_CODES.VALIDATION_INVALID_FORMAT, 'The uploaded file is not a valid CSV or Excel file'); }
+        let workbook; try { workbook = XLSX.read(req.file.buffer, { type: 'buffer' }); } catch (error) { throw new CustomError(ERROR_CODES.VALIDATION_INVALID_FORMAT, 'The uploaded file is not a valid CSV or Excel file'); }
         const rows = parseWorkbookRows(workbook); if (!rows.length) throw new CustomError(ERROR_CODES.VALIDATION_INVALID_FORMAT, 'File is empty or invalid format');
         const results = { success: [], failed: [], total: rows.length, reviewSuccess: 0, reviewFailed: 0 }; const organizationMap = new Map(); const validRows = [];
         for (const row of rows) {
@@ -198,7 +201,7 @@ const importOrganizations = async (req, res, next) => {
         await runBatches(InternshipRecord, importedRows.filter(row => row.internshipData).map(row => ({ updateOne: { filter: { source_sheet: row.sheetName, source_row: row.rowNumber }, update: { $set: { ...row.internshipData, organization_id: newIds.get(`${normalizeOrganizationName(row.orgData.name_th)}\u0000${normalizeOrganizationName(row.orgData.name_en)}`) } }, upsert: true } })));
         const reviewOps = await buildReviewOperations(workbook, organizationMap, results); await runBatches(Review, reviewOps); results.reviewSuccess = reviewOps.length;
         res.status(200).json({ success: true, message: `Import completed: ${results.success.length} organizations succeeded, ${results.failed.length} failed, ${results.reviewSuccess} reviews saved`, data: results });
-    } catch (error) { next(error); } finally { if (req.file?.path) deleteStoredFile(req.file.path, 'import file'); }
+    } catch (error) { next(error); }
 };
 
 module.exports = { importOrganizations };
