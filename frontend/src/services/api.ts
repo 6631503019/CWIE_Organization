@@ -354,10 +354,11 @@ export const obj_Auth_API = {
  */
 export const obj_Organization_API = {
     getAll: (obj_Params?: any) => {
-        const { _skipAuthRedirect, ...obj_Query_Params } = obj_Params || {}
+        const { _skipAuthRedirect, _timeoutMs, ...obj_Query_Params } = obj_Params || {}
         return obj_API_Client.get('/organizations', {
             params: obj_Query_Params,
-            _skipAuthRedirect
+            _skipAuthRedirect,
+            timeout: _timeoutMs
         } as any)
     },
     getById: (str_ID: string, obj_Config?: any) =>
@@ -423,10 +424,11 @@ export const obj_Roadshow_API = {
  */
 export const obj_MOU_API = {
     getAll: (obj_Params?: any) => {
-        const { _skipAuthRedirect, ...obj_Query_Params } = obj_Params || {}
+        const { _skipAuthRedirect, _timeoutMs, ...obj_Query_Params } = obj_Params || {}
         return obj_API_Client.get('/mou', {
             params: obj_Query_Params,
-            _skipAuthRedirect
+            _skipAuthRedirect,
+            timeout: _timeoutMs
         } as any)
     },
     getById: (str_ID: string, obj_Config?: any) =>

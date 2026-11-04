@@ -15,7 +15,7 @@
             <p>{{ text('Manage and view all organization data in the database.', 'จัดการและดูข้อมูลทั้งหมดขององค์กรในฐานข้อมูล') }}</p>
           </div>
           <div class="page_actions">
-            <button class="import_btn" @click="showImportModal = true"><span class="upload_icon"></span>{{ text('Upload Organizations', 'อัปโหลดองค์กร') }}</button>
+            <button class="import_btn" :disabled="state.loading" @click="showImportModal = true"><span class="upload_icon"></span>{{ text('Upload Organizations', 'อัปโหลดองค์กร') }}</button>
             <button class="add_org_btn" @click="addOrganization"><span class="plus_icon"></span>{{ text('Add Organization', 'เพิ่มองค์กร') }}</button>
           </div>
         </div>
@@ -605,7 +605,7 @@ import AdminNavbar from '../components/AdminNavbar.vue'
 import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
-import apiClient, { organizationAPI, mouAPI, BACKEND_URL } from '../services/api'
+import apiClient, { organizationAPI, mouAPI, BACKEND_URL, reviewAPI } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
 
 // ===========================
@@ -676,6 +676,7 @@ const IMPORT_ALLOWED_MIME_TYPES = [
   'application/octet-stream'
 ]
 let bln_Is_Fetching_Organizations = false
+let bln_Is_Importing = false
 const notificationMessage = ref('')
 const notificationType = ref<'success' | 'error' | 'warning'>('success')
 const selectedOrganization = ref<any>(null)
@@ -1536,10 +1537,10 @@ const fetchOrganizations = async () => {
 
   bln_Is_Fetching_Organizations = true
   try {
-    const response = await organizationAPI.getAll({ limit: 100, public: 'false' })
+    const response = await organizationAPI.getAll({ limit: 100, public: 'false', _timeoutMs: 30000 })
     
     // Fetch all MOUs
-    const mouResponse = await mouAPI.getAll({ limit: 100 })
+    const mouResponse = await mouAPI.getAll({ limit: 100, _timeoutMs: 30000 })
     const allMOUs = mouResponse.data.data || []
     
     // Create MOU map for quick lookup
@@ -1892,13 +1893,14 @@ const handleImportFile = (event: Event) => {
 }
 
 const submitImport = async () => {
-  if (!importFile.value) {
+  if (!importFile.value || bln_Is_Importing) {
     notificationMessage.value = 'Please select a file to import'
     notificationType.value = 'warning'
     showNotificationModal.value = true
     return
   }
 
+  bln_Is_Importing = true
   state.loading = true
   try {
     console.log('Starting import for file:', importFile.value.name)
@@ -1932,6 +1934,7 @@ const submitImport = async () => {
     importResults.value = result.data
     
     // Refresh organizations list
+    bln_Is_Importing = false
     await fetchOrganizations()
     
     notificationMessage.value = result.message || 'Organizations imported successfully'
@@ -1950,6 +1953,7 @@ const submitImport = async () => {
     notificationType.value = 'error'
     showNotificationModal.value = true
   } finally {
+    bln_Is_Importing = false
     state.loading = false
   }
 }
@@ -1966,6 +1970,7 @@ onMounted(async () => {
     
     // Setup auto-refresh
     intervalId = window.setInterval(async () => {
+      if (bln_Is_Importing) return
       try {
         await fetchOrganizations()
       } catch (err) {

@@ -6,6 +6,7 @@ const { CustomError, ERROR_CODES } = require('../utils/customError');
 const { getOrganizationKey, toOrganizationRecord } = require('../utils/organizationRecord');
 
 const IMPORT_BATCH_SIZE = 500;
+const getMemoryUsageMb = () => Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
 const normalizeHeader = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
 const normalizeOrganizationName = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
 const text = value => value === null || value === undefined ? '' : String(value).trim();
@@ -131,18 +132,44 @@ const buildReviewOperations = async (workbook, organizationMap, results) => {
     }
     return operations;
 };
-const runBatches = async (model, operations) => {
+const runBatches = async (model, operations, stage) => {
+    const totalBatches = Math.ceil(operations.length / IMPORT_BATCH_SIZE);
     for (let index = 0; index < operations.length; index += IMPORT_BATCH_SIZE) {
         await model.bulkWrite(operations.slice(index, index + IMPORT_BATCH_SIZE), { ordered: false });
+        console.info('[import] batch completed', {
+            stage,
+            batch: Math.floor(index / IMPORT_BATCH_SIZE) + 1,
+            totalBatches,
+            operations: operations.length,
+            heapUsedMb: getMemoryUsageMb()
+        });
         await new Promise(resolve => setImmediate(resolve));
     }
 };
 
 const importOrganizations = async (req, res, next) => {
+    let stage = 'request received';
     try {
+        console.info('[import] request received', {
+            hasFile: Boolean(req.file),
+            sizeBytes: req.file?.size || 0,
+            extension: req.file?.originalname?.split('.').pop()?.toLowerCase() || null
+        });
         if (!req.file) throw new CustomError(ERROR_CODES.VALIDATION_MISSING_REQUIRED_FIELD, 'Please upload a file');
-        let workbook; try { workbook = XLSX.read(req.file.buffer, { type: 'buffer' }); } catch (error) { throw new CustomError(ERROR_CODES.VALIDATION_INVALID_FORMAT, 'The uploaded file is not a valid CSV or Excel file'); }
-        const rows = parseWorkbookRows(workbook); if (!rows.length) throw new CustomError(ERROR_CODES.VALIDATION_INVALID_FORMAT, 'File is empty or invalid format');
+        stage = 'file validated';
+        console.info('[import] file validated', { sizeBytes: req.file.size, heapUsedMb: getMemoryUsageMb() });
+        let workbook;
+        stage = 'workbook parsing';
+        console.info('[import] workbook parsing started', { heapUsedMb: getMemoryUsageMb() });
+        try { workbook = XLSX.read(req.file.buffer, { type: 'buffer' }); } catch (error) { throw new CustomError(ERROR_CODES.VALIDATION_INVALID_FORMAT, 'The uploaded file is not a valid CSV or Excel file'); }
+        const rows = parseWorkbookRows(workbook);
+        console.info('[import] workbook parsing completed', {
+            sheets: workbook.SheetNames,
+            rowCount: rows.length,
+            heapUsedMb: getMemoryUsageMb()
+        });
+        if (!rows.length) throw new CustomError(ERROR_CODES.VALIDATION_INVALID_FORMAT, 'File is empty or invalid format');
+        stage = 'row validation';
         const results = { success: [], failed: [], total: rows.length, reviewSuccess: 0, reviewFailed: 0 }; const organizationMap = new Map(); const validRows = [];
         for (const row of rows) {
             try {
@@ -187,7 +214,8 @@ const importOrganizations = async (req, res, next) => {
                 }
             });
         }
-        await runBatches(InternshipRecord, organizationOps);
+        stage = 'organization writes';
+        await runBatches(InternshipRecord, organizationOps, stage);
         const importedRows = validRows;
         existing.forEach(org => {
             organizationMap.set(normalizeOrganizationName(org.organization_name_th), org);
@@ -198,10 +226,26 @@ const importOrganizations = async (req, res, next) => {
             organizationMap.set(normalizeOrganizationName(group.row.orgData.name_en), { _id: group.id });
             results.success.push({ row: group.row.rowNumber, name: group.row.orgData.name_en || group.row.orgData.name_th, action: group.old ? 'Updated' : 'Created', changes: group.changes });
         }
-        await runBatches(InternshipRecord, importedRows.filter(row => row.internshipData).map(row => ({ updateOne: { filter: { source_sheet: row.sheetName, source_row: row.rowNumber }, update: { $set: { ...row.internshipData, organization_id: newIds.get(`${normalizeOrganizationName(row.orgData.name_th)}\u0000${normalizeOrganizationName(row.orgData.name_en)}`) } }, upsert: true } })));
-        const reviewOps = await buildReviewOperations(workbook, organizationMap, results); await runBatches(Review, reviewOps); results.reviewSuccess = reviewOps.length;
+        stage = 'internship writes';
+        await runBatches(InternshipRecord, importedRows.filter(row => row.internshipData).map(row => ({ updateOne: { filter: { source_sheet: row.sheetName, source_row: row.rowNumber }, update: { $set: { ...row.internshipData, organization_id: newIds.get(`${normalizeOrganizationName(row.orgData.name_th)}\u0000${normalizeOrganizationName(row.orgData.name_en)}`) } }, upsert: true } })), stage);
+        stage = 'review writes';
+        const reviewOps = await buildReviewOperations(workbook, organizationMap, results); await runBatches(Review, reviewOps, stage); results.reviewSuccess = reviewOps.length;
+        console.info('[import] completed', {
+            organizations: results.success.length,
+            failed: results.failed.length,
+            reviews: results.reviewSuccess,
+            heapUsedMb: getMemoryUsageMb()
+        });
         res.status(200).json({ success: true, message: `Import completed: ${results.success.length} organizations succeeded, ${results.failed.length} failed, ${results.reviewSuccess} reviews saved`, data: results });
-    } catch (error) { next(error); }
+    } catch (error) {
+        console.error('[import] failed', {
+            stage,
+            errorName: error.name,
+            errorMessage: error.message,
+            heapUsedMb: getMemoryUsageMb()
+        });
+        next(error);
+    }
 };
 
 module.exports = { importOrganizations };
