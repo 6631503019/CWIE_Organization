@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const { protect, authorize } = require('../middleware/auth');
-const { importOrganizations } = require('../controllers/importController');
+const { importOrganizations, getImportStatus } = require('../controllers/importController');
 const { CustomError, ERROR_CODES } = require('../utils/customError');
 
 const fileFilter = (req, file, cb) => {
@@ -60,5 +60,6 @@ const uploadOrganizationFile = (req, res, next) => {
 
 // Routes
 router.post('/organizations', protect, authorize('admin'), uploadOrganizationFile, importOrganizations);
+router.get('/organizations/status/:jobId', protect, authorize('admin'), getImportStatus);
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const XLSX = require('xlsx');
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const InternshipRecord = require('../models/InternshipRecord');
 const Review = require('../models/Review');
@@ -6,10 +7,78 @@ const { CustomError, ERROR_CODES } = require('../utils/customError');
 const { getOrganizationKey, toOrganizationRecord } = require('../utils/organizationRecord');
 
 const IMPORT_BATCH_SIZE = 500;
+const IMPORT_JOB_RETENTION_MS = 60 * 60 * 1000;
+const importJobs = new Map();
 const getMemoryUsageMb = () => Math.round(process.memoryUsage().heapUsed / 1024 / 1024);
 const normalizeHeader = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
 const normalizeOrganizationName = value => String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
 const text = value => value === null || value === undefined ? '' : String(value).trim();
+const isEmptyRow = row => Object.values(row).every(value => {
+    if (value === null || value === undefined) return true;
+    return typeof value === 'string' && value.trim() === '';
+});
+const createImportJob = (file, userId) => ({
+    jobId: crypto.randomUUID(),
+    userId: String(userId),
+    fileBuffer: file.buffer,
+    originalName: file.originalname,
+    status: 'queued',
+    stage: 'file received',
+    processedRows: 0,
+    totalRows: 0,
+    emptyRowsSkipped: 0,
+    validRowsProcessed: 0,
+    successCount: 0,
+    failedCount: 0,
+    reviewCount: 0,
+    progressPercentage: 0,
+    startedAt: null,
+    completedAt: null,
+    error: null,
+    result: null,
+    completedOperations: 0,
+    totalOperations: 0
+});
+const calculateProgress = job => {
+    if (job.status === 'completed') return 100;
+    if (job.status === 'failed') return Math.min(job.progressPercentage, 99);
+    if (job.stage === 'file received') return 2;
+    if (job.stage === 'workbook parsing') return 8;
+    if (job.stage === 'row validation') {
+        return job.totalRows ? 10 + Math.round((job.processedRows / job.totalRows) * 35) : 10;
+    }
+    if (job.stage === 'organization writes') {
+        return job.totalOperations ? 45 + Math.round((job.completedOperations / job.totalOperations) * 25) : 45;
+    }
+    if (job.stage === 'internship writes') {
+        return job.totalOperations ? 70 + Math.round((job.completedOperations / job.totalOperations) * 15) : 70;
+    }
+    if (job.stage === 'review writes') {
+        return job.totalOperations ? 85 + Math.round((job.completedOperations / job.totalOperations) * 14) : 85;
+    }
+    return job.progressPercentage;
+};
+const updateImportJob = (job, updates = {}) => {
+    Object.assign(job, updates);
+    job.progressPercentage = calculateProgress(job);
+};
+const getImportStatusData = job => ({
+    jobId: job.jobId,
+    status: job.status,
+    stage: job.stage,
+    processedRows: job.processedRows,
+    totalRows: job.totalRows,
+    emptyRowsSkipped: job.emptyRowsSkipped,
+    validRowsProcessed: job.validRowsProcessed,
+    successCount: job.successCount,
+    failedCount: job.failedCount,
+    reviewCount: job.reviewCount,
+    progressPercentage: job.progressPercentage,
+    startedAt: job.startedAt,
+    completedAt: job.completedAt,
+    error: job.error,
+    result: job.result
+});
 const getCellValue = (row, aliases) => {
     const names = aliases.map(normalizeHeader);
     const entry = Object.entries(row).find(([key]) => names.includes(normalizeHeader(key)));
@@ -114,13 +183,18 @@ const mapRow = (row, sheetName, rowNumber) => {
 };
 const parseWorkbookRows = workbook => {
     const rows = []; const sheetNames = workbook.SheetNames.length > 1 ? workbook.SheetNames.filter(name => !/^review\b/i.test(name)) : workbook.SheetNames;
-    for (const sheetName of sheetNames) { const sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' }); if (sheetRows.length && Object.keys(sheetRows[0]).length < 28 && sheetNames.length > 1) continue; sheetRows.forEach((source, index) => rows.push({ source, sheetName, rowNumber: index + 2 })); }
+    for (const sheetName of sheetNames) {
+        const sheetRows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '', blankrows: true });
+        const firstNonEmptyRow = sheetRows.find(row => !isEmptyRow(row));
+        if (firstNonEmptyRow && Object.keys(firstNonEmptyRow).length < 28 && sheetNames.length > 1) continue;
+        sheetRows.forEach((source, index) => rows.push({ source, sheetName, rowNumber: index + 2 }));
+    }
     return rows;
 };
 const buildReviewOperations = async (workbook, organizationMap, results) => {
     const operations = [];
     for (const sheetName of workbook.SheetNames.filter(name => /^review\b/i.test(name))) {
-        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '' });
+        const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '', blankrows: true });
         for (let index = 3; index < rows.length; index += 1) {
             const row = rows[index]; const studentId = text(row[1]); const names = splitBilingualValue(row[3]); const position = splitBilingualValue(row[20]); const jobPosition = position.en || position.th;
             const reviewData = { strength: text(row[8]), improvement: text(row[13]), assignment: text(row[8]), accommodation: text(row[9]), supervisor: text(row[10]), welfare: text(row[11]), other: text(row[12]), recommendations: text(row[19]), recommended_skills: text(row[21]), employment_status: text(row[22]) };
@@ -132,10 +206,12 @@ const buildReviewOperations = async (workbook, organizationMap, results) => {
     }
     return operations;
 };
-const runBatches = async (model, operations, stage) => {
+const runBatches = async (model, operations, stage, job) => {
+    updateImportJob(job, { stage, completedOperations: 0, totalOperations: operations.length });
     const totalBatches = Math.ceil(operations.length / IMPORT_BATCH_SIZE);
     for (let index = 0; index < operations.length; index += IMPORT_BATCH_SIZE) {
         await model.bulkWrite(operations.slice(index, index + IMPORT_BATCH_SIZE), { ordered: false });
+        updateImportJob(job, { completedOperations: Math.min(index + IMPORT_BATCH_SIZE, operations.length) });
         console.info('[import] batch completed', {
             stage,
             batch: Math.floor(index / IMPORT_BATCH_SIZE) + 1,
@@ -147,38 +223,48 @@ const runBatches = async (model, operations, stage) => {
     }
 };
 
-const importOrganizations = async (req, res, next) => {
+const processImportJob = async job => {
     let stage = 'request received';
     try {
         console.info('[import] request received', {
-            hasFile: Boolean(req.file),
-            sizeBytes: req.file?.size || 0,
-            extension: req.file?.originalname?.split('.').pop()?.toLowerCase() || null
+            jobId: job.jobId,
+            sizeBytes: job.fileBuffer.length,
+            extension: job.originalName.split('.').pop()?.toLowerCase() || null
         });
-        if (!req.file) throw new CustomError(ERROR_CODES.VALIDATION_MISSING_REQUIRED_FIELD, 'Please upload a file');
+        updateImportJob(job, { status: 'processing', stage: 'file received', startedAt: new Date().toISOString() });
         stage = 'file validated';
-        console.info('[import] file validated', { sizeBytes: req.file.size, heapUsedMb: getMemoryUsageMb() });
+        console.info('[import] file validated', { jobId: job.jobId, sizeBytes: job.fileBuffer.length, heapUsedMb: getMemoryUsageMb() });
         let workbook;
         stage = 'workbook parsing';
-        console.info('[import] workbook parsing started', { heapUsedMb: getMemoryUsageMb() });
-        try { workbook = XLSX.read(req.file.buffer, { type: 'buffer' }); } catch (error) { throw new CustomError(ERROR_CODES.VALIDATION_INVALID_FORMAT, 'The uploaded file is not a valid CSV or Excel file'); }
+        updateImportJob(job, { stage });
+        console.info('[import] workbook parsing started', { jobId: job.jobId, heapUsedMb: getMemoryUsageMb() });
+        try { workbook = XLSX.read(job.fileBuffer, { type: 'buffer' }); } catch (error) { throw new CustomError(ERROR_CODES.VALIDATION_INVALID_FORMAT, 'The uploaded file is not a valid CSV or Excel file'); }
         const rows = parseWorkbookRows(workbook);
         console.info('[import] workbook parsing completed', {
+            jobId: job.jobId,
             sheets: workbook.SheetNames,
             rowCount: rows.length,
             heapUsedMb: getMemoryUsageMb()
         });
         if (!rows.length) throw new CustomError(ERROR_CODES.VALIDATION_INVALID_FORMAT, 'File is empty or invalid format');
+        updateImportJob(job, { totalRows: rows.length, stage: 'row validation' });
         stage = 'row validation';
-        const results = { success: [], failed: [], total: rows.length, reviewSuccess: 0, reviewFailed: 0 }; const organizationMap = new Map(); const validRows = [];
-        for (const row of rows) {
+        const results = { success: [], failed: [], total: rows.length, emptyRowsSkipped: 0, validRowsProcessed: 0, reviewSuccess: 0, reviewFailed: 0 }; const organizationMap = new Map(); const validRows = [];
+        for (const [rowIndex, row] of rows.entries()) {
+            if (isEmptyRow(row.source)) {
+                results.emptyRowsSkipped += 1;
+                updateImportJob(job, { processedRows: rowIndex + 1, emptyRowsSkipped: results.emptyRowsSkipped });
+                continue;
+            }
             try {
-                const mapped = mapRow(row.source, row.sheetName, row.rowNumber); mapped.orgData.admin_id = req.user._id; const missing = ['name_th', 'name_en', 'address_th', 'address_en', 'organization_type', 'email', 'admin_id'].filter(field => !mapped.orgData[field]);
-                if (missing.length) { addFailedRow(results, row, `Missing required field(s): ${missing.join(', ')}`); continue; }
-                if (!['MFU', 'private company', 'Government', 'Oversea'].includes(mapped.orgData.organization_type)) { addFailedRow(results, row, `Invalid organization_type: ${mapped.orgData.organization_type}`); continue; }
-                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mapped.orgData.email)) { addFailedRow(results, row, 'Invalid email format'); continue; }
+                const mapped = mapRow(row.source, row.sheetName, row.rowNumber); mapped.orgData.admin_id = job.userId; const missing = ['name_th', 'name_en', 'address_th', 'address_en', 'organization_type', 'email', 'admin_id'].filter(field => !mapped.orgData[field]);
+                if (missing.length) { addFailedRow(results, row, `Missing required field(s): ${missing.join(', ')}`); updateImportJob(job, { processedRows: rowIndex + 1, failedCount: results.failed.length }); continue; }
+                if (!['MFU', 'private company', 'Government', 'Oversea'].includes(mapped.orgData.organization_type)) { addFailedRow(results, row, `Invalid organization_type: ${mapped.orgData.organization_type}`); updateImportJob(job, { processedRows: rowIndex + 1, failedCount: results.failed.length }); continue; }
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mapped.orgData.email)) { addFailedRow(results, row, 'Invalid email format'); updateImportJob(job, { processedRows: rowIndex + 1, failedCount: results.failed.length }); continue; }
                 validRows.push({ ...row, ...mapped });
+                results.validRowsProcessed += 1;
             } catch (error) { addFailedRow(results, row, error.message); }
+            updateImportJob(job, { processedRows: rowIndex + 1, validRowsProcessed: results.validRowsProcessed, failedCount: results.failed.length });
         }
         const names = [...new Set(validRows.flatMap(row => [row.orgData.name_th, row.orgData.name_en]))];
         const existing = await InternshipRecord.find({
@@ -200,7 +286,7 @@ const importOrganizations = async (req, res, next) => {
             const changes = old ? Object.keys(row.orgData).filter(field => field !== 'admin_id' && String(old[field] ?? '') !== String(row.orgData[field] ?? '')).map(field => `${field} updated`) : [];
             organizationGroups.set(organizationKey, { id, old, row, changes: changes.length ? changes : ['No changes detected'] });
             newIds.set(organizationKey, id);
-            const organizationData = toOrganizationRecord(row.orgData, req.user._id, old || {});
+            const organizationData = toOrganizationRecord(row.orgData, job.userId, old || {});
             // New imports are active by default; existing organizations keep
             // their current visibility state when their row is updated.
             const setData = old ? organizationData : { ...organizationData, is_public: true };
@@ -215,7 +301,7 @@ const importOrganizations = async (req, res, next) => {
             });
         }
         stage = 'organization writes';
-        await runBatches(InternshipRecord, organizationOps, stage);
+        await runBatches(InternshipRecord, organizationOps, stage, job);
         const importedRows = validRows;
         existing.forEach(org => {
             organizationMap.set(normalizeOrganizationName(org.organization_name_th), org);
@@ -227,25 +313,59 @@ const importOrganizations = async (req, res, next) => {
             results.success.push({ row: group.row.rowNumber, name: group.row.orgData.name_en || group.row.orgData.name_th, action: group.old ? 'Updated' : 'Created', changes: group.changes });
         }
         stage = 'internship writes';
-        await runBatches(InternshipRecord, importedRows.filter(row => row.internshipData).map(row => ({ updateOne: { filter: { source_sheet: row.sheetName, source_row: row.rowNumber }, update: { $set: { ...row.internshipData, organization_id: newIds.get(`${normalizeOrganizationName(row.orgData.name_th)}\u0000${normalizeOrganizationName(row.orgData.name_en)}`) } }, upsert: true } })), stage);
+        await runBatches(InternshipRecord, importedRows.filter(row => row.internshipData).map(row => ({ updateOne: { filter: { source_sheet: row.sheetName, source_row: row.rowNumber }, update: { $set: { ...row.internshipData, organization_id: newIds.get(`${normalizeOrganizationName(row.orgData.name_th)}\u0000${normalizeOrganizationName(row.orgData.name_en)}`) } }, upsert: true } })), stage, job);
         stage = 'review writes';
-        const reviewOps = await buildReviewOperations(workbook, organizationMap, results); await runBatches(Review, reviewOps, stage); results.reviewSuccess = reviewOps.length;
+        const reviewOps = await buildReviewOperations(workbook, organizationMap, results); await runBatches(Review, reviewOps, stage, job); results.reviewSuccess = reviewOps.length;
+        updateImportJob(job, { status: 'completed', stage: 'completed', successCount: results.success.length, failedCount: results.failed.length, reviewCount: results.reviewSuccess, result: results, completedAt: new Date().toISOString() });
         console.info('[import] completed', {
+            jobId: job.jobId,
             organizations: results.success.length,
             failed: results.failed.length,
             reviews: results.reviewSuccess,
             heapUsedMb: getMemoryUsageMb()
         });
-        res.status(200).json({ success: true, message: `Import completed: ${results.success.length} organizations succeeded, ${results.failed.length} failed, ${results.reviewSuccess} reviews saved`, data: results });
+        job.fileBuffer = null;
     } catch (error) {
+        updateImportJob(job, { status: 'failed', stage: 'failed', error: error.message, completedAt: new Date().toISOString() });
         console.error('[import] failed', {
+            jobId: job.jobId,
             stage,
             errorName: error.name,
             errorMessage: error.message,
             heapUsedMb: getMemoryUsageMb()
         });
+        job.fileBuffer = null;
+    }
+};
+
+const importOrganizations = async (req, res, next) => {
+    try {
+        if (!req.file) throw new CustomError(ERROR_CODES.VALIDATION_MISSING_REQUIRED_FIELD, 'Please upload a file');
+        const job = createImportJob(req.file, req.user._id);
+        importJobs.set(job.jobId, job);
+        console.info('[import] job created', { jobId: job.jobId, sizeBytes: req.file.size });
+        res.status(202).json({
+            success: true,
+            message: 'Import started',
+            data: getImportStatusData(job)
+        });
+        setImmediate(() => processImportJob(job));
+        setTimeout(() => importJobs.delete(job.jobId), IMPORT_JOB_RETENTION_MS).unref();
+    } catch (error) {
         next(error);
     }
 };
 
-module.exports = { importOrganizations };
+const getImportStatus = async (req, res, next) => {
+    try {
+        const job = importJobs.get(req.params.jobId);
+        if (!job || job.userId !== String(req.user._id)) {
+            throw new CustomError(ERROR_CODES.NOT_FOUND_RESOURCE, 'Import job not found');
+        }
+        res.status(200).json({ success: true, data: getImportStatusData(job) });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { importOrganizations, getImportStatus };

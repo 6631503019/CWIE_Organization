@@ -548,6 +548,27 @@
           <span class="file_name" v-if="importFile">{{ importFile.name }}</span>
           <span class="file_name" v-else>No file selected</span>
         </div>
+
+        <div v-if="importJob" class="import_progress_panel">
+          <div class="import_progress_header">
+            <strong>{{ importJob.status === 'completed' ? 'Import complete' : 'Importing organizations' }}</strong>
+            <span>{{ importJob.progressPercentage }}%</span>
+          </div>
+          <div class="import_progress_track">
+            <div class="import_progress_fill" :style="{ width: `${importJob.progressPercentage}%` }"></div>
+          </div>
+          <p class="import_progress_stage">{{ getImportStageLabel(importJob.stage) }}</p>
+          <div class="import_progress_stats">
+            <span>Elapsed: {{ formatImportElapsed(importElapsedSeconds) }}</span>
+            <span>Rows: {{ importJob.processedRows }} / {{ importJob.totalRows }}</span>
+            <span>Success: {{ importJob.successCount }}</span>
+            <span>Failed: {{ importJob.failedCount }}</span>
+            <span>Reviews: {{ importJob.reviewCount }}</span>
+          </div>
+          <p v-if="importJob.emptyRowsSkipped" class="import_progress_note">
+            Empty rows skipped: {{ importJob.emptyRowsSkipped }}
+          </p>
+        </div>
         
         <div v-if="importResults" class="import_results">
           <p class="results_summary">
@@ -583,7 +604,7 @@
         
         <div class="modal_actions">
           <button class="btn_cancel" @click="showImportModal = false; importFile = null; importResults = null">Cancel</button>
-          <button class="btn_save" @click="submitImport" :disabled="!importFile">Import</button>
+          <button class="btn_save" @click="submitImport" :disabled="!importFile || state.loading">Import</button>
         </div>
       </div>
     </div>
@@ -665,6 +686,8 @@ const showNotificationModal = ref(false)
 const showImportModal = ref(false)
 const importFile = ref<File | null>(null)
 const importResults = ref<any>(null)
+const importJob = ref<any>(null)
+const importElapsedSeconds = ref(0)
 const IMPORT_MAX_FILE_SIZE = 25 * 1024 * 1024
 const IMPORT_ALLOWED_EXTENSIONS = ['.csv', '.xlsx', '.xls']
 const IMPORT_ALLOWED_MIME_TYPES = [
@@ -677,6 +700,9 @@ const IMPORT_ALLOWED_MIME_TYPES = [
 ]
 let bln_Is_Fetching_Organizations = false
 let bln_Is_Importing = false
+let importStatusTimeoutId: number | null = null
+let importElapsedIntervalId: number | null = null
+let bln_Is_Component_Mounted = true
 const notificationMessage = ref('')
 const notificationType = ref<'success' | 'error' | 'warning'>('success')
 const selectedOrganization = ref<any>(null)
@@ -1892,6 +1918,65 @@ const handleImportFile = (event: Event) => {
   }
 }
 
+const getImportStageLabel = (stage: string): string => {
+  const labels: Record<string, string> = {
+    'file received': 'File received',
+    'workbook parsing': 'Reading workbook',
+    'row validation': 'Validating rows',
+    'organization writes': 'Saving organizations',
+    'internship writes': 'Saving internship records',
+    'review writes': 'Saving reviews',
+    completed: 'Import completed',
+    failed: 'Import failed'
+  }
+  return labels[stage] || stage
+}
+
+const formatImportElapsed = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60).toString().padStart(2, '0')
+  const remainingSeconds = (seconds % 60).toString().padStart(2, '0')
+  return `${minutes}:${remainingSeconds}`
+}
+
+const waitForImportPoll = (milliseconds: number): Promise<void> => new Promise(resolve => {
+  importStatusTimeoutId = window.setTimeout(() => {
+    importStatusTimeoutId = null
+    resolve()
+  }, milliseconds)
+})
+
+const pollImportStatus = async (jobId: string): Promise<any> => {
+  let consecutiveFailures = 0
+
+  while (bln_Is_Component_Mounted) {
+    try {
+      const response = await apiClient.get(`/import/organizations/status/${jobId}`, { timeout: 15000 })
+      const job = response.data.data
+      importJob.value = job
+
+      if (job.startedAt) {
+        importElapsedSeconds.value = Math.max(0, Math.floor((Date.now() - new Date(job.startedAt).getTime()) / 1000))
+      }
+
+      if (job.status === 'completed') return job
+      if (job.status === 'failed') throw new Error(job.error || 'Import failed')
+      consecutiveFailures = 0
+    } catch (error: any) {
+      const isTransientNetworkError = error.code === 'ECONNABORTED' || error.message === 'Network Error'
+      if (!isTransientNetworkError) throw error
+
+      consecutiveFailures += 1
+      if (consecutiveFailures >= 3) {
+        throw new Error('Unable to retrieve import progress. Check the backend status and try again.')
+      }
+    }
+
+    await waitForImportPoll(Math.min(5000, 2000 * Math.max(1, consecutiveFailures)))
+  }
+
+  throw new Error('Import monitoring stopped because the page was closed')
+}
+
 const submitImport = async () => {
   if (!importFile.value || bln_Is_Importing) {
     notificationMessage.value = 'Please select a file to import'
@@ -1914,15 +1999,22 @@ const submitImport = async () => {
         'Content-Type': 'multipart/form-data'
       }
     })
-    const result = response.data
-    console.log('Import result:', result)
-    console.log('Success count:', result.data.success.length)
-    console.log('Failed count:', result.data.failed.length)
+    const job = response.data.data
+    importJob.value = job
+    importElapsedSeconds.value = 0
+    importElapsedIntervalId = window.setInterval(() => {
+      if (importJob.value?.startedAt) {
+        importElapsedSeconds.value = Math.max(0, Math.floor((Date.now() - new Date(importJob.value.startedAt).getTime()) / 1000))
+      }
+    }, 1000)
+
+    const completedJob = await pollImportStatus(job.jobId)
+    const result = completedJob.result
     
     // Log all failed rows for debugging
-    if (result.data.failed.length > 0) {
+    if (result.failed.length > 0) {
       console.error('Failed rows details:')
-      result.data.failed.forEach((fail: any, index: number) => {
+      result.failed.forEach((fail: any, index: number) => {
         console.error(`  ${index + 1}. Row ${fail.row}: ${fail.error}`)
         if (fail.data) {
           console.error('     Columns found:', Object.keys(fail.data))
@@ -1931,13 +2023,12 @@ const submitImport = async () => {
       })
     }
     
-    importResults.value = result.data
-    
     // Refresh organizations list
     bln_Is_Importing = false
     await fetchOrganizations()
     
-    notificationMessage.value = result.message || 'Organizations imported successfully'
+    importResults.value = result
+    notificationMessage.value = `Import completed: ${result.success.length} organizations succeeded, ${result.failed.length} failed, ${result.reviewSuccess} reviews saved`
     notificationType.value = 'success'
     showNotificationModal.value = true
     
@@ -1953,6 +2044,14 @@ const submitImport = async () => {
     notificationType.value = 'error'
     showNotificationModal.value = true
   } finally {
+    if (importElapsedIntervalId) {
+      clearInterval(importElapsedIntervalId)
+      importElapsedIntervalId = null
+    }
+    if (importStatusTimeoutId) {
+      clearTimeout(importStatusTimeoutId)
+      importStatusTimeoutId = null
+    }
     bln_Is_Importing = false
     state.loading = false
   }
@@ -3702,6 +3801,49 @@ onBeforeUnmount(() => {
   font-size: 14px;
   color: #6B7280;
   font-style: italic;
+}
+
+.import_progress_panel {
+  margin: 16px 0;
+  padding: 16px;
+  background: #EFF6FF;
+  border: 1px solid #93C5FD;
+  border-radius: 8px;
+}
+
+.import_progress_header,
+.import_progress_stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: #1E3A8A;
+}
+
+.import_progress_track {
+  width: 100%;
+  height: 10px;
+  margin: 12px 0 8px;
+  overflow: hidden;
+  background: #DBEAFE;
+  border-radius: 5px;
+}
+
+.import_progress_fill {
+  height: 100%;
+  background: #2563EB;
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+.import_progress_stage,
+.import_progress_note {
+  margin: 8px 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  color: #1E40AF;
 }
 
 .import_results {
