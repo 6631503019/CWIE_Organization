@@ -6,51 +6,60 @@ const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/cust
 // @desc    Login with a verified Google Workspace account
 // @route   POST /api/auth/google
 // @access  Public
+
 const loginWithGoogle = async (req, res, next) => {
     try {
         const { idToken, loginType } = req.body;
 
-        const str_Id_Token = typeof idToken === 'string' ? idToken.trim() : '';
+        const str_Id_Token =
+            typeof idToken === 'string' ? idToken.trim() : '';
 
-        if (!str_Id_Token || !['admin', 'student'].includes(loginType)) {
+        if (
+            !str_Id_Token ||
+            !['admin', 'student'].includes(loginType)
+        ) {
             throw new CustomError(
                 ERROR_CODES.VALIDATION_MISSING_REQUIRED_FIELD,
                 'Google token and login type are required'
             );
         }
 
-        console.debug('Firebase ID token shape:', {
-            type: typeof idToken,
-            length: str_Id_Token.length,
-            segmentCount: str_Id_Token.split('.').length
-        });
-
         const decodedToken = await firebaseAdmin.verifyIdToken(str_Id_Token);
+
         const email = decodedToken.email?.trim().toLowerCase();
 
-const SPECIAL_ADMIN_EMAIL = '6631503019@lamduan.mfu.ac.th';
+        const SPECIAL_ADMIN_EMAIL = '6631503019@lamduan.mfu.ac.th';
 
-const isSpecialAccount = email === SPECIAL_ADMIN_EMAIL;
-const isAdminDomain = email?.endsWith('@mfu.ac.th');
-const isStudentDomain = email?.endsWith('@lamduan.mfu.ac.th');
+        const isSpecialAccount = email === SPECIAL_ADMIN_EMAIL;
+        const isAdminDomain = email?.endsWith('@mfu.ac.th');
+        const isStudentDomain = email?.endsWith('@lamduan.mfu.ac.th');
 
-if (
-  !decodedToken.email_verified ||
-  !email ||
-  !['admin', 'student'].includes(loginType)
-) {
-  throw new CustomError('Invalid login credentials.', 403);
-}
+        if (!decodedToken.email_verified || !email) {
+            throw new CustomError(
+                ERROR_CODES.AUTH_TOKEN_INVALID,
+                'Google account email is not verified'
+            );
+        }
 
-const isAuthorized =
-  (loginType === 'admin' && (isAdminDomain || isSpecialAccount)) ||
-  (loginType === 'student' && (isStudentDomain || isSpecialAccount));
+        const isAuthorized =
+            (loginType === 'admin' &&
+                (isAdminDomain || isSpecialAccount)) ||
+            (loginType === 'student' &&
+                (isStudentDomain || isSpecialAccount));
 
-if (!isAuthorized) {
-  throw new CustomError('This account is not authorized for this login type.', 403);
-}
+        if (!isAuthorized) {
+            throw new CustomError(
+                ERROR_CODES.FORBIDDEN_INSUFFICIENT_PERMISSIONS,
+                'This account is not authorized for this login type'
+            );
+        }
 
-        let user = await User.findOne({ $or: [{ firebaseUid: decodedToken.uid }, { email }] });
+        let user = await User.findOne({
+            $or: [
+                { firebaseUid: decodedToken.uid },
+                { email }
+            ]
+        });
 
         if (user && !user.isActive) {
             throw new CustomError(
@@ -59,40 +68,29 @@ if (!isAuthorized) {
             );
         }
 
-        if (loginType === 'admin' && !isAdminEmail) {
-            throw new CustomError(
-                ERROR_CODES.FORBIDDEN_INSUFFICIENT_PERMISSIONS,
-                'Only the registered Admin Lamduan Mail can use Admin login'
-            );
-        }
-
-        if (loginType === 'student' && user?.role === 'admin') {
-            throw new CustomError(
-                ERROR_CODES.FORBIDDEN_INSUFFICIENT_PERMISSIONS,
-                'Administrator accounts must use the admin login'
-            );
-        }
-
         if (!user) {
             user = await User.create({
                 firebaseUid: decodedToken.uid,
                 email,
                 name: decodedToken.name || email.split('@')[0],
-                role: isAdminEmail ? 'admin' : 'user'
+                role: isSpecialAccount ? 'admin' : 'user'
             });
-        } else if (isAdminEmail && user.role !== 'admin') {
-            user.role = 'admin';
-            user.firebaseUid = decodedToken.uid;
-            await user.save();
         } else if (user.firebaseUid !== decodedToken.uid) {
             user.firebaseUid = decodedToken.uid;
             await user.save();
         }
 
-        const token = generateToken({ id: user._id });
-        const refreshToken = generateRefreshToken({ id: user._id });
+        const token = generateToken({
+            id: user._id,
+            loginType
+        });
 
-        res.status(200).json({
+        const refreshToken = generateRefreshToken({
+            id: user._id,
+            loginType
+        });
+
+        return res.status(200).json({
             success: true,
             message: 'Google login successful',
             token,
@@ -101,32 +99,36 @@ if (!isAuthorized) {
                 id: user._id,
                 name: user.name,
                 email: user.email,
-                role: user.role
+                role: user.role,
+                loginType
             }
         });
+
     } catch (error) {
-  if (error.code?.startsWith('auth/')) {
-    console.error('Firebase token verification error:', {
-      code: error.code,
-      message: error.message,
-      projectId: process.env.FIREBASE_PROJECT_ID,
-    });
+        if (error.code?.startsWith('auth/')) {
+            console.error('Firebase token verification error:', {
+                code: error.code,
+                message: error.message
+            });
 
-    return next(
-      new CustomError(
-        ERROR_CODES.AUTH_TOKEN_INVALID,
-        'Invalid Google authentication token'
-      )
-    );
-  }
+            return next(
+                new CustomError(
+                    ERROR_CODES.AUTH_TOKEN_INVALID,
+                    'Invalid Google authentication token'
+                )
+            );
+        }
 
-  next(error);
-}
+        console.error('Google login error:', error);
+        return next(error);
+    }
 };
+
 
 // @desc    Refresh access token
 // @route   POST /api/auth/refresh
 // @access  Public
+
 const refresh = async (req, res, next) => {
     try {
         const { refreshToken } = req.body;
@@ -138,10 +140,8 @@ const refresh = async (req, res, next) => {
             );
         }
 
-        // Verify refresh token
         const decoded = verifyRefreshToken(refreshToken);
 
-        // Get user
         const user = await User.findById(decoded.id);
 
         if (!user) {
@@ -158,14 +158,44 @@ const refresh = async (req, res, next) => {
             );
         }
 
-        // Generate new access token
-        const token = generateToken({ id: user._id });
+        const loginType = decoded.loginType;
 
-        res.status(200).json({
+        if (!['admin', 'student'].includes(loginType)) {
+            throw new CustomError(
+                ERROR_CODES.AUTH_TOKEN_INVALID,
+                'Invalid login context'
+            );
+        }
+
+        const email = user.email?.trim().toLowerCase();
+        const specialEmail = '6631503019@lamduan.mfu.ac.th';
+
+        const isSpecial = email === specialEmail;
+        const isAdmin = email?.endsWith('@mfu.ac.th') || isSpecial;
+        const isStudent = email?.endsWith('@lamduan.mfu.ac.th') || isSpecial;
+
+        const isAuthorized =
+            (loginType === 'admin' && isAdmin) ||
+            (loginType === 'student' && isStudent);
+
+        if (!isAuthorized) {
+            throw new CustomError(
+                ERROR_CODES.FORBIDDEN_INSUFFICIENT_PERMISSIONS,
+                'This account is not authorized for this login type'
+            );
+        }
+
+        const token = generateToken({
+            id: user._id,
+            loginType
+        });
+
+        return res.status(200).json({
             success: true,
             message: 'Token refreshed successfully',
             token
         });
+
     } catch (error) {
         if (error.name === 'JsonWebTokenError') {
             return next(new CustomError(
@@ -181,9 +211,10 @@ const refresh = async (req, res, next) => {
             ));
         }
 
-        next(error);
+        return next(error);
     }
 };
+
 
 // @desc    Get current user
 // @route   GET /api/auth/me
