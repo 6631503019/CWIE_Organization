@@ -332,7 +332,7 @@ onMounted(async () => {
 }
 
 .main_content {
-  margin-left: 232px;
+  margin-left: 66px;
   padding: 40px 20px 20px 20px;
   min-height: 100vh;
 }

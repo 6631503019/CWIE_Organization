@@ -197,11 +197,12 @@ const buildReviewOperations = async (workbook, organizationMap, results) => {
         const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '', blankrows: true });
         for (let index = 3; index < rows.length; index += 1) {
             const row = rows[index]; const studentId = text(row[1]); const names = splitBilingualValue(row[3]); const position = splitBilingualValue(row[20]); const jobPosition = position.en || position.th;
+            const academicYear = /^\d{4}$/.test(text(row[0])) ? text(row[0]) : undefined;
             const reviewData = { strength: text(row[8]), improvement: text(row[13]), assignment: text(row[8]), accommodation: text(row[9]), supervisor: text(row[10]), welfare: text(row[11]), other: text(row[12]), recommendations: text(row[19]), recommended_skills: text(row[21]), employment_status: text(row[22]) };
             const reviewText = [reviewData.strength && `Strength: ${reviewData.strength}`, reviewData.improvement && `Area of Improvement: ${reviewData.improvement}`, reviewData.recommendations && `Recommendations: ${reviewData.recommendations}`].filter(Boolean).join('\n').substring(0, 2000);
             const organization = organizationMap.get(normalizeOrganizationName(names.th)) || organizationMap.get(normalizeOrganizationName(names.en));
             if (!studentId || (!names.th && !names.en) || !jobPosition || !reviewText || !organization) { results.reviewFailed += 1; continue; }
-            operations.push({ updateOne: { filter: { source_sheet: sheetName, source_row: index + 1 }, update: { $set: { organization_id: organization._id, job_position: jobPosition, review_text: reviewText, student_id: studentId, student_name: text(row[2]), organization_name: names.en || names.th, source_sheet: sheetName, source_row: index + 1, review_data: reviewData } }, upsert: true } });
+            operations.push({ updateOne: { filter: { source_sheet: sheetName, source_row: index + 1 }, update: { $set: { organization_id: organization._id, job_position: jobPosition, review_text: reviewText, student_id: studentId, student_name: text(row[2]), organization_name: names.en || names.th, source_sheet: sheetName, source_row: index + 1, review_data: reviewData, ...(academicYear ? { academic_year: academicYear } : {}) } }, upsert: true } });
         }
     }
     return operations;

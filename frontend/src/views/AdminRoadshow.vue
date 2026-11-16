@@ -8,14 +8,14 @@
     <!-- Roadshow Header -->
     <section class="roadshow_header_section">
       <div class="roadshow_heading">
-        <h1 class="roadshow_page_title">Roadshow</h1>
-        <p class="roadshow_page_subtitle">Manage and view all roadshow events.</p>
+        <h1 class="roadshow_page_title">{{ text('Roadshow', 'โรดโชว์') }}</h1>
+        <p class="roadshow_page_subtitle">{{ text('Manage and view all roadshow events.', 'จัดการและดูข้อมูลกิจกรรมโรดโชว์ทั้งหมด') }}</p>
       </div>
 
 
       <button class="btn_add_roadshow" type="button" @click="Open_Create_Roadshow">
         <span class="plus_icon">+</span>
-        <span class="button_text">Add Roadshow</span>
+        <span class="button_text">{{ text('Add Roadshow', 'เพิ่มโรดโชว์') }}</span>
       </button>
     </section>
 
@@ -25,8 +25,8 @@
       <input
         v-model="str_Search_Query"
         type="text"
-        placeholder="Search roadshow title or organization..."
-        aria-label="Search roadshow title or organization"
+        :placeholder="text('Search roadshow title or organization...', 'ค้นหาชื่อโรดโชว์หรือองค์กร...')"
+        :aria-label="text('Search roadshow title or organization', 'ค้นหาชื่อโรดโชว์หรือองค์กร')"
       />
     </div>
 
@@ -34,19 +34,19 @@
     <section class="roadshow_table_wrapper">
       <div v-if="obj_state.error" class="error_message">{{ obj_state.error }}</div>
       <div v-else-if="obj_state.loading && arr_Roadshows.length === 0" class="loading_message">
-        Loading roadshows...
+        {{ text('Loading roadshows...', 'กำลังโหลดโรดโชว์...') }}
       </div>
 
       <table v-else class="roadshow_table">
         <thead>
           <tr>
             <th class="col_organization">{{ text('Organization', 'องค์กร') }}</th>
-            <th class="col_title">Roadshow title</th>
-            <th class="col_date">Date</th>
-            <th class="col_time">Time</th>
-            <th class="col_location">Location</th>
-            <th class="col_status">Status</th>
-            <th class="col_actions">Actions</th>
+            <th class="col_title">{{ text('Roadshow title', 'ชื่อโรดโชว์') }}</th>
+            <th class="col_date">{{ text('Date', 'วันที่') }}</th>
+            <th class="col_time">{{ text('Time', 'เวลา') }}</th>
+            <th class="col_location">{{ text('Location', 'สถานที่') }}</th>
+            <th class="col_status">{{ text('Status', 'สถานะ') }}</th>
+            <th class="col_actions">{{ text('Actions', 'การดำเนินการ') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -80,15 +80,15 @@
 
             <td class="actions_cell">
               <div class="table_actions">
-                <button type="button" class="table_action view_action" @click.stop="View_Roadshow(roadshow)">View</button>
-                <button type="button" class="table_action edit_action" @click.stop="Edit_Roadshow(roadshow)">Edit</button>
-                <button type="button" class="table_action delete_action" @click.stop="Confirm_Delete_Roadshow(roadshow)">Delete</button>
+                <button type="button" class="table_action view_action" @click.stop="View_Roadshow(roadshow)">{{ text('View', 'ดู') }}</button>
+                <button type="button" class="table_action edit_action" @click.stop="Edit_Roadshow(roadshow)">{{ text('Edit', 'แก้ไข') }}</button>
+                <button type="button" class="table_action delete_action" @click.stop="Confirm_Delete_Roadshow(roadshow)">{{ text('Delete', 'ลบ') }}</button>
               </div>
             </td>
           </tr>
 
           <tr v-if="Arr_Get_Paginated_Roadshows.length === 0">
-            <td colspan="7" class="empty_table_cell">No roadshows found.</td>
+            <td colspan="7" class="empty_table_cell">{{ text('No roadshows found.', 'ไม่พบโรดโชว์') }}</td>
           </tr>
         </tbody>
       </table>
@@ -582,7 +582,7 @@ const Handle_Page_Change = async (i_Page: number) => {
  * Side effects: Modifies obj_Form_Data, updates bln_Show_Edit_Modal and str_Editing_Roadshow_ID
  */
 const View_Roadshow = (obj_Roadshow: any): void => {
-  if (obj_Roadshow?.id) window.location.href = `/admin/roadshow/${obj_Roadshow.id}`
+  if (obj_Roadshow?.id) router.push(`/admin/roadshow/${obj_Roadshow.id}`)
 }
 
 const Edit_Roadshow = (obj_Roadshow: any) => {

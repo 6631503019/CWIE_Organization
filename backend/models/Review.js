@@ -34,6 +34,14 @@ const reviewSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
+    academic_year: {
+        type: String,
+        trim: true
+    },
+    semester: {
+        type: String,
+        trim: true
+    },
     source_sheet: {
         type: String,
         trim: true

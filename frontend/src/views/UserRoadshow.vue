@@ -3,7 +3,7 @@
     <UserNavbar />
     
     <!-- Roadshow Title -->
-    <h1 class="roadshow_title">Roadshow</h1>
+    <h1 class="roadshow_title">{{ text('Roadshow', 'โรดโชว์') }}</h1>
 
     <!-- Roadshow Cards Container -->
     <div class="roadshow_cards_container">
@@ -11,7 +11,7 @@
         {{ state.error }}
       </div>
       <div v-if="state.loading && roadshows.length === 0" class="loading_message">
-        Loading roadshows...
+        {{ text('Loading roadshows...', 'กำลังโหลดโรดโชว์...') }}
       </div>
       <div 
         v-for="roadshow in paginatedRoadshows" 
@@ -56,8 +56,10 @@ import { useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 import Pagination from '../components/Pagination.vue'
 import { roadshowAPI, BACKEND_URL } from '../services/api'
+import { useLanguage } from '../composables/useLanguage'
 
 const router = useRouter()
+const { text } = useLanguage()
 
 const state = reactive({
   loading: false,

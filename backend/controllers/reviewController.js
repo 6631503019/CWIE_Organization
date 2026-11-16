@@ -82,7 +82,7 @@ const getReviews = async (req, res, next) => {
 // @access  Public
 const createReview = async (req, res, next) => {
     try {
-        const { organization_id, job_position, review_text, rating } = req.body;
+        const { organization_id, job_position, review_text, rating, academic_year, semester } = req.body;
 
         // Check required fields
         const requiredFields = ['organization_id', 'job_position', 'review_text'];
@@ -111,7 +111,7 @@ const createReview = async (req, res, next) => {
             throw createNotFoundError('organization', organization_id);
         }
 
-        const review = await Review.create(req.body);
+        const review = await Review.create({ ...req.body, academic_year, semester });
 
         res.status(201).json({
             success: true,

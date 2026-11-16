@@ -21,6 +21,7 @@ const toOrganizationResponse = record => {
         phone_number: obj.telephone || obj.phone_number || '',
         province_id: obj.province_id || obj.province_en || obj.province_th || '',
         country_id: obj.country_id || obj.country_en || obj.country_th || '',
+        country: obj.country_id || obj.country_en || obj.country_th || '',
         organization_type: obj.organization_type || obj.business_type_en || obj.business_type_th || '',
         details: obj.details || ''
     };

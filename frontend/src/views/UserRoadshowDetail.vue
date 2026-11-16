@@ -10,7 +10,7 @@
     <!-- Detail Card -->
     <div class="detail_card">
       <div v-if="state.loading" class="loading_message">
-        Loading roadshow details...
+        {{ text('Loading roadshow details...', 'กำลังโหลดรายละเอียดโรดโชว์...') }}
       </div>
       <div v-else-if="state.error" class="error_message">
         {{ state.error }}
@@ -34,7 +34,7 @@
         </div>
 
         <div v-if="roadshow.time" class="roadshow_time_detail">
-          Time: {{ formatRoadshowTime(roadshow.time) }}
+          {{ text('Time', 'เวลา') }}: {{ formatRoadshowTime(roadshow.time) }}
         </div>
 
         <!-- Activity Images Grid -->
@@ -58,8 +58,10 @@ import UserNavbar from '../components/UserNavbar.vue'
 
 import { BACKEND_URL, roadshowAPI } from '../services/api'
 import { formatRoadshowTime } from '../utils/roadshowTime'
+import { useLanguage } from '../composables/useLanguage'
 
 const route = useRoute()
+const { text } = useLanguage()
 
 const state = reactive({
   loading: false,

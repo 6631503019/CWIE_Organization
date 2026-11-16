@@ -1043,7 +1043,9 @@ const filteredOrganizations = computed(() => {
     filtered = filtered.filter(org => 
       org.name.toLowerCase().includes(search) ||
       org.category.toLowerCase().includes(search) ||
-      org.province.toLowerCase().includes(search)
+      org.province.toLowerCase().includes(search) ||
+      org.country.toLowerCase().includes(search) ||
+      org.industry.toLowerCase().includes(search)
     )
   }
   
@@ -1054,6 +1056,18 @@ const filteredOrganizations = computed(() => {
   
   if (selectedFilters.province !== 'All') {
     filtered = filtered.filter(org => org.province === selectedFilters.province)
+  }
+
+  if (selectedFilters.industryCat !== 'All') {
+    filtered = filtered.filter(org => org.industry === selectedFilters.industryCat)
+  }
+
+  if (selectedFilters.country !== 'All') {
+    filtered = filtered.filter(org => org.country === selectedFilters.country)
+  }
+
+  if (selectedFilters.geography !== 'All') {
+    filtered = filtered.filter(org => org.geography === selectedFilters.geography)
   }
   
   return filtered
@@ -1563,7 +1577,7 @@ const fetchOrganizations = async () => {
 
   bln_Is_Fetching_Organizations = true
   try {
-    const response = await organizationAPI.getAll({ limit: 100, public: 'false', _timeoutMs: 30000 })
+    const response = await organizationAPI.getAll({ limit: 10000, public: 'false', _timeoutMs: 30000 })
     
     // Fetch all MOUs
     const mouResponse = await mouAPI.getAll({ limit: 100, _timeoutMs: 30000 })
@@ -1599,6 +1613,7 @@ const fetchOrganizations = async () => {
         country: normalizedCountry,
         geography: normalizedGeography,
         industryCategory: normalizedCategory,
+        industry: normalizedCategory,
         createdDate: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : 'N/A',
         editedDate: item.updatedAt ? new Date(item.updatedAt).toISOString().split('T')[0] : 'N/A',
         hasMOU: hasMOU,

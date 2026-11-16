@@ -13,12 +13,17 @@
     <!-- Organization Database Subtitle -->
     <span class="brand-subtitle">Organization Database</span>
 
+    <div class="language-switcher" aria-label="Language selector">
+      <button type="button" :class="{ selected: currentLanguage === 'EN' }" @click="setLanguage('EN')">EN</button>
+      <button type="button" :class="{ selected: currentLanguage === 'TH' }" @click="setLanguage('TH')">TH</button>
+    </div>
+
     <!-- Organization Link -->
     <a href="/user/organization" 
        class="nav-organization"
        :class="{ active: currentRoute === 'organization' }"
        @click.prevent="navigateTo('/user/organization')">
-      Organization
+      <i class="pi pi-building nav-icon" aria-hidden="true"></i>{{ text('Organization', 'องค์กร') }}
     </a>
 
     <!-- MOU Link -->
@@ -26,7 +31,7 @@
        class="nav-mou"
        :class="{ active: currentRoute === 'mou' }"
        @click.prevent="navigateTo('/user/mou')">
-      MOU
+      <i class="pi pi-file nav-icon" aria-hidden="true"></i>{{ text('MOU', 'บันทึกความร่วมมือ') }}
     </a>
 
     <!-- Roadshow Link -->
@@ -34,7 +39,7 @@
        class="nav-roadshow"
        :class="{ active: currentRoute === 'roadshow' }"
        @click.prevent="navigateTo('/user/roadshow')">
-      Roadshow
+      <i class="pi pi-share-alt nav-icon" aria-hidden="true"></i>{{ text('Roadshow', 'โรดโชว์') }}
     </a>
 
     <!-- Profile Separator Line -->
@@ -57,8 +62,10 @@
 import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useLanguage } from '../composables/useLanguage'
 
 const authStore = useAuthStore()
+const { currentLanguage, setLanguage, text } = useLanguage()
 const router = useRouter()
 const route = useRoute()
 
@@ -101,8 +108,8 @@ const navigateTo = (path: string) => {
 
 const handleLogout = async () => {
   try {
-    await authStore.logout()
-    router.push('/login')
+    await authStore.Logout()
+    router.push('/')
   } catch (error) {
     console.error('Logout error:', error)
   }
@@ -116,69 +123,99 @@ const handleLogout = async () => {
 /* Main Navbar Container */
 .user-navbar {
   position: fixed;
-  width: 232px;
+  width: 66px;
   height: 100vh;
   left: 0px;
   top: 0px;
-  background: #FFFFFF;
-  box-shadow: 0px 4px 4px #C97667;
+  background: #8B0000;
+  box-shadow: none;
   z-index: 1000;
+  overflow: hidden;
+  transition: width 0.2s ease;
+}
+
+.user-navbar:hover {
+  width: 227px;
 }
 
 /* Logo Image */
 .logo-image {
   position: absolute;
-  height: 62px;
-  left: 35px;
-  right: 150px;
-  top: 25px;
+  width: 43px;
+  height: 56px;
+  left: 15px;
+  top: 10px;
   object-fit: contain;
 }
 
 /* Brand Title - MFU CWIE */
 .brand-title {
   position: absolute;
-  left: 82px;
-  right: 35px;
-  top: 30px;
-  bottom: 917px;
+  left: 76px;
+  top: 19px;
   font-family: 'Inter';
   font-style: normal;
   font-weight: 700;
-  font-size: 18px;
+  font-size: 15px;
   line-height: 22px;
-  color: #F11408;
+  color: #FFFFFF;
+  white-space: nowrap;
 }
 
 /* Brand Subtitle - Organization Database */
 .brand-subtitle {
   position: absolute;
-  left: 87px;
-  right: 45px;
-  top: 56px;
-  bottom: 883px;
+  left: 76px;
+  top: 42px;
   font-family: 'Inter';
   font-style: normal;
   font-weight: 700;
   font-size: 12px;
   line-height: 15px;
-  color: #545454;
+  color: #FFFFFF;
+  white-space: nowrap;
+}
+
+.language-switcher {
+  position: absolute;
+  top: 82px;
+  left: 76px;
+  display: flex;
+  gap: 3px;
+}
+
+.language-switcher button {
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: transparent;
+  color: #FFFFFF;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.language-switcher button.selected {
+  background: #FFFFFF;
+  color: #8B0000;
 }
 
 /* Organization Navigation */
 .nav-organization {
   position: absolute;
-  left: 35px;
-  right: 35px;
+  left: 76px;
+  right: 16px;
   top: 111px;
   bottom: 830px;
   font-family: 'Outfit';
   font-style: normal;
   font-weight: 600;
-  font-size: 22px;
-  line-height: 28px;
-  color: #000000;
+  font-size: 14px;
+  line-height: 24px;
+  color: #FFFFFF;
   text-decoration: none;
+}
+
+.nav-icon {
+  width: 22px;
+  margin-right: 8px;
 }
 
 /* MOU Navigation */
@@ -186,14 +223,14 @@ const handleLogout = async () => {
   position: absolute;
   left: 35px;
   right: 35px;
-  top: 165px;
-  bottom: 776px;
+  top: 153px;
+  bottom: auto;
   font-family: 'Outfit';
   font-style: normal;
   font-weight: 600;
-  font-size: 22px;
-  line-height: 28px;
-  color: #000000;
+  font-size: 14px;
+  line-height: 24px;
+  color: #FFFFFF;
   text-decoration: none;
 }
 
@@ -202,14 +239,14 @@ const handleLogout = async () => {
   position: absolute;
   left: 35px;
   right: 35px;
-  top: 219px;
-  bottom: 722px;
+  top: 201px;
+  bottom: auto;
   font-family: 'Outfit';
   font-style: normal;
   font-weight: 600;
-  font-size: 22px;
-  line-height: 28px;
-  color: #000000;
+  font-size: 14px;
+  line-height: 24px;
+  color: #FFFFFF;
   text-decoration: none;
 }
 
@@ -254,7 +291,7 @@ const handleLogout = async () => {
   font-weight: 600;
   font-size: 14px;
   line-height: 18px;
-  color: #000000;
+  color: #FFFFFF;
 }
 
 /* Logout Icon */
@@ -263,7 +300,7 @@ const handleLogout = async () => {
   right: 13px;
   bottom: 18px;
   font-size: 18px;
-  color: #C70000;
+  color: #FFFFFF;
   cursor: pointer;
   transition: transform 0.2s;
 }
@@ -276,13 +313,14 @@ const handleLogout = async () => {
 .nav-organization.active,
 .nav-mou.active,
 .nav-roadshow.active {
-  color: #C70000 !important;
+  color: #FFFFFF !important;
+  background: rgba(255, 255, 255, 0.16);
 }
 
 /* Hover States */
 .nav-organization:hover,
 .nav-mou:hover,
 .nav-roadshow:hover {
-  color: #C70000;
+  color: #FFFFFF;
 }
 </style>

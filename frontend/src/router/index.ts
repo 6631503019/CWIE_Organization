@@ -52,7 +52,7 @@ const routes: RouteRecordRaw[] = [
         path: '/user/organization/:id',
         name: 'UserOrganizationDetail',
         component: () => import('../views/UserOrganizationDetail.vue'),
-        meta: { title: 'Organization Detail' }
+        meta: { title: 'Organization Detail', requiresAuth: true, requiresUser: true }
     },
     {
         path: '/user/mou',
@@ -69,8 +69,8 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/user/mou/:id/more',
         name: 'UserMOUMoreDetail',
-        component: () => import('../views/UserOrganizationDetail.vue'),
-        meta: { title: 'MOU More Detail' }
+        component: () => import('../views/UserMOUDetail.vue'),
+        meta: { title: 'MOU More Detail', requiresAuth: true, requiresUser: true }
     },
     {
         path: '/user/roadshow',
@@ -82,7 +82,7 @@ const routes: RouteRecordRaw[] = [
         path: '/user/roadshow/:id',
         name: 'UserRoadshowDetail',
         component: () => import('../views/UserRoadshowDetail.vue'),
-        meta: { title: 'Roadshow Detail' }
+        meta: { title: 'Roadshow Detail', requiresAuth: true, requiresUser: true }
     }
 ]
 

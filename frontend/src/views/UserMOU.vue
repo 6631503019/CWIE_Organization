@@ -5,7 +5,7 @@
     <!-- Main Content Area -->
     <div class="main_content">
       <!-- Page Title -->
-      <h1 class="page_title">MOU</h1>
+      <h1 class="page_title">{{ text('MOU', 'บันทึกความร่วมมือ') }}</h1>
       
       <!-- Search Section -->
       <div class="search_filter_section">
@@ -15,15 +15,15 @@
             <input 
               type="text" 
               class="search_input" 
-              placeholder="Text Search (Name)"
+              :placeholder="text('Text Search (Name)', 'ค้นหาตามชื่อ')"
               v-model="searchText"
             />
           </div>
           
           <!-- Action Buttons -->
           <div class="action_buttons">
-            <button class="reset_btn" @click="resetSearch">Reset</button>
-            <button class="search_btn" @click="applySearch">Search</button>
+            <button class="reset_btn" @click="resetSearch">{{ text('Reset', 'รีเซ็ต') }}</button>
+            <button class="search_btn" @click="applySearch">{{ text('Search', 'ค้นหา') }}</button>
           </div>
         </div>
       </div>
@@ -43,12 +43,12 @@
           
           <!-- Organization Info -->
           <div class="org_name">{{ mou.name }}</div>
-          <div class="org_status active">Active</div>
+          <div class="org_status active">{{ text('Active', 'ใช้งาน') }}</div>
           <div class="org_duration">{{ mou.duration }}</div>
           
           <!-- Details Button -->
           <div class="details_section">
-            <span class="details_text">Details</span>
+            <span class="details_text">{{ text('Details', 'รายละเอียด') }}</span>
             <div class="details_arrow"></div>
           </div>
         </div>
@@ -75,8 +75,10 @@ import { useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 import Pagination from '../components/Pagination.vue'
 import { organizationAPI, mouAPI, BACKEND_URL } from '../services/api'
+import { useLanguage } from '../composables/useLanguage'
 
 const router = useRouter()
+const { text } = useLanguage()
 
 // Reactive state management
 const state = reactive({
@@ -241,7 +243,7 @@ onMounted(async () => {
 }
 
 .main_content {
-  margin-left: 232px;
+  margin-left: 66px;
   padding: 40px 20px 20px 20px;
   min-height: 100vh;
 }

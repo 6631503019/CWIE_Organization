@@ -10,7 +10,7 @@
         <div class="mou_page_actions">
           <button type="button" class="add_mou_btn" @click="Open_Add_MOU">
             <span class="mou_plus_icon" aria-hidden="true">+</span>
-            <span>Add MOU</span>
+            <span>{{ text('Add MOU', 'เพิ่ม MOU') }}</span>
           </button>
         </div>
         
@@ -22,7 +22,7 @@
               <input 
                 type="text" 
                 class="search_input" 
-                placeholder="Search organization..."
+                :placeholder="text('Search organization...', 'ค้นหาองค์กร...')"
                 v-model="str_Search_Text"
               />
             </div>
@@ -30,7 +30,7 @@
             <!-- Status Filter -->
             <div class="status_filter">
               <div class="status_dropdown" @click="Toggle_Status_Dropdown">
-                <span class="status_label">{{ str_Selected_Status || 'Status' }}</span>
+                <span class="status_label">{{ str_Selected_Status || text('Status', 'สถานะ') }}</span>
                 <div class="dropdown_arrow"></div>
               </div>
               <div v-if="bln_Show_Status_Dropdown" class="status_options">
@@ -38,7 +38,7 @@
                   <input 
                     type="text" 
                     v-model="str_Status_Dropdown_Search" 
-                    placeholder="Search..."
+                    :placeholder="text('Search...', 'ค้นหา...')"
                     @click.stop
                     class="dropdown_search_input"
                   />
@@ -49,8 +49,8 @@
             
             <!-- Action Buttons -->
             <div class="action_buttons">
-              <button class="reset_btn">Reset</button>
-              <button class="search_btn">Search</button>
+              <button class="reset_btn" @click="Reset_Filters">{{ text('Reset', 'รีเซ็ต') }}</button>
+              <button class="search_btn" @click="Apply_Filters">{{ text('Search', 'ค้นหา') }}</button>
             </div>
           </div>
         </div>
@@ -60,11 +60,11 @@
   <table class="mou_table">
     <thead>
       <tr>
-        <th class="mou_table_org_col">Organization</th>
-        <th class="mou_table_document_col">Document Name</th>
-        <th class="mou_table_uploaded_col">Uploaded</th>
-        <th class="mou_table_status_col">Status</th>
-        <th class="mou_table_action_col">Actions</th>
+        <th class="mou_table_org_col">{{ text('Organization', 'องค์กร') }}</th>
+        <th class="mou_table_document_col">{{ text('Document Name', 'ชื่อเอกสาร') }}</th>
+        <th class="mou_table_uploaded_col">{{ text('Uploaded', 'อัปโหลดเมื่อ') }}</th>
+        <th class="mou_table_status_col">{{ text('Status', 'สถานะ') }}</th>
+        <th class="mou_table_action_col">{{ text('Actions', 'การดำเนินการ') }}</th>
       </tr>
     </thead>
 
@@ -331,7 +331,7 @@
   import { useLanguage } from '../composables/useLanguage'
 
   const router = useRouter()
-  const { currentLanguage } = useLanguage()
+  const { currentLanguage, text } = useLanguage()
 
   const getLocalizedValue = (english: unknown, thai: unknown): string => {
     const preferred = currentLanguage.value === 'TH' ? thai : english
@@ -591,6 +591,17 @@
   watch(str_Selected_Status, () => {
     obj_state.currentPage = 1 // Reset to first page when filtering
   })
+
+  const Reset_Filters = () => {
+    str_Search_Text.value = ''
+    str_Selected_Status.value = ''
+    str_Status_Dropdown_Search.value = ''
+    obj_state.currentPage = 1
+  }
+
+  const Apply_Filters = () => {
+    obj_state.currentPage = 1
+  }
   /**
   * Handle pagination page change
   * Purpose: Update current page with validation
@@ -682,7 +693,12 @@
         throw new Error('Invalid MOU object provided')
       }
       
-      str_Editing_Org_ID.value = obj_MOU.id
+      const str_Organization_ID = obj_MOU.organizationId || obj_MOU.organization_id?._id || obj_MOU.organization_id
+      if (!str_Organization_ID) {
+        throw new Error('Organization ID is missing for this MOU')
+      }
+
+      str_Editing_Org_ID.value = String(str_Organization_ID)
       str_Editing_Tab.value = 'organization'
       bln_Show_Edit_Modal.value = true
     } catch (error) {

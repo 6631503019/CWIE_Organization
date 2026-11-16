@@ -19,16 +19,50 @@ const getOrganizations = async (req, res, next) => {
         }
 
         const filter = { ...ORGANIZATION_FILTER };
+        const arr_And_Conditions = [];
         if (req.query.public !== 'false') filter.is_public = true;
         if (req.query.type) filter.organization_type = req.query.type;
+        if (req.query.country) {
+            arr_And_Conditions.push({
+                $or: [
+                    { country_id: new RegExp(req.query.country, 'i') },
+                    { country_en: new RegExp(req.query.country, 'i') },
+                    { country_th: new RegExp(req.query.country, 'i') }
+                ]
+            });
+        }
+        if (req.query.geography) filter.geography_id = new RegExp(req.query.geography, 'i');
+        if (req.query.province) {
+            arr_And_Conditions.push({
+                $or: [
+                    { province_id: new RegExp(req.query.province, 'i') },
+                    { province_en: new RegExp(req.query.province, 'i') },
+                    { province_th: new RegExp(req.query.province, 'i') }
+                ]
+            });
+        }
+        if (req.query.industry) {
+            arr_And_Conditions.push({
+                $or: [
+                    { industry_category_id: new RegExp(req.query.industry, 'i') },
+                    { business_category_en: new RegExp(req.query.industry, 'i') },
+                    { business_category_th: new RegExp(req.query.industry, 'i') }
+                ]
+            });
+        }
         if (req.query.search) {
             const search = new RegExp(req.query.search, 'i');
-            filter.$or = [
+            const searchConditions = [
                 { organization_name_th: search },
                 { organization_name_en: search },
-                { organization_email: search }
+                { organization_email: search },
+                { country_id: search },
+                { province_id: search },
+                { industry_category_id: search }
             ];
+            arr_And_Conditions.push({ $or: searchConditions });
         }
+        if (arr_And_Conditions.length) filter.$and = arr_And_Conditions;
 
         const [records, total] = await Promise.all([
             InternshipRecord.find(filter)

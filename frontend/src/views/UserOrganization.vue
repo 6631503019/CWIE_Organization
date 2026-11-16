@@ -5,18 +5,18 @@
     <!-- Main Content Area -->
     <div class="main_content">
       <!-- Page Title -->
-      <h1 class="page_title">Organization</h1>
+      <h1 class="page_title">{{ text('Organization', 'องค์กร') }}</h1>
       
       <!-- Filter Section -->
       <div class="filter_section">
-        <div class="filter_title">Filter Organization</div>
+        <div class="filter_title">{{ text('Filter Organization', 'ตัวกรององค์กร') }}</div>
         
         <!-- Text Search -->
         <div class="search_input_wrapper">
           <input 
             type="text" 
             class="search_input" 
-            placeholder="Text Search (Name, Tags)"
+            :placeholder="text('Text Search (Name, Tags)', 'ค้นหาชื่อหรือแท็ก')"
             v-model="searchText"
           />
         </div>
@@ -24,7 +24,7 @@
         <!-- Organization Type Dropdown -->
         <div class="filter_dropdown org_type_dropdown">
           <div class="dropdown_toggle" @click="toggleDropdown('orgType')">
-            <span class="dropdown_label">{{ selectedOrgType || '--Organization Type--' }}</span>
+            <span class="dropdown_label">{{ selectedOrgType || text('--Organization Type--', '--ประเภทองค์กร--') }}</span>
             <div class="dropdown_arrow"></div>
           </div>
           <div v-if="showDropdowns.orgType" class="dropdown_menu">
@@ -38,7 +38,7 @@
         <!-- Industry Category Dropdown -->
         <div class="filter_dropdown industry_dropdown">
           <div class="dropdown_toggle" @click="toggleDropdown('industry')">
-            <span class="dropdown_label">{{ selectedIndustry || '--Industry Category--' }}</span>
+            <span class="dropdown_label">{{ selectedIndustry || text('--Industry Category--', '--หมวดหมู่ธุรกิจ--') }}</span>
             <div class="dropdown_arrow"></div>
           </div>
           <div v-if="showDropdowns.industry" class="dropdown_menu">
@@ -60,7 +60,7 @@
         <!-- Country Dropdown -->
         <div class="filter_dropdown country_dropdown">
           <div class="dropdown_toggle" @click="toggleDropdown('country')">
-            <span class="dropdown_label">{{ selectedCountry || '---Country---' }}</span>
+            <span class="dropdown_label">{{ selectedCountry || text('---Country---', '---ประเทศ---') }}</span>
             <div class="dropdown_arrow"></div>
           </div>
           <div v-if="showDropdowns.country" class="dropdown_menu">
@@ -82,7 +82,7 @@
         <!-- Geography Dropdown -->
         <div class="filter_dropdown geography_dropdown">
           <div class="dropdown_toggle" @click="toggleDropdown('geography')">
-            <span class="dropdown_label">{{ selectedGeography || '--Geography--' }}</span>
+            <span class="dropdown_label">{{ selectedGeography || text('--Geography--', '--ภูมิภาค--') }}</span>
             <div class="dropdown_arrow"></div>
           </div>
           <div v-if="showDropdowns.geography" class="dropdown_menu">
@@ -104,7 +104,7 @@
         <!-- Province Dropdown -->
         <div class="filter_dropdown province_dropdown">
           <div class="dropdown_toggle" @click="toggleDropdown('province')">
-            <span class="dropdown_label">{{ selectedProvince || '--Province--' }}</span>
+            <span class="dropdown_label">{{ selectedProvince || text('--Province--', '--จังหวัด--') }}</span>
             <div class="dropdown_arrow"></div>
           </div>
           <div v-if="showDropdowns.province" class="dropdown_menu">
@@ -125,8 +125,8 @@
         
         <!-- Action Buttons -->
         <div class="filter_actions">
-          <button class="reset_btn" @click="resetFilters">Reset</button>
-          <button class="search_btn" @click="applyFilters">search</button>
+            <button class="reset_btn" @click="resetFilters">{{ text('Reset', 'รีเซ็ต') }}</button>
+          <button class="search_btn" @click="applyFilters">{{ text('Search', 'ค้นหา') }}</button>
         </div>
       </div>
       
@@ -210,8 +210,10 @@ import { useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 import Pagination from '../components/Pagination.vue'
 import { organizationAPI, reviewAPI } from '../services/api'
+import { useLanguage } from '../composables/useLanguage'
 
 const router = useRouter()
+const { text } = useLanguage()
 
 // Reactive state
 const loading = ref(false)
@@ -498,7 +500,7 @@ onMounted(async () => {
 }
 
 .main_content {
-  margin-left: 232px;
+  margin-left: 66px;
   padding: 40px 20px 20px 20px;
   min-height: 100vh;
 }

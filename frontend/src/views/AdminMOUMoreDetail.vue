@@ -137,6 +137,13 @@
 
     </main>
 
+    <OrganizationEditModal
+      v-model="bln_Show_Edit_Modal"
+      :organization-id="organization?._id || ''"
+      initial-tab="organization"
+      @saved="fetchMOU"
+    />
+
     <NotificationModal
       :show="showNotificationModal"
       :message="notificationMessage"
@@ -151,11 +158,13 @@ import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
+import OrganizationEditModal from '../components/OrganizationEditModal.vue'
 import { organizationAPI, reviewAPI, mouAPI, BACKEND_URL } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
 
 const route = useRoute()
 const router = useRouter()
+const bln_Show_Edit_Modal = ref(false)
 
 const organization = ref<any>(null)
 const mou = ref<any>(null)
@@ -334,6 +343,7 @@ const countryLabel = computed(() => {
     organization.value?.country?.name_en,
     organization.value?.country?.name_th,
     organization.value?.country?.name,
+    organization.value?.country_id,
     organization.value?.country,
     organization.value?.address?.country
   )
@@ -492,36 +502,7 @@ const editOrganization = async () => {
     return
   }
 
-  const routeRecords = router.getRoutes()
-  const editCandidates = routeRecords.filter(record => {
-    const routeDescription = `${String(record.name ?? '')} ${record.path}`.toLowerCase()
-    return routeDescription.includes('organization') && /edit|update/.test(routeDescription)
-  })
-
-  // Prefer an explicit organization edit URL, then a named edit route.
-  const editRoute =
-    editCandidates.find(record => /\/(edit|update)(\/|$)/i.test(record.path)) ||
-    editCandidates.find(record => /edit|update/i.test(String(record.name ?? '')))
-
-  if (editRoute?.name) {
-    const params: Record<string, string> = {}
-    const parameterNames = editRoute.path.match(/:([A-Za-z0-9_]+)/g) || []
-
-    parameterNames.forEach(parameter => {
-      params[parameter.slice(1)] = String(orgId)
-    })
-
-    await router.push({
-      name: editRoute.name,
-      params
-    })
-    return
-  }
-
-  // Keep the application's existing expected path as a fallback.
-  await router.push({
-    path: `/admin/organization/${encodeURIComponent(String(orgId))}/edit`
-  })
+  bln_Show_Edit_Modal.value = true
 }
 
 const goBack = () => {
