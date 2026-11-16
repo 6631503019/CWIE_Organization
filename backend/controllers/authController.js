@@ -26,23 +26,30 @@ const loginWithGoogle = async (req, res, next) => {
         });
 
         const decodedToken = await firebaseAdmin.verifyIdToken(str_Id_Token);
-        const email = decodedToken.email?.toLowerCase();
-        const allowedDomains = (process.env.GOOGLE_WORKSPACE_DOMAINS || process.env.GOOGLE_WORKSPACE_DOMAIN || 'mfu.ac.th,lamduan.mfu.ac.th')
-            .split(',')
-            .map(domain => domain.trim().toLowerCase().replace(/^@/, ''))
-            .filter(Boolean);
-        const adminEmail = (process.env.ADMIN_GOOGLE_EMAIL || '6631503019@lamduan.mfu.ac.th').trim().toLowerCase();
-        const emailDomain = email?.split('@').pop();
+        const email = decodedToken.email?.trim().toLowerCase();
+const loginType = req.body.loginType;
 
-        const isAdminEmail = email === adminEmail;
-        const isAllowedDomain = emailDomain && allowedDomains.includes(emailDomain);
+const SPECIAL_ADMIN_EMAIL = '6631503019@lamduan.mfu.ac.th';
 
-        if (!decodedToken.email_verified || !email || (!isAdminEmail && !isAllowedDomain)) {
-            throw new CustomError(
-                ERROR_CODES.VALIDATION_EMAIL_DOMAIN_NOT_ALLOWED,
-                `Only the registered Admin email or university accounts are allowed`
-            );
-        }
+const isSpecialAccount = email === SPECIAL_ADMIN_EMAIL;
+const isAdminDomain = email?.endsWith('@mfu.ac.th');
+const isStudentDomain = email?.endsWith('@lamduan.mfu.ac.th');
+
+if (
+  !decodedToken.email_verified ||
+  !email ||
+  !['admin', 'student'].includes(loginType)
+) {
+  throw new CustomError('Invalid login credentials.', 403);
+}
+
+const isAuthorized =
+  (loginType === 'admin' && (isAdminDomain || isSpecialAccount)) ||
+  (loginType === 'student' && (isStudentDomain || isSpecialAccount));
+
+if (!isAuthorized) {
+  throw new CustomError('This account is not authorized for this login type.', 403);
+}
 
         let user = await User.findOne({ $or: [{ firebaseUid: decodedToken.uid }, { email }] });
 
