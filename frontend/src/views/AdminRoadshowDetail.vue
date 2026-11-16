@@ -64,8 +64,24 @@
             </div>
           </div>
 
-          <button class="btn_back" type="button" @click="$router.back()">Back to List</button>
-          <button class="btn_edit" type="button" @click="$router.back()">Edit</button>
+          <button
+  class="btn_back"
+  type="button"
+  @click="router.back()"
+>
+  Back to List
+</button>
+
+<button
+  class="btn_edit"
+  type="button"
+  @click="router.push({
+    name: 'AdminRoadshowEdit',
+    params: { id: route.params.id }
+  })"
+>
+  Edit
+</button>
         </template>
       </section>
     </main>
@@ -74,7 +90,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import { formatRoadshowTime } from '../utils/roadshowTime'
@@ -102,6 +118,7 @@ const obj_UI_State = reactive({
 const obj_Roadshow_Data = ref<any>(null)  // Object: roadshow details from API
 
 const route = useRoute()
+const router = useRouter()
 const { currentLanguage } = useLanguage()
 
 function Get_Roadshow_Title(obj_Roadshow: any): string {
