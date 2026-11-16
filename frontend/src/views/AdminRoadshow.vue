@@ -333,6 +333,7 @@ import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
 import { formatRoadshowTime, normalizeRoadshowTime } from '../utils/roadshowTime'
 import { useLanguage } from '../composables/useLanguage'
+import { useRoute, useRouter } from 'vue-router'
 
 // ===========================
 // CONSTANTS
@@ -346,7 +347,7 @@ const CONST_AUTO_REFRESH_INTERVAL_MS = 45000 // 45 seconds
 const CONST_ITEMS_PER_PAGE = 5
 const CONST_EMPTY_IMAGE_SVG = "data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27271%27 height=%27272%27%3E%3Crect fill=%27%23ddd%27 width=%27271%27 height=%27272%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E"
 const CONST_API_LIMIT_QUERY = '?limit=100&public=false'
-
+const router = useRouter()
 // ===========================
 // REACTIVE STATE MANAGEMENT
 // ===========================
@@ -582,7 +583,12 @@ const Handle_Page_Change = async (i_Page: number) => {
  * Side effects: Modifies obj_Form_Data, updates bln_Show_Edit_Modal and str_Editing_Roadshow_ID
  */
 const View_Roadshow = (obj_Roadshow: any): void => {
-  if (obj_Roadshow?.id) router.push(`/admin/roadshow/${obj_Roadshow.id}`)
+  if (!obj_Roadshow?.id) {
+    console.error('Roadshow ID not found:', obj_Roadshow)
+    return
+  }
+
+  router.push(`/admin/roadshow/${obj_Roadshow.id}`)
 }
 
 const Edit_Roadshow = (obj_Roadshow: any) => {
