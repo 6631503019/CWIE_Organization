@@ -27,7 +27,6 @@ const loginWithGoogle = async (req, res, next) => {
 
         const decodedToken = await firebaseAdmin.verifyIdToken(str_Id_Token);
         const email = decodedToken.email?.trim().toLowerCase();
-const loginType = req.body.loginType;
 
 const SPECIAL_ADMIN_EMAIL = '6631503019@lamduan.mfu.ac.th';
 
