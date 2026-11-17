@@ -19,6 +19,13 @@ const CONST_HTTP_UNAUTHORIZED = 401
 // ============================================================================
 let bln_Is_Token_Refreshing = false
 let arr_Failed_Request_Queue: any[] = []
+let bln_Session_Expiry_Handled = false
+
+if (typeof window !== 'undefined') {
+    window.addEventListener('auth:started', () => {
+        bln_Session_Expiry_Handled = false
+    })
+}
 
 // ============================================================================
 // Function: Process_Token_Refresh_Queue
@@ -79,6 +86,9 @@ const Clear_All_Auth_Data = (): void => {
         localStorage.removeItem(CONST_AUTH_USER_STORAGE_KEY)
         localStorage.removeItem(CONST_AUTH_REFRESH_TOKEN_KEY)
         localStorage.removeItem('token') // Legacy key
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('auth:expired'))
+        }
     } catch (error) {
         console.error('Error clearing auth data:', error)
     }
@@ -218,7 +228,8 @@ obj_API_Client.interceptors.response.use(
                         error: (err as any).message
                     })
 
-                    if (bln_Should_Redirect_On_Refresh_Fail) {
+                    if (bln_Should_Redirect_On_Refresh_Fail && !bln_Session_Expiry_Handled) {
+                        bln_Session_Expiry_Handled = true
                         console.debug('User was logged in but token refresh failed - redirecting to login')
                         window.location.href = '/login'
                     } else {
@@ -243,7 +254,8 @@ obj_API_Client.interceptors.response.use(
                 // If user has no token, a 401 is expected for public endpoints with optional auth
                 const bln_Should_Redirect = !str_Skip_Redirect && str_Had_Token && typeof window !== 'undefined' && window.location.pathname !== '/login'
 
-                if (bln_Should_Redirect) {
+                if (bln_Should_Redirect && !bln_Session_Expiry_Handled) {
+                    bln_Session_Expiry_Handled = true
                     console.debug('User was logged in but auth failed - redirecting to login')
                     window.location.href = '/login'
                 } else {

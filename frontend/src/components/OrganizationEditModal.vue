@@ -10,6 +10,25 @@
         >
           <span>Organization</span>
         </div>
+
+        <div class="mou_date_row">
+          <div class="form_group date_group">
+            <label>Publication Start</label>
+            <input type="datetime-local" v-model="mouData.publicationStartAt" class="date_input" />
+          </div>
+          <div class="form_group date_group">
+            <label>Publication End</label>
+            <input type="datetime-local" v-model="mouData.publicationEndAt" class="date_input" />
+          </div>
+        </div>
+
+        <div class="form_group date_group">
+          <label>Publication Status</label>
+          <select v-model="mouData.isPublished" class="date_input">
+            <option :value="true">Published</option>
+            <option :value="false">Hidden</option>
+          </select>
+        </div>
         <div 
           class="tab_item"
           :class="{ active: activeTab === 'review' }"
@@ -211,6 +230,39 @@
               <input type="tel" v-model="formData.phoneNumber" placeholder="Phone Number" />
             </div>
           </div>
+
+          <div class="form_row">
+            <div class="form_field">
+              <label>Country (EN)</label>
+              <input type="text" v-model="formData.countryEN" placeholder="Country (EN)" />
+            </div>
+            <div class="form_field">
+              <label>Country (TH)</label>
+              <input type="text" v-model="formData.countryTH" placeholder="Country (TH)" />
+            </div>
+          </div>
+
+          <div class="form_row">
+            <div class="form_field">
+              <label>Province (EN)</label>
+              <input type="text" v-model="formData.provinceEN" placeholder="Province (EN)" />
+            </div>
+            <div class="form_field">
+              <label>Province (TH)</label>
+              <input type="text" v-model="formData.provinceTH" placeholder="Province (TH)" />
+            </div>
+          </div>
+
+          <div class="form_row">
+            <div class="form_field">
+              <label>School (EN)</label>
+              <input type="text" v-model="formData.schoolEN" placeholder="School (EN)" />
+            </div>
+            <div class="form_field">
+              <label>School (TH)</label>
+              <input type="text" v-model="formData.schoolTH" placeholder="School (TH)" />
+            </div>
+          </div>
           
           <div class="form_field full_width">
             <label>Details</label>
@@ -256,6 +308,9 @@
               <div class="review_carousel_card" v-if="currentReview">
                 <div class="review_card_header">
                   <div class="review_position">{{ currentReview.job_position || 'N/A' }}</div>
+                  <button class="delete_review_btn" @click="startEditingReview(currentReview)" title="Edit review">
+                    <span aria-hidden="true">Edit</span>
+                  </button>
                   <button class="delete_review_btn" @click="deleteExistingReview(currentReview._id)" title="Delete review">
                     <div class="delete_icon"></div>
                   </button>
@@ -287,6 +342,17 @@
           <div class="form_field">
             <label>Review</label>
             <textarea v-model="reviewData.review" placeholder="Write your review..." rows="6"></textarea>
+          </div>
+
+          <div class="form_row">
+            <div class="form_field">
+              <label>Academic Year</label>
+              <input type="text" v-model="reviewData.academicYear" placeholder="Academic Year" />
+            </div>
+            <div class="form_field">
+              <label>Semester</label>
+              <input type="text" v-model="reviewData.semester" placeholder="Semester" />
+            </div>
           </div>
           
           <!-- Action Buttons -->
@@ -403,8 +469,14 @@ const formData = reactive({
   organizationType: '',
   industryCategory: '',
   country: '',
+  countryEN: '',
+  countryTH: '',
   geography: '',
   province: '',
+  provinceEN: '',
+  provinceTH: '',
+  schoolEN: '',
+  schoolTH: '',
   email: '',
   phoneNumber: '',
   details: '',
@@ -470,7 +542,10 @@ const filteredProvinces = computed(() => {
 
 const reviewData = reactive({
   jobPosition: '',
-  review: ''
+  review: '',
+  academicYear: '',
+  semester: '',
+  editingId: ''
 })
 
 // Fetch existing reviews for organization
@@ -506,6 +581,14 @@ const currentReview = computed(() => {
   return existingReviews.value[currentReviewIndex.value] || null
 })
 
+const startEditingReview = (review: any) => {
+  reviewData.editingId = String(review._id || '')
+  reviewData.jobPosition = review.job_position || ''
+  reviewData.review = review.review_text || ''
+  reviewData.academicYear = review.academic_year || ''
+  reviewData.semester = review.semester || ''
+}
+
 // Delete a review
 const deleteExistingReview = async (reviewId: string) => {
   const confirmed = confirm('Are you sure you want to delete this review?')
@@ -528,7 +611,10 @@ const deleteExistingReview = async (reviewId: string) => {
 const mouData = reactive({
   mouFile: null as File | null,
   startDate: '',
-  endDate: ''
+  endDate: '',
+  publicationStartAt: '',
+  publicationEndAt: '',
+  isPublished: true
 })
 
 // Methods
@@ -583,10 +669,16 @@ const saveAllData = async () => {
     formDataToSend.append('address_th', formData.addressTH)
     formDataToSend.append('organization_type', formData.organizationType)
     
-    if (formData.industryCategory) formDataToSend.append('industry_category_id', formData.industryCategory)
-    if (formData.country) formDataToSend.append('country_id', formData.country)
-    if (formData.geography) formDataToSend.append('geography_id', formData.geography)
-    if (formData.province) formDataToSend.append('province_id', formData.province)
+    formDataToSend.append('industry_category_id', formData.industryCategory)
+    formDataToSend.append('country_id', formData.country)
+    formDataToSend.append('country_en', formData.countryEN)
+    formDataToSend.append('country_th', formData.countryTH)
+    formDataToSend.append('geography_id', formData.geography)
+    formDataToSend.append('province_id', formData.province)
+    formDataToSend.append('province_en', formData.provinceEN)
+    formDataToSend.append('province_th', formData.provinceTH)
+    formDataToSend.append('school_en', formData.schoolEN)
+    formDataToSend.append('school_th', formData.schoolTH)
     
     formDataToSend.append('email', formData.email)
     formDataToSend.append('phone_number', formData.phoneNumber)
@@ -617,11 +709,17 @@ const saveAllData = async () => {
           const reviewPayload = {
             organization_id: savedOrgId,
             job_position: reviewData.jobPosition,
-            review_text: reviewData.review
+            review_text: reviewData.review,
+            academic_year: reviewData.academicYear,
+            semester: reviewData.semester
           }
-          
-          await reviewAPI.create(reviewPayload)
+          if (reviewData.editingId) {
+            await reviewAPI.update(reviewData.editingId, reviewPayload)
+          } else {
+            await reviewAPI.create(reviewPayload)
+          }
           savedItems.push('Review')
+          await fetchExistingReviews(savedOrgId)
           console.log('Review saved successfully')
         } catch (reviewError: any) {
           console.error('Review save failed:', reviewError)
@@ -631,10 +729,10 @@ const saveAllData = async () => {
     }
 
     // Step 3: Save MOU Data (if provided)
-    if (mouData.startDate && mouData.endDate) {
+    if ((mouData.startDate && mouData.endDate) || existingMouId.value) {
       if (new Date(mouData.endDate) <= new Date(mouData.startDate)) {
         errors.push('MOU (End date must be after start date)')
-      } else if (!mouData.mouFile) {
+      } else if (!mouData.mouFile && !existingMouId.value) {
         errors.push('MOU (No file selected)')
       } else if (!savedOrgId) {
         errors.push('MOU (No organization ID)')
@@ -649,7 +747,10 @@ const saveAllData = async () => {
           mouFormData.append('organization_id', savedOrgId)
           mouFormData.append('start_date', mouData.startDate)
           mouFormData.append('end_date', mouData.endDate)
-          mouFormData.append('mou', mouData.mouFile)
+          mouFormData.append('publication_start_at', mouData.publicationStartAt)
+          mouFormData.append('publication_end_at', mouData.publicationEndAt)
+          mouFormData.append('is_published', String(mouData.isPublished))
+          if (mouData.mouFile) mouFormData.append('mou', mouData.mouFile)
 
           if (existingMouId.value) {
             await mouAPI.update(existingMouId.value, mouFormData)
@@ -712,9 +813,15 @@ const loadOrganizationData = async () => {
     formData.addressTH = orgData.address_th || ''
     formData.organizationType = orgData.organization_type || ''
     formData.industryCategory = orgData.industry_category_id || ''
-    formData.country = orgData.country_id || ''
+    formData.country = orgData.country_id || orgData.country_en || orgData.country_th || ''
+    formData.countryEN = orgData.country_en || ''
+    formData.countryTH = orgData.country_th || ''
     formData.geography = orgData.geography_id || ''
-    formData.province = orgData.province_id || ''
+    formData.province = orgData.province_id || orgData.province_en || orgData.province_th || ''
+    formData.provinceEN = orgData.province_en || ''
+    formData.provinceTH = orgData.province_th || ''
+    formData.schoolEN = orgData.school_en || ''
+    formData.schoolTH = orgData.school_th || ''
     formData.email = orgData.email || ''
     formData.phoneNumber = orgData.phone_number || ''
     formData.details = orgData.details || ''
@@ -752,6 +859,9 @@ const loadMOUData = async () => {
       existingMouId.value = mou._id
       mouData.startDate = mou.start_date ? new Date(mou.start_date).toISOString().split('T')[0] : ''
       mouData.endDate = mou.end_date ? new Date(mou.end_date).toISOString().split('T')[0] : ''
+      mouData.publicationStartAt = mou.publication_start_at ? new Date(mou.publication_start_at).toISOString().slice(0, 16) : ''
+      mouData.publicationEndAt = mou.publication_end_at ? new Date(mou.publication_end_at).toISOString().slice(0, 16) : ''
+      mouData.isPublished = mou.is_published !== false
       
       if (mou.mou_path) {
         mouPreview.value = `${BACKEND_URL}${mou.mou_path}`

@@ -158,6 +158,7 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
                 localStorage.setItem(CONST_AUTH_TOKEN_STORAGE_KEY, data.token)
                 localStorage.setItem(CONST_AUTH_USER_STORAGE_KEY, JSON.stringify(data.data))
                 localStorage.setItem(CONST_AUTH_REFRESH_TOKEN_STORAGE_KEY, data.refreshToken)
+                window.dispatchEvent(new CustomEvent('auth:started'))
                 return { success: true, message: data.message }
             } catch (error) {
                 await signOut(firebaseAuth).catch(() => undefined)

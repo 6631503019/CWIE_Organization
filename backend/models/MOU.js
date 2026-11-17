@@ -18,6 +18,14 @@ const mouSchema = new mongoose.Schema({
         type: Date,
         required: false
     },
+    publication_start_at: {
+        type: Date,
+        required: false
+    },
+    publication_end_at: {
+        type: Date,
+        required: false
+    },
     is_published: {
         type: Boolean,
         default: true  // Default to published for new MOUs
@@ -33,6 +41,7 @@ const mouSchema = new mongoose.Schema({
 
 mouSchema.index({ organization_id: 1 });
 mouSchema.index({ is_published: 1 });
+mouSchema.index({ is_published: 1, publication_start_at: 1, publication_end_at: 1 });
 
 // Virtual for mou_path (alias for mou_file_path with leading slash)
 mouSchema.virtual('mou_path').get(function () {

@@ -51,7 +51,7 @@
     </div>
 
     <!-- Profile Name -->
-    <span class="profile-name">{{ authStore.user?.name || 'Student User' }}</span>
+    <span class="profile-name">{{ authStore.user?.email || authStore.user?.name || 'Student User' }}</span>
 
     <!-- Logout Icon -->
     <i class="pi pi-sign-out logout-icon" @click="handleLogout" title="Logout"></i>

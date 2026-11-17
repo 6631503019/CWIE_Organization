@@ -75,10 +75,7 @@
 <button
   class="btn_edit"
   type="button"
-  @click="router.push({
-    name: 'AdminRoadshowEdit',
-    params: { id: route.params.id }
-  })"
+  @click="router.push({ name: 'AdminRoadshow', query: { edit: String(route.params.id) } })"
 >
   Edit
 </button>

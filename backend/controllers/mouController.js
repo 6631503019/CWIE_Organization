@@ -3,6 +3,36 @@ const InternshipRecord = require('../models/InternshipRecord');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 const { deleteStoredFile } = require('../utils/fileCleanup');
 
+const parseOptionalDate = (value, field) => {
+    if (value === undefined || value === null) return undefined;
+    if (value === '') return null;
+    const dateValue = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)
+        ? `${value}:00+07:00`
+        : value;
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) {
+        throw new CustomError(ERROR_CODES.VALIDATION_DATE_INVALID, `Invalid ${field} format`, { field });
+    }
+    return parsed;
+};
+
+const validatePublicationWindow = (body) => {
+    const start = parseOptionalDate(body.publication_start_at, 'publication_start_at');
+    const end = parseOptionalDate(body.publication_end_at, 'publication_end_at');
+    if (start && end && start >= end) {
+        throw new CustomError(ERROR_CODES.VALIDATION_INVALID_RANGE, 'Publication start must be before publication end');
+    }
+    if (start !== undefined) body.publication_start_at = start;
+    if (end !== undefined) body.publication_end_at = end;
+};
+
+const isPublishedNow = mou => {
+    const now = new Date();
+    return mou.is_published !== false &&
+        (!mou.publication_start_at || mou.publication_start_at <= now) &&
+        (!mou.publication_end_at || mou.publication_end_at > now);
+};
+
 // @desc    Get all MOUs
 // @route   GET /api/mou
 // @access  Public
@@ -12,9 +42,15 @@ const getMOUs = async (req, res, next) => {
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        // Build filter based on published parameter
+        const isStudentRequest = !req.user || req.user.role !== 'admin';
         let filter = {};
-        if (req.query.published === 'true') {
+        if (isStudentRequest) {
+            filter.is_published = true;
+            filter.$and = [
+                { $or: [{ publication_start_at: null }, { publication_start_at: { $lte: new Date() } }] },
+                { $or: [{ publication_end_at: null }, { publication_end_at: { $gt: new Date() } }] }
+            ];
+        } else if (req.query.published === 'true') {
             filter.is_published = true;
         } else if (req.query.published === 'false') {
             filter.is_published = false;
@@ -59,7 +95,7 @@ const getMOU = async (req, res, next) => {
         }
 
         // Check if MOU is published or user has permission
-        if (!mou.is_published && (!req.user || req.user.role !== 'admin')) {
+        if (!isPublishedNow(mou) && (!req.user || req.user.role !== 'admin')) {
             throw new CustomError(
                 ERROR_CODES.FORBIDDEN_RESOURCE_ACCESS_DENIED,
                 'This MOU is not published',
@@ -88,6 +124,7 @@ const createMOU = async (req, res, next) => {
         console.log('=====================================');
 
         const { organization_id } = req.body;
+        validatePublicationWindow(req.body);
 
         // Check required fields
         if (!organization_id) {
@@ -202,6 +239,7 @@ const updateMOU = async (req, res, next) => {
         console.log('=====================================');
 
         const mou = await MOU.findById(req.params.id);
+        validatePublicationWindow(req.body);
 
         if (!mou) {
             throw createNotFoundError('mou', req.params.id);

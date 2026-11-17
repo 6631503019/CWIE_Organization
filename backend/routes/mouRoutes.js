@@ -6,17 +6,17 @@ const {
     updateMOU,
     deleteMOU
 } = require('../controllers/mouController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
 
 const router = express.Router();
 
 router.route('/')
-    .get(getMOUs)
+    .get(optionalAuth, getMOUs)
     .post(protect, authorize('admin'), upload.single('mou'), createMOU);
 
 router.route('/:id')
-    .get(getMOU)
+    .get(optionalAuth, getMOU)
     .put(protect, authorize('admin'), upload.single('mou'), updateMOU)
     .delete(protect, authorize('admin'), deleteMOU);
 

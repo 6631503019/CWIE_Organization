@@ -244,6 +244,25 @@
       >
         No organizations found
       </div>
+
+      <div class="add_mou_dates">
+        <label class="add_mou_field">
+          <span class="add_mou_label">Publication Start</span>
+          <input v-model="obj_Add_MOU.publicationStartAt" class="add_mou_input" type="datetime-local">
+        </label>
+        <label class="add_mou_field">
+          <span class="add_mou_label">Publication End</span>
+          <input v-model="obj_Add_MOU.publicationEndAt" class="add_mou_input" type="datetime-local">
+        </label>
+      </div>
+
+      <label class="add_mou_field">
+        <span class="add_mou_label">Publication Status</span>
+        <select v-model="obj_Add_MOU.isPublished" class="add_mou_input">
+          <option :value="true">Published</option>
+          <option :value="false">Hidden</option>
+        </select>
+      </label>
     </div>
   </div>
         </div>
@@ -381,7 +400,13 @@
   const str_Editing_Tab = ref<'organization' | 'review' | 'mou'>('organization')
   const bln_Show_Add_MOU_Modal = ref(false)
   const arr_Add_MOU_Organizations = ref<any[]>([])
-  const obj_Add_MOU = reactive({ organizationId: '', file: null as File | null})
+  const obj_Add_MOU = reactive({
+    organizationId: '',
+    file: null as File | null,
+    publicationStartAt: '',
+    publicationEndAt: '',
+    isPublished: true
+  })
   const str_Add_MOU_Organization_Search = ref('')
   const bln_Show_Add_MOU_Organization_List = ref(false)
 
@@ -484,6 +509,9 @@
     bln_Show_Add_MOU_Modal.value = false
     obj_Add_MOU.organizationId = ''
     obj_Add_MOU.file = null
+    obj_Add_MOU.publicationStartAt = ''
+    obj_Add_MOU.publicationEndAt = ''
+    obj_Add_MOU.isPublished = true
     obj_state.error = null
     str_Add_MOU_Organization_Search.value = ''
   bln_Show_Add_MOU_Organization_List.value = false
@@ -549,6 +577,9 @@
 
       // ใช้ตัวแปร file ที่ผ่าน null check แล้ว
       formData.append('mou', file)
+      if (obj_Add_MOU.publicationStartAt) formData.append('publication_start_at', obj_Add_MOU.publicationStartAt)
+      if (obj_Add_MOU.publicationEndAt) formData.append('publication_end_at', obj_Add_MOU.publicationEndAt)
+      formData.append('is_published', String(obj_Add_MOU.isPublished))
 
       await mouAPI.create(formData)
 

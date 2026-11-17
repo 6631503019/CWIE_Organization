@@ -40,12 +40,12 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../stores/auth'
 import { useLanguage } from '../../composables/useLanguage'
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   userName?: string
 }>(), {
   userName: 'Admin User'
@@ -56,6 +56,7 @@ const authStore = useAuthStore()
 const { currentLanguage, setLanguage, text } = useLanguage()
 const isMenuOpen = ref(false)
 const adminMenuRef = ref<HTMLElement | null>(null)
+const userName = computed(() => authStore.obj_Current_User?.email || props.userName)
 
 const handleDocumentClick = (event: MouseEvent) => {
   if (adminMenuRef.value && !adminMenuRef.value.contains(event.target as Node)) {

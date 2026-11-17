@@ -347,6 +347,7 @@ const CONST_AUTO_REFRESH_INTERVAL_MS = 45000 // 45 seconds
 const CONST_ITEMS_PER_PAGE = 5
 const CONST_EMPTY_IMAGE_SVG = "data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27271%27 height=%27272%27%3E%3Crect fill=%27%23ddd%27 width=%27271%27 height=%27272%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E"
 const CONST_API_LIMIT_QUERY = '?limit=100&public=false'
+const route = useRoute()
 const router = useRouter()
 // ===========================
 // REACTIVE STATE MANAGEMENT
@@ -603,7 +604,7 @@ const Edit_Roadshow = (obj_Roadshow: any) => {
     obj_Form_Data.title_en = obj_Roadshow.title_en || obj_Roadshow.title || ''
     obj_Form_Data.title_th = obj_Roadshow.title_th || ''
     obj_Form_Data.topic = obj_Form_Data.title_en || obj_Form_Data.title_th
-    obj_Form_Data.details = obj_Roadshow.description || ''
+    obj_Form_Data.details = obj_Roadshow.details || obj_Roadshow.description || ''
     obj_Form_Data.organization_en = obj_Roadshow.organization_en || obj_Roadshow.organization || ''
     obj_Form_Data.organization_th = obj_Roadshow.organization_th || ''
     obj_Form_Data.location = obj_Roadshow.location || ''
@@ -615,8 +616,8 @@ const Edit_Roadshow = (obj_Roadshow: any) => {
     // Store dates in YYYY-MM-DD format internally
     obj_Form_Data.posted_date = obj_Roadshow.posted_date || ''
     obj_Form_Data.deleted_date = obj_Roadshow.deleted_date || ''
-    obj_Form_Data.isPublic = obj_Roadshow.isPublic || false
-    obj_Form_Data.existingActivityImagePaths = obj_Roadshow.activityImagePaths || []
+    obj_Form_Data.isPublic = obj_Roadshow.is_public ?? obj_Roadshow.isPublic ?? false
+    obj_Form_Data.existingActivityImagePaths = obj_Roadshow.activity_image_paths || obj_Roadshow.activityImagePaths || []
     obj_Form_Data.deleteActivityImageIndices = []
     
     // DEBUG: Log entire roadshow object
@@ -1402,6 +1403,11 @@ onMounted(async () => {
     obj_state.loading = true
     
     await Load_Roadshows_From_API()
+    const editId = String(route.query.edit || '')
+    if (editId) {
+      const roadshow = arr_Roadshows.value.find(item => String(item.id) === editId)
+      if (roadshow) Edit_Roadshow(roadshow)
+    }
     // Setup auto-refresh interval
     Setup_Auto_Refresh()
     
