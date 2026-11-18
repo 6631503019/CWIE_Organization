@@ -415,18 +415,37 @@
   * Output: None (routes to new page)
   * Side effects: Changes current route
   */
-  const View_MOU_Details = (obj_MOU: any) => {
+  const View_MOU_Details = async (obj_MOU: any) => {
     try {
-      const str_Organization_ID = obj_MOU?.organizationId ||
+      let str_Organization_ID = obj_MOU?.organizationId ||
         (typeof obj_MOU?.organization_id === 'object'
           ? obj_MOU.organization_id?._id
-          : obj_MOU?.organization_id)
+          : obj_MOU?.organization_id) ||
+        (typeof obj_MOU?.mou?.organization_id === 'object'
+          ? obj_MOU.mou.organization_id?._id
+          : obj_MOU?.mou?.organization_id)
+
+      // The table keeps both IDs. Resolve the organization from the MOU
+      // record when an older response did not include the mapped ID.
+      if (!str_Organization_ID && obj_MOU?.id) {
+        const response = await mouAPI.getById(String(obj_MOU.id))
+        const mouRecord = response.data?.data
+        const organization = mouRecord?.organization_id
+        str_Organization_ID = typeof organization === 'object'
+          ? organization?._id
+          : organization
+      }
+
       if (!str_Organization_ID) {
         throw new Error('Organization ID is missing for this MOU')
       }
-      router.push(`/admin/organization/${str_Organization_ID}`)
+      await router.push({
+        name: 'AdminOrganizationDetail',
+        params: { id: String(str_Organization_ID) }
+      })
     } catch (error) {
       console.error('Error in View_MOU_Details:', error)
+      obj_state.error = 'Unable to open the organization detail page'
     }
   }
 
