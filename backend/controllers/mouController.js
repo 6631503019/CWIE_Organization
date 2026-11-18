@@ -2,6 +2,7 @@ const MOU = require('../models/MOU');
 const InternshipRecord = require('../models/InternshipRecord');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 const { deleteStoredFile } = require('../utils/fileCleanup');
+const { getPublicUploadPath } = require('../config/uploads');
 
 const parseOptionalDate = (value, field) => {
     if (value === undefined || value === null) return undefined;
@@ -168,7 +169,7 @@ const createMOU = async (req, res, next) => {
                 deleteStoredFile(existingMOU.mou_file_path, 'old MOU file');
             }
 
-            req.body.mou_file_path = req.file.path.replace(/\\/g, '/');
+            req.body.mou_file_path = getPublicUploadPath('mou', req.file.filename);
             req.body.admin_id = req.user._id;
 
             // Convert is_published from string to boolean if needed
@@ -197,7 +198,7 @@ const createMOU = async (req, res, next) => {
             });
         }
 
-        req.body.mou_file_path = req.file.path.replace(/\\/g, '/');
+        req.body.mou_file_path = getPublicUploadPath('mou', req.file.filename);
 
         // Add admin ID from authenticated user
         req.body.admin_id = req.user._id;
@@ -271,7 +272,7 @@ const updateMOU = async (req, res, next) => {
                 deleteStoredFile(mou.mou_file_path, 'old MOU file');
             }
             
-            req.body.mou_file_path = req.file.path.replace(/\\/g, '/');
+            req.body.mou_file_path = getPublicUploadPath('mou', req.file.filename);
         }
 
         const updatedMOU = await MOU.findByIdAndUpdate(

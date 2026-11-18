@@ -466,5 +466,14 @@ export const reviewAPI = obj_Review_API
 export const roadshowAPI = obj_Roadshow_API
 export const mouAPI = obj_MOU_API
 export const BACKEND_URL = CONST_BACKEND_URL
+export const getUploadedFileUrl = (value: unknown): string => {
+    if (!value) return ''
+    const strValue = String(value).replace(/\\/g, '/').trim()
+    if (/^https?:\/\//i.test(strValue)) return strValue
+    if (strValue.startsWith('/uploads/')) return `${CONST_BACKEND_URL}${strValue}`
+    const normalized = strValue.replace(/^\/+/, '')
+    if (normalized.startsWith('uploads/')) return `${CONST_BACKEND_URL}/${normalized}`
+    return `${CONST_BACKEND_URL}/uploads/${normalized}`
+}
 export const isTokenExpired = Bln_Is_Token_Expired
 export const checkTokenValidity = Bln_Check_Token_Validity

@@ -159,7 +159,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import OrganizationEditModal from '../components/OrganizationEditModal.vue'
-import { organizationAPI, reviewAPI, mouAPI, BACKEND_URL } from '../services/api'
+import { organizationAPI, reviewAPI, mouAPI, BACKEND_URL, getUploadedFileUrl } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
 
 const route = useRoute()
@@ -381,7 +381,7 @@ const documentPath = computed(() => {
   return path.startsWith('/') ? path : `/${path}`
 })
 
-const documentUrl = computed(() => documentPath.value ? `${BACKEND_URL}${documentPath.value}` : '')
+const documentUrl = computed(() => getUploadedFileUrl(documentPath.value))
 const documentName = computed(() => documentPath.value.split('/').pop() || 'MOU Document')
 
 const organizationDescription = computed(() => {

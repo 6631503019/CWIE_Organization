@@ -46,8 +46,13 @@ mouSchema.index({ is_published: 1, publication_start_at: 1, publication_end_at: 
 // Virtual for mou_path (alias for mou_file_path with leading slash)
 mouSchema.virtual('mou_path').get(function () {
     if (!this.mou_file_path) return null;
-    const path = this.mou_file_path.replace(/\\/g, '/');
-    return path.startsWith('/') ? path : '/' + path;
+    let filePath = this.mou_file_path.replace(/\\/g, '/');
+    const uploadsIndex = filePath.indexOf('/uploads/');
+    if (uploadsIndex >= 0) filePath = filePath.slice(uploadsIndex);
+    if (!filePath.startsWith('uploads/') && !filePath.startsWith('/uploads/') && filePath.includes('uploads/mou/')) {
+        filePath = '/' + filePath.slice(filePath.indexOf('uploads/mou/'));
+    }
+    return filePath.startsWith('/') ? filePath : '/' + filePath;
 });
 
 // Ensure virtuals are included in JSON

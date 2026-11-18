@@ -1,6 +1,7 @@
 const InternshipRecord = require('../models/InternshipRecord');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 const { deleteStoredFile } = require('../utils/fileCleanup');
+const { getPublicUploadPath } = require('../config/uploads');
 const {
     getOrganizationKey,
     toOrganizationRecord,
@@ -141,7 +142,7 @@ const createOrganization = async (req, res, next) => {
             if (!['image/jpeg', 'image/png', 'image/gif'].includes(req.file.mimetype)) {
                 throw new CustomError(ERROR_CODES.VALIDATION_FILE_TYPE_INVALID, 'Logo must be JPEG, PNG, or GIF');
             }
-            req.body.logo_path = `/${req.file.path.replace(/\\/g, '/').replace(/^\/+/, '')}`;
+            req.body.logo_path = getPublicUploadPath('logos', req.file.filename);
         }
         req.body.is_public = normalizeBoolean(req.body.is_public);
         const organization = await InternshipRecord.create(toOrganizationRecord(req.body, req.user._id));
@@ -174,7 +175,7 @@ const updateOrganization = async (req, res, next) => {
         }
         if (req.file) {
             if (existing.logo_path) deleteStoredFile(existing.logo_path, 'old logo file');
-            req.body.logo_path = `/${req.file.path.replace(/\\/g, '/').replace(/^\/+/, '')}`;
+            req.body.logo_path = getPublicUploadPath('logos', req.file.filename);
         }
         req.body.is_public = normalizeBoolean(req.body.is_public);
         const organization = await InternshipRecord.findByIdAndUpdate(

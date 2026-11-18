@@ -3,6 +3,7 @@ const InternshipRecord = require('../models/InternshipRecord');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 const { deleteStoredFile } = require('../utils/fileCleanup');
 const { normalizeRoadshowTime } = require('../utils/roadshowTime');
+const { getPublicUploadPath } = require('../config/uploads');
 
 // @desc    Get all roadshows
 // @route   GET /api/roadshows
@@ -138,11 +139,11 @@ const createRoadshow = async (req, res, next) => {
         // Handle file uploads
         if (req.files) {
             if (req.files.poster) {
-                req.body.poster_path = '/' + req.files.poster[0].path.replace(/\\/g, '/').replace(/^\/+/, '');
+                req.body.poster_path = getPublicUploadPath('posters', req.files.poster[0].filename);
             }
             if (req.files.activity_image) {
                 req.body.activity_image_paths = req.files.activity_image.map(file =>
-                    '/' + file.path.replace(/\\/g, '/').replace(/^\/+/, '')
+                    getPublicUploadPath('activities', file.filename)
                 );
             }
         }
@@ -222,7 +223,7 @@ const updateRoadshow = async (req, res, next) => {
                 if (roadshow.poster_path) {
                     deleteStoredFile(roadshow.poster_path, 'old roadshow poster');
                 }
-                req.body.poster_path = '/' + req.files.poster[0].path.replace(/\\/g, '/').replace(/^\/+/, '');
+                req.body.poster_path = getPublicUploadPath('posters', req.files.poster[0].filename);
             }
             if (req.files.activity_image) {
                 if (Array.isArray(roadshow.activity_image_paths)) {
@@ -231,7 +232,7 @@ const updateRoadshow = async (req, res, next) => {
                     );
                 }
                 req.body.activity_image_paths = req.files.activity_image.map(file =>
-                    '/' + file.path.replace(/\\/g, '/').replace(/^\/+/, '')
+                    getPublicUploadPath('activities', file.filename)
                 );
             }
         }

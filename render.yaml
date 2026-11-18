@@ -6,6 +6,10 @@ services:
     buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /api/health
+    disk:
+      name: cwie-uploads
+      mountPath: /var/data/cwie
+      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
@@ -29,6 +33,8 @@ services:
         sync: false
       - key: FIREBASE_PRIVATE_KEY
         sync: false
+      - key: UPLOAD_DIR
+        value: /var/data/cwie/uploads
 
   - type: web
     name: cwie-organization-frontend

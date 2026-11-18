@@ -346,7 +346,7 @@
   import AdminTopBar from '../components/admin/AdminTopBar.vue'
   import Pagination from '../components/Pagination.vue'
   import OrganizationEditModal from '../components/OrganizationEditModal.vue'
-  import { organizationAPI, mouAPI, BACKEND_URL } from '../services/api'
+  import { organizationAPI, mouAPI, BACKEND_URL, getUploadedFileUrl } from '../services/api'
   import { useLanguage } from '../composables/useLanguage'
 
   const router = useRouter()
@@ -828,21 +828,7 @@
   ''
 
 const getMOUFileURL = (value: unknown): string => {
-  if (!value) return ''
-
-  const pathValue = String(value).replace(/\\/g, '/').trim()
-  if (!pathValue) return ''
-  if (/^https?:\/\//i.test(pathValue)) return pathValue
-
-  const normalizedPath = pathValue.startsWith('/')
-    ? pathValue
-    : `/${pathValue}`
-
-  if (normalizedPath.startsWith('/uploads/')) {
-    return `${BACKEND_URL}${normalizedPath}`
-  }
-
-  return `${BACKEND_URL}/uploads/${normalizedPath.replace(/^\/+/, '')}`
+  return getUploadedFileUrl(value)
 }
 
 const str_MOU_URL = getMOUFileURL(str_MOU_Path)

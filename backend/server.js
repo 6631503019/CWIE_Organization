@@ -5,6 +5,9 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 require('dotenv').config();
+const { configuredUploadRoot, migrateLegacyUploadFiles } = require('./config/uploads');
+const MOU = require('./models/MOU');
+const { optionalAuth } = require('./middleware/auth');
 
 // Import models to register schemas
 require('./models/User');
@@ -67,7 +70,44 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Static files - serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+migrateLegacyUploadFiles();
+
+app.use('/uploads/mou', optionalAuth, async (req, res, next) => {
+    try {
+        const filename = path.basename(req.path);
+        if (!filename || filename.includes('/') || filename.includes('\\')) {
+            return res.status(400).json({ success: false, message: 'Invalid file name', statusCode: 400 });
+        }
+
+        const mou = await MOU.findOne({
+            mou_file_path: { $regex: `${filename.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
+        });
+
+        if (!mou) {
+            return res.status(404).json({ success: false, message: 'MOU file not found', statusCode: 404 });
+        }
+
+        if (req.user?.role !== 'admin') {
+            const now = new Date();
+            const published = mou.is_published !== false &&
+                (!mou.publication_start_at || mou.publication_start_at <= now) &&
+                (!mou.publication_end_at || mou.publication_end_at > now);
+
+            if (!published) {
+                return res.status(403).json({ success: false, message: 'MOU is not published', statusCode: 403 });
+            }
+        }
+
+        return next();
+    } catch (error) {
+        return next(error);
+    }
+});
+
+app.use('/uploads', express.static(configuredUploadRoot, {
+    dotfiles: 'deny',
+    index: false
+}));
 
 // Database connection
 const primaryMongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/cwie_organization';

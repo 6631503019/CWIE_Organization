@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { configuredUploadRoot, uploadDirectories } = require('../config/uploads');
 
 const normalizeStoredPath = (storedPath) => {
     if (!storedPath || typeof storedPath !== 'string') {
@@ -16,7 +17,18 @@ const resolveStoredPath = (storedPath) => {
         return null;
     }
 
-    return path.resolve(__dirname, '..', normalized);
+    if (normalized.startsWith('uploads/')) {
+        const relativeToUploadRoot = normalized.slice('uploads/'.length);
+        return path.resolve(configuredUploadRoot, relativeToUploadRoot);
+    }
+
+    for (const directory of Object.values(uploadDirectories)) {
+        if (normalized.startsWith(path.basename(directory) + '/')) {
+            return path.resolve(directory, normalized.split('/').slice(1).join('/'));
+        }
+    }
+
+    return path.resolve(configuredUploadRoot, normalized);
 };
 
 const deleteStoredFile = (storedPath, logLabel = 'file') => {

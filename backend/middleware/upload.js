@@ -1,53 +1,53 @@
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
+const crypto = require('crypto');
+const { uploadDirectories } = require('../config/uploads');
+const { CustomError, ERROR_CODES } = require('../utils/customError');
 
-// Ensure upload directories exist
-const ensureDirectoryExists = (dir) => {
-    if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-    }
+const createUploadTypeError = message => {
+    const error = new CustomError(ERROR_CODES.VALIDATION_FILE_TYPE_INVALID, message);
+    error.status = error.statusCode;
+    return error;
 };
 
 // Configure storage
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        let uploadPath = 'uploads/';
-
         if (file.fieldname === 'logo') {
-            uploadPath += 'logos/';
+            cb(null, uploadDirectories.logos);
         } else if (file.fieldname === 'mou') {
-            uploadPath += 'mou/';
+            cb(null, uploadDirectories.mou);
         } else if (file.fieldname === 'poster') {
-            uploadPath += 'posters/';
+            cb(null, uploadDirectories.posters);
         } else if (file.fieldname === 'activity_image') {
-            uploadPath += 'activities/';
+            cb(null, uploadDirectories.activities);
+        } else {
+            cb(createUploadTypeError('Unsupported upload field'), false);
         }
-
-        ensureDirectoryExists(uploadPath);
-        cb(null, uploadPath);
     },
     filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+        const extension = file.fieldname === 'mou' ? '.pdf' : path.extname(file.originalname).toLowerCase();
+        const safeExtension = /^[.][a-z0-9]{1,10}$/i.test(extension) ? extension : '';
+        const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
+        cb(null, `${file.fieldname}-${uniqueSuffix}${safeExtension}`);
     }
 });
 
 // File filter
 const fileFilter = (req, file, cb) => {
     if (file.fieldname === 'mou') {
-        // Only allow PDF files for MOU
-        if (file.mimetype === 'application/pdf') {
+        const lowerName = file.originalname.toLowerCase();
+        if (file.mimetype === 'application/pdf' && lowerName.endsWith('.pdf')) {
             cb(null, true);
         } else {
-            cb(new Error('Only PDF files are allowed for MOU'), false);
+            cb(createUploadTypeError('Only PDF files are allowed for MOU'), false);
         }
     } else {
         // Allow images for other fields
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
         } else {
-            cb(new Error('Only image files are allowed'), false);
+            cb(createUploadTypeError('Only image files are allowed'), false);
         }
     }
 };
