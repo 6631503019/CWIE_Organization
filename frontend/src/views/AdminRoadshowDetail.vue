@@ -15,78 +15,49 @@
         </div>
 
         <template v-else-if="obj_Roadshow_Data">
-          <section class="detail_header">
-            <span class="status_pill" :class="Get_Status_Class(obj_Roadshow_Data)">
-              {{ Get_Status(obj_Roadshow_Data) }}
-            </span>
-            <h1 class="roadshow_title_detail">{{ Get_Roadshow_Title(obj_Roadshow_Data) }}</h1>
-            <p class="organized_by">
-              Organized by {{ Get_Organization_Name(obj_Roadshow_Data) }}
-            </p>
-          </section>
-
-          <div class="detail_layout">
-            <div class="roadshow_image_detail">
-              <img
-                :src="posterBlob || Str_Get_Image_URL(null)"
-                :alt="Get_Roadshow_Title(obj_Roadshow_Data)"
-                @error="(e) => (e.target as HTMLImageElement).src = Str_Get_Image_URL(null)"
-              />
-            </div>
-
-            <section class="event_info_grid">
-              <div class="info_item">
-                <span>Date</span>
-                <strong>{{ Format_Date(obj_Roadshow_Data.event_date || obj_Roadshow_Data.posted_date) }}</strong>
-              </div>
-              <div class="info_item">
-                <span>Time</span>
-                <strong>{{ formatRoadshowTime(obj_Roadshow_Data.time) || '—' }}</strong>
-              </div>
-              <div class="info_item">
-                <span>Organization</span>
-                <strong>{{ Get_Organization_Name(obj_Roadshow_Data) }}</strong>
-              </div>
-              <div class="info_item">
-                <span>Location</span>
-                <strong>{{ obj_Roadshow_Data.location || '—' }}</strong>
-              </div>
-            </section>
-
-            <section class="description_section">
-              {{ obj_Roadshow_Data.details || '—' }}
-            </section>
-
-            <div v-if="activityImageCount > 0" class="activity_images_grid">
-              <div v-for="imageIndex in activityImageCount" :key="imageIndex" class="activity_image_card">
-                <img :src="activityBlobs[imageIndex - 1] || Str_Get_Image_URL(null)" :alt="`Activity photo ${imageIndex}`" />
-              </div>
-            </div>
+          <div class="detail_toolbar">
+            <button class="btn_back" type="button" @click="router.back()">← {{ text('Back to List', 'กลับไปยังรายการ') }}</button>
+            <button class="btn_edit" type="button" @click="editOpen = true">{{ text('Edit', 'แก้ไข') }}</button>
           </div>
-
-          <button
-  class="btn_back"
-  type="button"
-  @click="router.back()"
->
-  Back to List
-</button>
-
-<button
-  class="btn_edit"
-  type="button"
-  @click="editOpen = true"
->
-  Edit
-</button>
+          <section class="detail_header">
+            <div>
+              <span class="status_pill" :class="Get_Status_Class(obj_Roadshow_Data)">{{ Get_Status(obj_Roadshow_Data) }}</span>
+              <h1 class="roadshow_title_detail">{{ Get_Roadshow_Title(obj_Roadshow_Data) }}</h1>
+              <p class="organized_by">{{ Get_Organization_Name(obj_Roadshow_Data) }}</p>
+            </div>
+            <img class="header_poster" :src="posterBlob || Str_Get_Image_URL(null)" :alt="Get_Roadshow_Title(obj_Roadshow_Data)" @error="(e) => (e.target as HTMLImageElement).src = Str_Get_Image_URL(null)" />
+          </section>
+          <section class="detail_card">
+            <h2>{{ text('Roadshow Information', 'ข้อมูลโรดโชว์') }}</h2>
+            <div class="detail_grid">
+              <div class="detail_item"><span>{{ text('Organization', 'องค์กร') }}</span><strong>{{ Get_Organization_Name(obj_Roadshow_Data) }}</strong></div>
+              <div class="detail_item"><span>{{ text('Location', 'สถานที่') }}</span><strong>{{ obj_Roadshow_Data.location || '—' }}</strong></div>
+              <div class="detail_item"><span>{{ text('Event date', 'วันที่จัดงาน') }}</span><strong>{{ Format_Date(obj_Roadshow_Data.event_date || obj_Roadshow_Data.posted_date) }}</strong></div>
+              <div class="detail_item"><span>{{ text('Time', 'เวลา') }}</span><strong>{{ formatRoadshowTime(obj_Roadshow_Data.time) || '—' }}</strong></div>
+              <div class="detail_item"><span>{{ text('Posted date', 'วันที่ประกาศ') }}</span><strong>{{ Format_Date(obj_Roadshow_Data.posted_date) }}</strong></div>
+              <div class="detail_item"><span>{{ text('Deleted date', 'วันที่สิ้นสุดการแสดง') }}</span><strong>{{ Format_Date(obj_Roadshow_Data.deleted_date) }}</strong></div>
+            </div>
+          </section>
+          <section class="detail_card">
+            <h2>{{ text('Description', 'รายละเอียด') }}</h2>
+            <p class="description_text">{{ obj_Roadshow_Data.details || '—' }}</p>
+          </section>
+          <section v-if="activityImageCount > 0" class="detail_card">
+            <h2>{{ text('Activity images', 'รูปภาพกิจกรรม') }}</h2>
+            <div class="activity_images_grid">
+              <img v-for="imageIndex in activityImageCount" :key="imageIndex" :src="activityBlobs[imageIndex - 1] || Str_Get_Image_URL(null)" :alt="`Activity photo ${imageIndex}`" @error="(e) => (e.target as HTMLImageElement).src = Str_Get_Image_URL(null)" />
+            </div>
+          </section>
         </template>
       </section>
     </main>
-    <RoadshowEditModal
+    <RoadshowForm
       v-if="obj_Roadshow_Data"
       v-model="editOpen"
+      mode="edit"
       :roadshow="obj_Roadshow_Data"
       :poster-url="posterBlob"
+      :activity-urls="activityBlobs"
       @saved="refreshAfterSave"
     />
   </div>
@@ -97,7 +68,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import AdminTopBar from '../components/admin/AdminTopBar.vue'
-import RoadshowEditModal from '../components/RoadshowEditModal.vue'
+import RoadshowForm from '../components/RoadshowForm.vue'
 import { formatRoadshowTime } from '../utils/roadshowTime'
 import { useLanguage } from '../composables/useLanguage'
 import { fetchRoadshowPosterBlob, fetchRoadshowActivityBlob, roadshowAPI } from '../services/api'
@@ -135,7 +106,7 @@ const activityImageCount = computed(() => {
 
 const route = useRoute()
 const router = useRouter()
-const { currentLanguage } = useLanguage()
+const { currentLanguage, text } = useLanguage()
 
 function Get_Roadshow_Title(obj_Roadshow: any): string {
   const str_Title = currentLanguage.value === 'TH'
@@ -671,6 +642,42 @@ onMounted(async () => {
   left: 1184px;
   top: 590px;
   z-index: 20;
+}
+
+/* Responsive layout overrides the legacy fixed Figma frame above. */
+.admin_roadshow_detail { min-width: 0; overflow-x: hidden; background: #f3f4f6; }
+.detail_main { width: 100%; min-width: 0; margin-left: 0; padding: 24px; background: #f3f4f6; }
+.detail_content { width: min(1120px, 100%); min-width: 0; height: auto; margin: 0 auto; padding: 24px; box-sizing: border-box; border-radius: 12px; overflow: visible; }
+.detail_toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+.detail_header { position: static; display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; width: auto; height: auto; padding-bottom: 22px; border-bottom: 1px solid #e8e8e8; }
+.detail_header > div { min-width: 0; }
+.status_pill { position: static; width: auto; height: auto; padding: 5px 10px; font-size: 11px; }
+.roadshow_title_detail { position: static; width: auto; height: auto; margin: 14px 0 8px; font-size: clamp(22px, 3vw, 32px); line-height: 1.2; white-space: normal; overflow-wrap: anywhere; }
+.organized_by { position: static; width: auto; height: auto; white-space: normal; overflow-wrap: anywhere; }
+.header_poster { width: 180px; height: 130px; flex: 0 0 180px; object-fit: contain; border-radius: 8px; background: #f3f4f6; }
+.detail_card { margin-top: 20px; padding: 22px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; }
+.detail_card h2 { margin: 0 0 16px; font-size: 18px; }
+.detail_grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.detail_item { min-width: 0; }
+.detail_item span { display: block; margin-bottom: 5px; color: #73737a; font-size: 12px; }
+.detail_item strong { display: block; overflow-wrap: anywhere; font-size: 14px; }
+.description_text { margin: 0; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.6; }
+.activity_images_grid { position: static; width: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+.activity_images_grid img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 8px; background: #f3f4f6; }
+.btn_back, .btn_edit { position: static; width: auto; height: auto; }
+.btn_back { padding: 10px 16px; }
+.btn_edit { padding: 10px 18px; }
+@media (max-width: 700px) {
+  .detail_main { padding: 12px; }
+  .detail_content { padding: 16px; }
+  .detail_header { display: block; }
+  .header_poster { width: 100%; height: 180px; margin-top: 18px; }
+  .detail_grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+}
+@media (max-width: 420px) {
+  .detail_toolbar { align-items: stretch; flex-direction: column; }
+  .detail_toolbar button { width: 100%; }
+  .detail_grid { grid-template-columns: 1fr; }
 }
 
 </style>

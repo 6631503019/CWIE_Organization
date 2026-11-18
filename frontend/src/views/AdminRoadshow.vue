@@ -107,8 +107,18 @@
     </div>
     </main>
 
+    <RoadshowForm
+      v-if="bln_Show_Create_Modal || bln_Show_Edit_Modal"
+      :model-value="roadshowFormOpen"
+      :mode="bln_Show_Create_Modal ? 'create' : 'edit'"
+      :roadshow="obj_Editing_Roadshow"
+      :poster-url="editingPosterUrl"
+      @saved="Handle_Roadshow_Form_Saved"
+      @update:model-value="Handle_Roadshow_Form_Closed"
+    />
+
     <!-- Create/Edit Modal -->
-    <div v-if="bln_Show_Create_Modal || bln_Show_Edit_Modal" class="modal_overlay" @mousedown.self="Handle_Overlay_Mouse_Down" @mouseup.self="Handle_Overlay_Mouse_Up">
+    <div v-if="false && (bln_Show_Create_Modal || bln_Show_Edit_Modal)" class="modal_overlay" @mousedown.self="Handle_Overlay_Mouse_Down" @mouseup.self="Handle_Overlay_Mouse_Up">
       <div class="add_roadshow_modal">
         <h2 class="modal_title">{{ bln_Show_Create_Modal ? 'Add Roadshow' : 'Edit Roadshow' }}</h2>
         <div class="form_divider"></div>
@@ -331,6 +341,7 @@ import AdminNavbar from '../components/AdminNavbar.vue'
 import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
+import RoadshowForm from '../components/RoadshowForm.vue'
 import { formatRoadshowTime, normalizeRoadshowTime } from '../utils/roadshowTime'
 import { useLanguage } from '../composables/useLanguage'
 import { useRoute, useRouter } from 'vue-router'
@@ -368,6 +379,9 @@ const bln_Show_Create_Modal = ref(false)
 const bln_Show_Edit_Modal = ref(false)
 const bln_Show_Delete_Modal = ref(false)
 const bln_Show_Notification_Modal = ref(false)
+const obj_Editing_Roadshow = ref<any | null>(null)
+const editingPosterUrl = ref('')
+const roadshowFormOpen = computed(() => bln_Show_Create_Modal.value || bln_Show_Edit_Modal.value)
 const str_Notification_Message = ref('')
 const str_Notification_Type = ref<'success' | 'error' | 'warning'>('success')
 const obj_Deleting_Roadshow = ref<any>(null)
@@ -477,6 +491,8 @@ watch(bln_Show_Edit_Modal, (bln_Is_Open) => {
 
 const Open_Create_Roadshow = (): void => {
   Reset_Form()
+  obj_Editing_Roadshow.value = null
+  editingPosterUrl.value = ''
   bln_Show_Create_Modal.value = true
 }
 
@@ -600,13 +616,20 @@ const View_Roadshow = (obj_Roadshow: any): void => {
   router.push(`/admin/roadshow/${obj_Roadshow.id}`)
 }
 
-const Edit_Roadshow = (obj_Roadshow: any) => {
+const Edit_Roadshow = async (obj_Roadshow: any) => {
   try {
     // Input validation
     if (!obj_Roadshow || !obj_Roadshow.id) {
       throw new Error('Invalid roadshow object provided')
     }
     
+    obj_Editing_Roadshow.value = obj_Roadshow
+    editingPosterUrl.value = ''
+    try {
+      editingPosterUrl.value = await fetchRoadshowPosterBlob(String(obj_Roadshow.id))
+    } catch {
+      editingPosterUrl.value = ''
+    }
     // Load roadshow data into form
     str_Editing_Roadshow_ID.value = obj_Roadshow.id
     obj_Form_Data.title_en = obj_Roadshow.title_en || obj_Roadshow.title || ''
@@ -647,6 +670,19 @@ const Edit_Roadshow = (obj_Roadshow: any) => {
     console.error('Error in Edit_Roadshow:', error)
     obj_state.error = error instanceof Error ? error.message : 'Failed to edit roadshow'
   }
+
+}
+
+const Handle_Roadshow_Form_Closed = (isOpen: boolean) => {
+  if (!isOpen) Close_Modals()
+}
+
+const Handle_Roadshow_Form_Saved = async () => {
+  await Load_Roadshows_From_API()
+  Close_Modals()
+  str_Notification_Message.value = text('Roadshow saved successfully.', 'บันทึกโรดโชว์สำเร็จ')
+  str_Notification_Type.value = 'success'
+  bln_Show_Notification_Modal.value = true
 }
 
 /**
@@ -800,6 +836,9 @@ const Handle_Delete_Overlay_Mouse_Up = (event: MouseEvent) => {
  */
 const Close_Modals = () => {
   try {
+    if (editingPosterUrl.value.startsWith('blob:')) URL.revokeObjectURL(editingPosterUrl.value)
+    editingPosterUrl.value = ''
+    obj_Editing_Roadshow.value = null
     bln_Show_Create_Modal.value = false
     bln_Show_Edit_Modal.value = false
     bln_Show_Delete_Modal.value = false
