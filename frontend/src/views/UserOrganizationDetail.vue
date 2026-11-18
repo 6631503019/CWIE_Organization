@@ -1,6 +1,7 @@
 <template>
   <div class="user_organization_detail">
     <UserNavbar />
+    <AdminTopBar />
     
     <!-- Main Content Card -->
     <div class="content_card">
@@ -15,7 +16,7 @@
       </div>
       
       <!-- Organization Name -->
-      <h1 class="org_title">{{ organization?.name_en || organization?.name_th || 'Organization Name' }}</h1>
+      <h1 class="org_title">{{ localizedName }}</h1>
       
       <!-- Organization Logo -->
       <div class="org_logo_large">
@@ -53,8 +54,8 @@
       
       <!-- Details Section -->
       <div class="details_section">
-        <h2 class="section_title">Details</h2>
-        <p class="details_text">{{ organization?.details || 'No details available.' }}</p>
+        <h2 class="section_title">{{ text('Details', 'รายละเอียด') }}</h2>
+          <p class="details_text">{{ organization?.details || text('No details available.', 'ไม่มีรายละเอียด') }}</p>
       </div>
       
       <!-- Reviews Section -->
@@ -101,13 +102,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
+import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import { organizationAPI, reviewAPI, mouAPI, fetchMouFileBlob, getOrganizationLogoUrl } from '../services/api'
+import { useLanguage } from '../composables/useLanguage'
 
 const route = useRoute()
 const router = useRouter()
+const { currentLanguage, text } = useLanguage()
 
 // Reactive data
 const organization = ref<any>(null)
@@ -122,6 +126,13 @@ const logoUrl = computed(() => {
   const uploadedUrl = getOrganizationLogoUrl(organization.value)
   if (uploadedUrl) return uploadedUrl
   return 'https://via.placeholder.com/435x435?text=No+Logo'
+})
+
+const localizedName = computed(() => {
+  if (!organization.value) return 'Organization Name'
+  return currentLanguage.value === 'TH'
+    ? organization.value.name_th || organization.value.name_en || 'Organization Name'
+    : organization.value.name_en || organization.value.name_th || 'Organization Name'
 })
 
 const fullAddress = computed(() => {
@@ -267,6 +278,12 @@ onMounted(async () => {
     console.log('All data loaded successfully')
   } catch (err: any) {
     console.error('Error loading page data:', err)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (mouDocumentUrl.value?.startsWith('blob:')) {
+    URL.revokeObjectURL(mouDocumentUrl.value)
   }
 })
 </script>

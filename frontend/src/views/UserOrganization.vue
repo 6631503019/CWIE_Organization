@@ -1,6 +1,7 @@
 <template>
   <div class="user_organization">
     <UserNavbar />
+    <AdminTopBar />
     
     <!-- Main Content Area -->
     <div class="main_content">
@@ -208,6 +209,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
+import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import Pagination from '../components/Pagination.vue'
 import { organizationAPI, reviewAPI } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
@@ -501,7 +503,7 @@ onMounted(async () => {
 
 .main_content {
   margin-left: 66px;
-  padding: 40px 20px 20px 20px;
+  padding: 92px 32px 32px;
   min-height: 100vh;
 }
 
@@ -884,6 +886,29 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   margin-bottom: 50px;
+}
+
+.filter_section {
+  width: 100%;
+  max-width: 1154px;
+  box-sizing: border-box;
+}
+.org_cards_grid {
+  grid-template-columns: repeat(auto-fill, minmax(280px, 575px));
+  width: 100%;
+  max-width: 1154px;
+  gap: 24px;
+}
+.org_card {
+  width: 100%;
+  max-width: 575px;
+}
+@media (max-width: 900px) {
+  .main_content { padding: 84px 16px 24px; }
+  .filter_section { height: auto; min-height: 265px; }
+  .search_input_wrapper { width: calc(100% - 60px); }
+  .org_cards_grid { grid-template-columns: 1fr; }
+  .org_card { max-width: none; }
 }
 </style>
 

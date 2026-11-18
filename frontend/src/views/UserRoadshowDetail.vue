@@ -1,6 +1,7 @@
 <template>
   <div class="user_roadshow_detail">
     <UserNavbar />
+    <AdminTopBar />
     
     <!-- Back Button -->
     <button class="btn_back" @click="$router.back()">
@@ -17,13 +18,14 @@
       </div>
       <div v-else-if="roadshow">
         <!-- Title -->
-        <h1 class="roadshow_title_detail">{{ roadshow.topic }}</h1>
+        <h1 class="roadshow_title_detail">{{ Get_Roadshow_Title(roadshow) }}</h1>
         
         <!-- Image -->
         <div class="roadshow_image_detail">
           <img 
             :src="posterBlob || 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27493%27 height=%27495%27%3E%3Crect fill=%27%23ddd%27 width=%27493%27 height=%27495%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'"
-            :alt="roadshow.topic"
+            :alt="Get_Roadshow_Title(roadshow)"
+            @click="openImage(posterBlob, Get_Roadshow_Title(roadshow))"
             @error="(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27493%27 height=%27495%27%3E%3Crect fill=%27%23ddd%27 width=%27493%27 height=%27495%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'"
           />
         </div>
@@ -42,8 +44,13 @@
           <div v-for="(_, index) in (roadshow.activity_gridfs_ids?.length ? roadshow.activity_gridfs_ids : roadshow.activity_image_paths)" :key="index" class="activity_image_card">
             <img 
               :src="activityBlobs[index] || 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27493%27 height=%27495%27%3E%3Crect fill=%27%23ddd%27 width=%27493%27 height=%27495%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'"
-              :alt="`Activity photo ${Number(index) + 1}`" 
+              :alt="`Activity photo ${Number(index) + 1}`"
+              @click="activityBlobs[index] && openImage(activityBlobs[index], `Activity photo ${Number(index) + 1}`)"
             />
+          </div>
+          <div v-if="lightboxUrl" class="image_lightbox" @click.self="closeImage">
+            <button type="button" class="lightbox_close" aria-label="Close image" @click="closeImage">×</button>
+            <img :src="lightboxUrl" :alt="lightboxAlt" />
           </div>
         </div>
       </div>
@@ -52,16 +59,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
+import AdminTopBar from '../components/admin/AdminTopBar.vue'
 
 import { roadshowAPI, fetchRoadshowPosterBlob, fetchRoadshowActivityBlob } from '../services/api'
 import { formatRoadshowTime } from '../utils/roadshowTime'
 import { useLanguage } from '../composables/useLanguage'
 
 const route = useRoute()
-const { text } = useLanguage()
+const { currentLanguage, text } = useLanguage()
 
 const state = reactive({
   loading: false,
@@ -71,29 +79,78 @@ const state = reactive({
 const roadshow = ref<any>(null)
 const posterBlob = ref('')
 const activityBlobs = ref<string[]>([])
+const lightboxUrl = ref('')
+const lightboxAlt = ref('')
+let loadRequest = 0
 
-onMounted(async () => {
-  console.log('UserRoadshowDetail mounted, ID:', route.params.id)
+const Get_Roadshow_Title = (item: any) => currentLanguage.value === 'TH'
+  ? item?.title_th || item?.title_en || item?.topic || '—'
+  : item?.title_en || item?.title_th || item?.topic || '—'
+
+const openImage = (url: string, alt: string) => {
+  if (!url) return
+  lightboxUrl.value = url
+  lightboxAlt.value = alt
+}
+const closeImage = () => {
+  lightboxUrl.value = ''
+  lightboxAlt.value = ''
+}
+const revokeImageUrls = () => {
+  if (posterBlob.value.startsWith('blob:')) URL.revokeObjectURL(posterBlob.value)
+  activityBlobs.value.forEach(url => {
+    if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+  })
+  posterBlob.value = ''
+  activityBlobs.value = []
+}
+
+const loadRoadshow = async () => {
+  const request = ++loadRequest
   state.loading = true
-  
+  state.error = null
+
   try {
     const response = await roadshowAPI.getById(route.params.id as string)
-    roadshow.value = response.data.data
-    try { posterBlob.value = await fetchRoadshowPosterBlob(roadshow.value._id) } catch {}
-    activityBlobs.value = await Promise.all(
-      (roadshow.value.activity_gridfs_ids || roadshow.value.activity_image_paths || []).map(
+    const nextRoadshow = response.data?.data || response.data
+    const roadshowId = nextRoadshow._id || route.params.id
+
+    let nextPoster = ''
+    try { nextPoster = await fetchRoadshowPosterBlob(roadshowId) } catch {}
+    const nextActivities = await Promise.all(
+      (nextRoadshow.activity_gridfs_ids || nextRoadshow.activity_image_paths || []).map(
         async (_: unknown, index: number) => {
-          try { return await fetchRoadshowActivityBlob(roadshow.value._id, index) } catch { return '' }
+          try { return await fetchRoadshowActivityBlob(roadshowId, index) } catch { return '' }
         }
       )
     )
-    console.log('Roadshow detail loaded:', roadshow.value)
+
+    if (request !== loadRequest) {
+      if (nextPoster.startsWith('blob:')) URL.revokeObjectURL(nextPoster)
+      nextActivities.forEach(url => {
+        if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+      })
+      return
+    }
+
+    revokeImageUrls()
+    roadshow.value = nextRoadshow
+    posterBlob.value = nextPoster
+    activityBlobs.value = nextActivities
   } catch (error: any) {
     state.error = error.response?.data?.message || 'Failed to load roadshow details'
-    console.error('Loading error:', error)
   } finally {
-    state.loading = false
+    if (request === loadRequest) state.loading = false
   }
+}
+
+onMounted(loadRoadshow)
+watch(() => route.params.id, async (newId, oldId) => {
+  if (newId && newId !== oldId) await loadRoadshow()
+})
+onBeforeUnmount(() => {
+  loadRequest++
+  revokeImageUrls()
 })
 </script>
 
@@ -275,5 +332,60 @@ onMounted(async () => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.image_lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, .88);
+}
+.image_lightbox img {
+  max-width: 92vw;
+  max-height: 92vh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.lightbox_close {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #111;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+@media (max-width: 1100px) {
+  .detail_card {
+    position: relative;
+    width: calc(100% - 32px);
+    min-height: 0;
+    left: auto;
+    top: auto;
+    margin: 96px 16px 32px 82px;
+  }
+  .roadshow_title_detail,
+  .roadshow_image_detail,
+  .roadshow_description_detail,
+  .roadshow_time_detail,
+  .activity_images_grid {
+    position: relative;
+    width: 100%;
+    left: auto;
+    top: auto;
+  }
+  .roadshow_title_detail { height: auto; text-align: left; margin-bottom: 20px; }
+  .roadshow_image_detail { height: min(495px, 60vw); margin-bottom: 20px; }
+  .roadshow_description_detail { max-height: none; margin-bottom: 20px; }
+  .roadshow_time_detail { margin-bottom: 20px; }
+  .btn_back { left: 82px; top: 75px; }
 }
 </style>

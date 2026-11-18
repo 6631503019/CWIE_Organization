@@ -1,9 +1,18 @@
 <template>
   <div class="user_roadshow">
     <UserNavbar />
+    <AdminTopBar />
     
-    <!-- Roadshow Title -->
-    <h1 class="roadshow_title">{{ text('Roadshow', 'โรดโชว์') }}</h1>
+    <main class="roadshow_main">
+      <section class="roadshow_header_section">
+        <div>
+          <h1 class="roadshow_title">{{ text('Roadshow', 'โรดโชว์') }}</h1>
+          <p class="roadshow_subtitle">{{ text('View public roadshow events.', 'ดูข้อมูลกิจกรรมโรดโชว์ที่เผยแพร่') }}</p>
+        </div>
+      </section>
+      <div class="roadshow_search_bar">
+        <input v-model="searchText" type="text" :placeholder="text('Search roadshow title or organization...', 'ค้นหาชื่อโรดโชว์หรือองค์กร...')" />
+      </div>
 
     <!-- Roadshow Cards Container -->
     <div class="roadshow_cards_container">
@@ -47,6 +56,7 @@
         @page-change="handlePageChange"
       />
     </div>
+    </main>
   </div>
 </template>
 
@@ -54,6 +64,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
+import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import Pagination from '../components/Pagination.vue'
 import { roadshowAPI, fetchRoadshowPosterBlob } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
@@ -69,15 +80,25 @@ const state = reactive({
 })
 
 const roadshows = ref<any[]>([])
+const searchText = ref('')
+
+const filteredRoadshows = computed(() => {
+  const search = searchText.value.trim().toLowerCase()
+  if (!search) return roadshows.value
+  return roadshows.value.filter((item: any) =>
+    String(item.title || '').toLowerCase().includes(search) ||
+    String(item.description || '').toLowerCase().includes(search)
+  )
+})
 
 const paginatedRoadshows = computed(() => {
   const start = (state.currentPage - 1) * state.itemsPerPage
   const end = start + state.itemsPerPage
-  return roadshows.value.slice(start, end)
+  return filteredRoadshows.value.slice(start, end)
 })
 
 const totalPages = computed(() => 
-  Math.ceil(roadshows.value.length / state.itemsPerPage)
+  Math.ceil(filteredRoadshows.value.length / state.itemsPerPage)
 )
 
 const handlePageChange = async (page: number) => {
@@ -299,6 +320,77 @@ onMounted(async () => {
 .countdown_number {
   display: block;
   line-height: 1;
+}
+
+.roadshow_main {
+  margin-left: 66px;
+  padding: 92px 32px 32px;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+.roadshow_header_section {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+.roadshow_title {
+  position: static;
+  width: auto;
+  height: auto;
+  font-size: 32px;
+  line-height: 40px;
+}
+.roadshow_subtitle {
+  margin: 4px 0 0;
+  color: #777;
+  font-size: 14px;
+}
+.roadshow_search_bar {
+  position: relative;
+  left: auto;
+  top: auto;
+  width: min(720px, 100%);
+  height: 44px;
+  margin: 0 0 20px;
+}
+.roadshow_search_bar input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0 16px;
+  font: 600 14px Inter, sans-serif;
+}
+.roadshow_cards_container {
+  position: relative;
+  left: auto;
+  top: auto;
+  width: 100%;
+  max-width: 1100px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+.roadshow_large_card {
+  position: relative;
+  left: auto;
+  top: auto;
+  width: 100%;
+  height: auto;
+  min-height: 270px;
+}
+.roadshow_pagination_container {
+  position: relative;
+  left: auto;
+  top: auto;
+  width: 100%;
+  margin-top: 24px;
+}
+@media (max-width: 700px) {
+  .roadshow_main { margin-left: 66px; padding: 84px 12px 24px; }
+  .roadshow_cards_container { grid-template-columns: 1fr; }
 }
 </style>
 

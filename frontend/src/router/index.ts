@@ -61,6 +61,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'MOU', requiresAuth: true, requiresUser: true }
     },
     {
+        path: '/user/mou/:id',
+        name: 'UserMOUDetail',
+        component: () => import('../views/UserMOUDetail.vue'),
+        meta: { title: 'MOU Detail', requiresAuth: true, requiresUser: true }
+    },
+    {
         path: '/user/roadshow',
         name: 'UserRoadshow',
         component: () => import('../views/UserRoadshow.vue'),
@@ -109,13 +115,13 @@ router.beforeEach(async (to, from, next) => {
 
             // Check if route requires admin role
             if (to.meta.requiresAdmin && !authStore.bln_Is_Admin) {
-                next('/')
+                next(authStore.bln_Is_User ? '/user/organization' : '/')
                 return
             }
 
             // Check if route requires user role (non-admin)
             if (to.meta.requiresUser && !authStore.bln_Is_User) {
-                next('/')
+                next(authStore.bln_Is_Admin ? '/admin/organization' : '/')
                 return
             }
         } catch (error) {

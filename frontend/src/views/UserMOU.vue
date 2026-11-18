@@ -196,7 +196,8 @@ const fetchPublishedMOUs = async () => {
         const logoUrl = getOrganizationLogoUrl(item) || '/api/placeholder/95/95'
         
         return {
-          id: item._id,
+          id: String(mou._id),
+          organizationId: item._id,
           name: item.name_en || item.name_th || 'No Name',
           duration: durationText,
           logo: logoUrl

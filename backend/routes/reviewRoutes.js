@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.route('/')
     .get(getAllReviews)
-    .post(createReview);
+    .post(protect, authorize('admin'), createReview);
 
 router.route('/organization/:organizationId')
     .get(getReviews);
