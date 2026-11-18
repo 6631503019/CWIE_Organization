@@ -159,7 +159,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import OrganizationEditModal from '../components/OrganizationEditModal.vue'
-import { organizationAPI, reviewAPI, mouAPI, BACKEND_URL, getUploadedFileUrl, getMouFileUrl } from '../services/api'
+import { organizationAPI, reviewAPI, mouAPI, BACKEND_URL, getUploadedFileUrl, getMouFileUrl, getOrganizationLogoUrl } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
 
 const route = useRoute()
@@ -213,17 +213,7 @@ const getNestedValue = (obj: any, keys: string[]): any => {
 }
 
 const logoUrl = computed(() => {
-  if (organization.value?.logo_path) {
-    let logoPath = String(organization.value.logo_path).replace(/\\/g, '/')
-
-    if (!logoPath.startsWith('/')) {
-      logoPath = '/' + logoPath
-    }
-
-    return `${BACKEND_URL}${logoPath}`
-  }
-
-  return '/api/placeholder/56/56'
+  return getOrganizationLogoUrl(organization.value) || '/api/placeholder/56/56'
 })
 
 const isOrganizationActive = computed(() => {

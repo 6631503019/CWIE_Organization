@@ -81,7 +81,7 @@ const getMOUs = async (req, res, next) => {
         // If published not specified or 'all', show all MOUs
 
         const mous = await MOU.find(filter)
-            .populate('organization_id', 'organization_name_en organization_name_th logo_path organization_type business_type_en business_type_th school_en school_th province_en province_th country_en country_th organization_email telephone details')
+            .populate('organization_id', 'organization_name_en organization_name_th logo_path logo_gridfs_id organization_type business_type_en business_type_th school_en school_th province_en province_th country_en country_th organization_email telephone details')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit);
@@ -111,7 +111,7 @@ const getMOUs = async (req, res, next) => {
 const getMOU = async (req, res, next) => {
     try {
         const mou = await MOU.findById(req.params.id)
-            .populate('organization_id', 'organization_name_en organization_name_th logo_path organization_email address_en address_th organization_type country_id province_id telephone details business_type_en business_type_th school_en school_th province_en province_th country_en country_th');
+            .populate('organization_id', 'organization_name_en organization_name_th logo_path logo_gridfs_id organization_email address_en address_th organization_type country_id province_id telephone details business_type_en business_type_th school_en school_th province_en province_th country_en country_th');
 
         if (!mou) {
             throw createNotFoundError('mou', req.params.id);

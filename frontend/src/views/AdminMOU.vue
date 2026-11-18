@@ -197,7 +197,7 @@
   import AdminTopBar from '../components/admin/AdminTopBar.vue'
   import Pagination from '../components/Pagination.vue'
   import MouModal from '../components/MouModal.vue'
-  import { organizationAPI, mouAPI, BACKEND_URL, getUploadedFileUrl, getMouFileUrl } from '../services/api'
+  import { organizationAPI, mouAPI, BACKEND_URL, getUploadedFileUrl, getMouFileUrl, getOrganizationLogoUrl } from '../services/api'
   import { useLanguage } from '../composables/useLanguage'
 
   const router = useRouter()
@@ -604,14 +604,7 @@ const str_MOU_URL = obj_MOU_Data?._id
       }
       
       // Process logo path
-      let str_Logo_Path = obj_Organization.logo_path
-      if (str_Logo_Path) {
-        str_Logo_Path = str_Logo_Path.replace(/\\/g, '/')
-        if (!str_Logo_Path.startsWith('/')) {
-          str_Logo_Path = '/' + str_Logo_Path
-        }
-      }
-      const str_Logo_URL = str_Logo_Path ? `${BACKEND_URL}${str_Logo_Path}` : CONST_PLACEHOLDER_LOGO
+      const str_Logo_URL = getOrganizationLogoUrl(obj_Organization) || CONST_PLACEHOLDER_LOGO
       
       return {
   // IMPORTANT:

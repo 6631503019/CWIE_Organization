@@ -19,6 +19,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Admin - Organization Management', requiresAuth: true, requiresAdmin: true }
     },
     {
+        path: '/admin/organization/:id',
+        name: 'AdminOrganizationDetail',
+        component: () => import('../views/AdminOrganizationDetail.vue'),
+        meta: { title: 'Admin - Organization Detail', requiresAuth: true, requiresAdmin: true }
+    },
+    {
         path: '/admin/mou',
         name: 'AdminMOU',
         component: () => import('../views/AdminMOU.vue'),

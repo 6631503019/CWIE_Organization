@@ -19,7 +19,7 @@
        :class="{ active: currentRoute === 'organization' }"
        @click.prevent="navigateTo('/admin/organization')">
       <i class="pi pi-building nav-icon" aria-hidden="true"></i>
-      Organization
+      {{ text('Organization', 'องค์กร') }}
     </a>
 
     <!-- MOU Link -->
@@ -28,7 +28,7 @@
        :class="{ active: currentRoute === 'mou' }"
        @click.prevent="navigateTo('/admin/mou')">
       <i class="pi pi-file nav-icon" aria-hidden="true"></i>
-      MOU
+      {{ text('MOU', 'MOU') }}
     </a>
 
     <!-- Roadshow Link -->
@@ -37,8 +37,13 @@
        :class="{ active: currentRoute === 'roadshow' }"
        @click.prevent="navigateTo('/admin/roadshow')">
       <i class="pi pi-share-alt nav-icon" aria-hidden="true"></i>
-      Roadshow
+      {{ text('Roadshow', 'โรดโชว์') }}
     </a>
+
+    <div class="language-switcher" aria-label="Language selector">
+      <button type="button" :class="{ selected: currentLanguage === 'EN' }" @click="setLanguage('EN')">EN</button>
+      <button type="button" :class="{ selected: currentLanguage === 'TH' }" @click="setLanguage('TH')">TH</button>
+    </div>
 
   </div>
 </template>
@@ -46,9 +51,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useLanguage } from '../composables/useLanguage'
 
 const router = useRouter()
 const route = useRoute()
+const { currentLanguage, setLanguage, text } = useLanguage()
 
 // Force reactivity with ref
 const forceUpdate = ref(0)
@@ -303,4 +310,26 @@ const navigateTo = (path: string) => {
 .admin-navbar:hover .nav-mou { top: 168px; }
 .admin-navbar:hover .nav-roadshow { top: 223px; }
 .admin-navbar:hover .nav-organization.active, .admin-navbar:hover .nav-mou.active, .admin-navbar:hover .nav-roadshow.active { background: #600606; border-radius: 2px; }
+
+.language-switcher {
+  position: absolute;
+  left: 13px;
+  bottom: 24px;
+  display: flex;
+  gap: 3px;
+}
+.language-switcher button {
+  width: 30px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,.7);
+  border-radius: 3px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font: 600 11px/22px Inter, sans-serif;
+}
+.language-switcher button.selected { background: #fff; color: #8B0000; }
+.admin-navbar:not(:hover) .language-switcher button { font-size: 0; width: 18px; border: 0; }
+.admin-navbar:not(:hover) .language-switcher button.selected::after { content: '•'; font-size: 16px; }
 </style>

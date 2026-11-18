@@ -54,6 +54,7 @@ const internshipRecordSchema = new mongoose.Schema({
     province_id: { type: String, trim: true },
     is_public: { type: Boolean, default: true },
     logo_path: { type: String, trim: true },
+    logo_gridfs_id: { type: mongoose.Schema.Types.ObjectId, default: null },
     details: { type: String, trim: true, maxlength: 1000 },
     admin_id: {
         type: mongoose.Schema.Types.ObjectId,

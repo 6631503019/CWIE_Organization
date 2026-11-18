@@ -2,6 +2,8 @@ const InternshipRecord = require('../models/InternshipRecord');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 const { deleteStoredFile } = require('../utils/fileCleanup');
 const { getPublicUploadPath } = require('../config/uploads');
+const fs = require('fs');
+const { uploadOrganizationLogoToGridFS, openGridFSFile, deleteGridFSFile } = require('../config/gridfs');
 const {
     getOrganizationKey,
     toOrganizationRecord,
@@ -130,6 +132,7 @@ const normalizeBoolean = value => {
 };
 
 const createOrganization = async (req, res, next) => {
+    let uploadedGridfsId = null;
     try {
         validateOrganizationBody(req.body);
         const organizationKey = getOrganizationKey(req.body.name_th, req.body.name_en);
@@ -142,6 +145,8 @@ const createOrganization = async (req, res, next) => {
             if (!['image/jpeg', 'image/png', 'image/gif'].includes(req.file.mimetype)) {
                 throw new CustomError(ERROR_CODES.VALIDATION_FILE_TYPE_INVALID, 'Logo must be JPEG, PNG, or GIF');
             }
+            uploadedGridfsId = await uploadOrganizationLogoToGridFS(req.file, { kind: 'organization-logo' });
+            req.body.logo_gridfs_id = uploadedGridfsId;
             req.body.logo_path = getPublicUploadPath('logos', req.file.filename);
         }
         req.body.is_public = normalizeBoolean(req.body.is_public);
@@ -153,11 +158,13 @@ const createOrganization = async (req, res, next) => {
             data: toOrganizationResponse(organization)
         });
     } catch (error) {
+        if (uploadedGridfsId) await deleteGridFSFile(uploadedGridfsId, 'organizationLogos').catch(() => undefined);
         next(error);
     }
 };
 
 const updateOrganization = async (req, res, next) => {
+    let uploadedGridfsId = null;
     try {
         const existing = await InternshipRecord.findOne({ _id: req.params.id, ...ORGANIZATION_FILTER });
         if (!existing) throw createNotFoundError('organization', req.params.id);
@@ -174,7 +181,8 @@ const updateOrganization = async (req, res, next) => {
             throw new CustomError(ERROR_CODES.VALIDATION_INVALID_TYPE, 'Invalid organization type');
         }
         if (req.file) {
-            if (existing.logo_path) deleteStoredFile(existing.logo_path, 'old logo file');
+            uploadedGridfsId = await uploadOrganizationLogoToGridFS(req.file, { kind: 'organization-logo', organizationId: String(existing._id) });
+            req.body.logo_gridfs_id = uploadedGridfsId;
             req.body.logo_path = getPublicUploadPath('logos', req.file.filename);
         }
         req.body.is_public = normalizeBoolean(req.body.is_public);
@@ -183,6 +191,10 @@ const updateOrganization = async (req, res, next) => {
             toOrganizationRecord(req.body, existing.admin_id, existing),
             { new: true, runValidators: true }
         );
+        if (req.file) {
+            if (existing.logo_gridfs_id) await deleteGridFSFile(existing.logo_gridfs_id, 'organizationLogos').catch(error => console.error('Failed to remove old organization logo from GridFS:', error.message));
+            if (existing.logo_path) deleteStoredFile(existing.logo_path, 'old logo file');
+        }
 
         res.status(200).json({
             success: true,
@@ -190,6 +202,7 @@ const updateOrganization = async (req, res, next) => {
             data: toOrganizationResponse(organization)
         });
     } catch (error) {
+        if (uploadedGridfsId) await deleteGridFSFile(uploadedGridfsId, 'organizationLogos').catch(() => undefined);
         next(error);
     }
 };
@@ -199,8 +212,34 @@ const deleteOrganization = async (req, res, next) => {
         const organization = await InternshipRecord.findOne({ _id: req.params.id, ...ORGANIZATION_FILTER });
         if (!organization) throw createNotFoundError('organization', req.params.id);
         if (organization.logo_path) deleteStoredFile(organization.logo_path, 'logo file');
+        if (organization.logo_gridfs_id) await deleteGridFSFile(organization.logo_gridfs_id, 'organizationLogos').catch(error => console.error('Failed to remove organization logo from GridFS:', error.message));
         await InternshipRecord.findByIdAndDelete(req.params.id);
         res.status(200).json({ success: true, message: 'Organization deleted successfully', data: null });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getOrganizationLogo = async (req, res, next) => {
+    try {
+        const organization = await InternshipRecord.findOne({ _id: req.params.id, ...ORGANIZATION_FILTER });
+        if (!organization) throw createNotFoundError('organization', req.params.id);
+        if (!organization.logo_gridfs_id) {
+            if (organization.logo_path) {
+                const legacyPath = require('../utils/fileCleanup').resolveStoredPath(organization.logo_path);
+                if (legacyPath && fs.existsSync(legacyPath)) return res.sendFile(legacyPath);
+            }
+            throw createNotFoundError('file', req.params.id);
+        }
+        const gridfs = await openGridFSFile(organization.logo_gridfs_id, 'organizationLogos');
+        res.setHeader('Content-Type', gridfs.file.contentType || 'application/octet-stream');
+        res.setHeader('Content-Length', gridfs.file.length);
+        res.setHeader('Cache-Control', 'public, max-age=300');
+        gridfs.stream.on('error', error => {
+            if (!res.headersSent) res.status(500).end();
+            else res.destroy(error);
+        });
+        gridfs.stream.pipe(res);
     } catch (error) {
         next(error);
     }
@@ -211,5 +250,6 @@ module.exports = {
     getOrganization,
     createOrganization,
     updateOrganization,
-    deleteOrganization
+    deleteOrganization,
+    getOrganizationLogo
 };

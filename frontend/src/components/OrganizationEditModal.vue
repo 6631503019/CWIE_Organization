@@ -417,7 +417,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, watch, computed } from 'vue'
-import { organizationAPI, mouAPI, reviewAPI, BACKEND_URL } from '../services/api'
+import { organizationAPI, mouAPI, reviewAPI, BACKEND_URL, getOrganizationLogoUrl } from '../services/api'
 
 // Props
 const props = defineProps<{
@@ -827,9 +827,7 @@ const loadOrganizationData = async () => {
     formData.details = orgData.details || ''
     formData.isPublic = orgData.is_public || false
     
-    if (orgData.logo_path) {
-      logoPreview.value = `${BACKEND_URL}${orgData.logo_path}`
-    }
+    logoPreview.value = getOrganizationLogoUrl(orgData) || null
     
     // Load existing MOU if any
     await loadMOUData()

@@ -23,7 +23,8 @@ const toOrganizationResponse = record => {
         country_id: obj.country_id || obj.country_en || obj.country_th || '',
         country: obj.country_id || obj.country_en || obj.country_th || '',
         organization_type: obj.organization_type || obj.business_type_en || obj.business_type_th || '',
-        details: obj.details || ''
+        details: obj.details || '',
+        logo_gridfs_id: obj.logo_gridfs_id || null
     };
 };
 
@@ -57,6 +58,7 @@ const toOrganizationRecord = (body, adminId, current = {}) => ({
     industry_category_id: body.industry_category_id ?? current.industry_category_id ?? '',
     is_public: body.is_public ?? current.is_public ?? true,
     logo_path: body.logo_path ?? current.logo_path,
+    logo_gridfs_id: body.logo_gridfs_id ?? current.logo_gridfs_id ?? null,
     details: body.details ?? current.details ?? '',
     admin_id: adminId || current.admin_id
 });

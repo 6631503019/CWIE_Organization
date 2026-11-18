@@ -466,6 +466,13 @@ export const reviewAPI = obj_Review_API
 export const roadshowAPI = obj_Roadshow_API
 export const mouAPI = obj_MOU_API
 export const BACKEND_URL = CONST_BACKEND_URL
+export const getOrganizationLogoUrl = (organization: any): string => {
+    if (!organization) return ''
+    if (organization.logo_gridfs_id && organization._id) {
+        return `${CONST_API_BASE_URL}/organizations/${encodeURIComponent(String(organization._id))}/logo`
+    }
+    return getUploadedFileUrl(organization.logo_path)
+}
 export const getUploadedFileUrl = (value: unknown): string => {
     if (!value) return ''
     const strValue = String(value).replace(/\\/g, '/').trim()

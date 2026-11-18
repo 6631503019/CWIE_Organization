@@ -1910,7 +1910,7 @@ const saveMOU = async () => {
 }
 
 const viewOrganizationDetail = (id: string | number) => {
-  router.push(`/admin/mou/${id}/more`)
+  router.push(`/admin/organization/${id}`)
 }
 
 const addOrganization = async () => {

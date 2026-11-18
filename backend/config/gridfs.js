@@ -40,6 +40,9 @@ const uploadPdfToGridFS = (file, metadata = {}) =>
 const uploadRoadshowImageToGridFS = (file, metadata = {}) =>
     uploadFileToGridFS('roadshowFiles', file, file.mimetype || 'application/octet-stream', metadata);
 
+const uploadOrganizationLogoToGridFS = (file, metadata = {}) =>
+    uploadFileToGridFS('organizationLogos', file, file.mimetype || 'application/octet-stream', metadata);
+
 const openGridFSFile = async (fileId, bucketName = 'mouFiles') => {
     const bucket = getBucket(bucketName);
     const objectId = mongoose.Types.ObjectId.isValid(fileId)
@@ -74,6 +77,7 @@ module.exports = {
     getBucket,
     uploadPdfToGridFS,
     uploadRoadshowImageToGridFS,
+    uploadOrganizationLogoToGridFS,
     openGridFSFile,
     deleteGridFSFile
 };

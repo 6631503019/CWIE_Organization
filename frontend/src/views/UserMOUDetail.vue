@@ -111,7 +111,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 import Pagination from '../components/Pagination.vue'
-import { organizationAPI, mouAPI, BACKEND_URL, getUploadedFileUrl, fetchMouFileBlob } from '../services/api'
+import { organizationAPI, mouAPI, BACKEND_URL, getUploadedFileUrl, fetchMouFileBlob, getOrganizationLogoUrl } from '../services/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -280,14 +280,7 @@ const fetchPublishedMOUs = async () => {
         }
         
         // Normalize logo path
-        let logoPath = item.logo_path
-        if (logoPath) {
-          logoPath = logoPath.replace(/\\/g, '/')
-          if (!logoPath.startsWith('/')) {
-            logoPath = '/' + logoPath
-          }
-        }
-        const logoUrl = logoPath ? `${BACKEND_URL}${logoPath}` : '/api/placeholder/95/95'
+        const logoUrl = getOrganizationLogoUrl(item) || '/api/placeholder/95/95'
         
         return {
           id: item._id,

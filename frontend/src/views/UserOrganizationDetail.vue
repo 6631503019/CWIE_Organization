@@ -104,7 +104,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
-import { organizationAPI, reviewAPI, mouAPI, BACKEND_URL, fetchMouFileBlob } from '../services/api'
+import { organizationAPI, reviewAPI, mouAPI, fetchMouFileBlob, getOrganizationLogoUrl } from '../services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -119,13 +119,8 @@ const error = ref<string | null>(null)
 
 // Computed properties
 const logoUrl = computed(() => {
-  if (organization.value?.logo_path) {
-    let logoPath = organization.value.logo_path.replace(/\\/g, '/')
-    if (!logoPath.startsWith('/')) {
-      logoPath = '/' + logoPath
-    }
-    return `${BACKEND_URL}${logoPath}`
-  }
+  const uploadedUrl = getOrganizationLogoUrl(organization.value)
+  if (uploadedUrl) return uploadedUrl
   return 'https://via.placeholder.com/435x435?text=No+Logo'
 })
 

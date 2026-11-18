@@ -4,7 +4,8 @@ const {
     getOrganization,
     createOrganization,
     updateOrganization,
-    deleteOrganization
+    deleteOrganization,
+    getOrganizationLogo
 } = require('../controllers/organizationController');
 const { protect, authorize, optionalAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload');
@@ -19,5 +20,7 @@ router.route('/:id')
     .get(optionalAuth, getOrganization)
     .put(protect, authorize('admin'), upload.single('logo'), updateOrganization)
     .delete(protect, authorize('admin'), deleteOrganization);
+
+router.get('/:id/logo', optionalAuth, getOrganizationLogo);
 
 module.exports = router;
