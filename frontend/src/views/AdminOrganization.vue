@@ -273,7 +273,7 @@
                       :key="option" 
                       @click="formData.country = option; modalDropdownOpen.country = false"
                     >
-                      {{ option }}
+                      {{ displayLocationValue(option, option) }}
                     </div>
                   </div>
                 </div>
@@ -765,27 +765,7 @@ const orgTypeOptions = [
   { value: 'MFU', label: 'MFU' }
 ]
 
-// Dropdown options - match backend values
-const industryCatOptions = [
-  'All', 
-  'School of Applied Digital Technology',
-  'Agriculture and Food Products',
-  'Automotive and Transportation Equipment',
-  'Banking, Finance and Insurance',
-  'Business Services',
-  'Energy',
-  'Healthcare',
-  'Information and Communication Technology',
-  'Manufacturing and Industrial Products',
-  'Mining and Metal Products',
-  'Petrochemicals and Chemicals',
-  'Textile and Garments',
-  'Tourism and Hospitality',
-  'Trading and Distribution',
-  'Transportation and Logistics',
-  'Utilities'
-]
-const countryOptions = ['Thailand', 'USA', 'Japan', 'China', 'Others']
+// Country filter options are derived from countries present in organization records.
 const geographyOptions = ['Central Region', 'Northern Region', 'Northeastern Region', 'Southern Region', 'Eastern Region', 'Western Region']
 const provinceOptions = [
   'Amnat Charoen', 'Ang Thong', 'Bangkok', 'Bueng Kan', 'Buri Ram', 
@@ -1082,10 +1062,23 @@ const filteredIndustryCat = computed(() => {
   )
 })
 
+const countryOptions = computed(() => {
+  const countries = allOrganizations.value
+    .map(org => normalizeLocationValue(String(org.org_country || '').trim()))
+    .filter(value => value && value !== 'N/A')
+
+  return [
+    'All',
+    ...Array.from(new Set(countries)).sort((a, b) => a.localeCompare(b))
+  ]
+})
+
 const filteredCountry = computed(() => {
-  if (!dropdownSearch.value.country) return countryOptions
-  return countryOptions.filter(option => 
-    option.toLowerCase().includes(dropdownSearch.value.country.toLowerCase())
+  const search = dropdownSearch.value.country.trim().toLowerCase()
+  if (!search) return countryOptions.value
+
+  return countryOptions.value.filter(option =>
+    getFilterOptionLabel('country', option).toLowerCase().includes(search)
   )
 })
 
@@ -1323,13 +1316,19 @@ const modalDropdownOpen = ref({
 
 // Filtered options for modal dropdowns
 const modalFilteredCountry = computed(() => {
-  const allCountryOptions = [
-    ...countryOptions,
-    'ไทย', 'จีน', 'ไต้หวัน', 'สหรัฐอเมริกา', 'ญี่ปุ่น'
-  ]
-  if (!modalDropdownSearch.value.country) return allCountryOptions
-  return allCountryOptions.filter(option => 
-    option.toLowerCase().includes(modalDropdownSearch.value.country.toLowerCase())
+  const currentCountry = normalizeLocationValue(String(formData.country || '').trim())
+  const countries = countryOptions.value.filter(option => option !== 'All')
+
+  // Keep the currently selected country available when editing older records.
+  if (currentCountry && currentCountry !== 'N/A' && !countries.includes(currentCountry)) {
+    countries.push(currentCountry)
+  }
+
+  const search = modalDropdownSearch.value.country.trim().toLowerCase()
+  if (!search) return countries
+
+  return countries.filter(option =>
+    displayLocationValue(option, option).toLowerCase().includes(search)
   )
 })
 
@@ -1704,41 +1703,42 @@ const fetchOrganizations = async () => {
       const hasMOU = !!mouMap[item._id]
       
       // Normalize all Thai values to English
-      const normalizedProvince = normalizeLocationValue(item.province_id || 'N/A')
-      const normalizedCountry = normalizeLocationValue(item.country_id || '')
       const normalizedGeography = getOrganizationDisplayField(
         item,
         ['geography_en', 'geography', 'geography_id'],
         ['geography_th'],
         ['geography_id']
       )
-      const normalizedCategory = normalizeLocationValue(item.industry_category_id || '')
       
       const orgCategory = getOrganizationDisplayField(
         item,
         ['organization_type', 'business_type_en', 'business_type'],
         ['business_type_th', 'organization_type_th'],
-        ['organization_type_id']
-      , 'EN')
+        ['organization_type_id'],
+        'EN'
+      )
 
       const orgSchool = getOrganizationDisplayField(
         item,
         ['school_en', 'school', 'school_name_en'],
         ['school_th', 'school_name_th'],
-        ['school_id']
-      , 'EN')
+        ['school_id'],
+        'EN'
+      )
       const orgProvince = getOrganizationDisplayField(
         item,
         ['province_en', 'province'],
         ['province_th'],
-        ['province_id']
-      , 'EN')
-      const orgCountry = getOrganizationDisplayField(
+        ['province_id'],
+        'EN'
+      )
+      const orgCountry = normalizeLocationValue(getOrganizationDisplayField(
         item,
         ['country_en', 'country'],
         ['country_th'],
-        ['country_id']
-      , 'EN')
+        ['country_id'],
+        'EN'
+      ))
       const orgIndustry = getOrganizationDisplayField(
         item,
         ['business_category_en', 'industry_category_en', 'industry_category_id'],
