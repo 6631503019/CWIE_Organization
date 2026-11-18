@@ -638,7 +638,7 @@ import AdminNavbar from '../components/AdminNavbar.vue'
 import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import NotificationModal from '../components/NotificationModal.vue'
 import Pagination from '../components/Pagination.vue'
-import apiClient, { organizationAPI, mouAPI, BACKEND_URL, reviewAPI } from '../services/api'
+import apiClient, { organizationAPI, mouAPI, BACKEND_URL, reviewAPI, fetchMouFileBlob } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
 
 // ===========================
@@ -2082,9 +2082,25 @@ const viewDocument = async (id: number) => {
   const orgId = String(org.rawData?._id || org.id)
   const mou = mouDataMap.value[orgId]
   
-  if (mou && mou.mou_path) {
-    const mouUrl = `${BACKEND_URL}${mou.mou_path}`
-    window.open(mouUrl, '_blank')
+  const mouId = mou?._id || mou?.id
+  if (mouId) {
+    const pdfWindow = window.open('', '_blank')
+    if (!pdfWindow) {
+      notificationMessage.value = 'Please allow pop-ups to view the MOU document'
+      notificationType.value = 'warning'
+      showNotificationModal.value = true
+      return
+    }
+    try {
+      const mouUrl = await fetchMouFileBlob(mouId)
+      pdfWindow.location.href = mouUrl
+      window.setTimeout(() => URL.revokeObjectURL(mouUrl), 60000)
+    } catch (error: any) {
+      pdfWindow.close()
+      notificationMessage.value = error.response?.data?.message || 'Unable to open MOU document'
+      notificationType.value = 'error'
+      showNotificationModal.value = true
+    }
   } else {
     notificationMessage.value = 'No MOU document available for this organization'
     notificationType.value = 'warning'

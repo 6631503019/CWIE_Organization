@@ -417,10 +417,14 @@
   */
   const View_MOU_Details = (obj_MOU: any) => {
     try {
-      if (!obj_MOU || !obj_MOU.id) {
-        throw new Error('Invalid MOU object provided')
+      const str_Organization_ID = obj_MOU?.organizationId ||
+        (typeof obj_MOU?.organization_id === 'object'
+          ? obj_MOU.organization_id?._id
+          : obj_MOU?.organization_id)
+      if (!str_Organization_ID) {
+        throw new Error('Organization ID is missing for this MOU')
       }
-      router.push(`/admin/mou/${obj_MOU.id}/more`)
+      router.push(`/admin/organization/${str_Organization_ID}`)
     } catch (error) {
       console.error('Error in View_MOU_Details:', error)
     }

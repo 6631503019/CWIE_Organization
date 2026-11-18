@@ -142,19 +142,26 @@ const loadOrganization = async (id: string) => {
   } finally {
     if (version === requestVersion.value) loadingOrganization.value = false
   }
+}
 
-  const openMou = async () => {
-    if (!mouId.value) return
-    mouLoading.value = true
-    try {
-      if (mouObjectUrl) URL.revokeObjectURL(mouObjectUrl)
-      mouObjectUrl = await fetchMouFileBlob(mouId.value)
-      window.open(mouObjectUrl, '_blank', 'noopener,noreferrer')
-    } catch (error: any) {
-      showNotification(error.response?.data?.message || text('Unable to open MOU PDF.', 'ไม่สามารถเปิดเอกสาร MOU ได้'), 'error')
-    } finally {
-      mouLoading.value = false
-    }
+const openMou = async () => {
+  if (!mouId.value) return
+  mouLoading.value = true
+  const pdfWindow = window.open('', '_blank')
+  if (!pdfWindow) {
+    showNotification(text('Please allow pop-ups to view the MOU PDF.', 'กรุณาอนุญาตป๊อปอัปเพื่อเปิดเอกสาร MOU'), 'warning')
+    mouLoading.value = false
+    return
+  }
+  try {
+    if (mouObjectUrl) URL.revokeObjectURL(mouObjectUrl)
+    mouObjectUrl = await fetchMouFileBlob(mouId.value)
+    pdfWindow.location.href = mouObjectUrl
+  } catch (error: any) {
+    pdfWindow.close()
+    showNotification(error.response?.data?.message || text('Unable to open MOU PDF.', 'ไม่สามารถเปิดเอกสาร MOU ได้'), 'error')
+  } finally {
+    mouLoading.value = false
   }
 }
 
