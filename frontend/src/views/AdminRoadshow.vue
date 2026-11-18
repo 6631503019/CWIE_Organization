@@ -229,7 +229,7 @@
             <p class="existing_label">📸 Currently Uploaded Photos ({{ obj_Form_Data.existingActivityImagePaths.length }}):</p>
             <div class="existing_images_grid">
               <div v-for="(imagePath, index) in obj_Form_Data.existingActivityImagePaths" :key="index" v-show="!obj_Form_Data.deleteActivityImageIndices.includes(index)" class="existing_image_card">
-                <img :src="`${CONST_BACKEND_URL}${imagePath}`" :alt="`Activity photo ${index + 1}`" />
+                <img :src="Get_Editing_Activity_Blob(index)" :alt="`Activity photo ${index + 1}`" />
                 <button type="button" class="delete_image_btn" @click="obj_Form_Data.deleteActivityImageIndices.push(index)" :title="`Delete photo ${index + 1}`">🗑️</button>
               </div>
             </div>
@@ -334,6 +334,7 @@ import Pagination from '../components/Pagination.vue'
 import { formatRoadshowTime, normalizeRoadshowTime } from '../utils/roadshowTime'
 import { useLanguage } from '../composables/useLanguage'
 import { useRoute, useRouter } from 'vue-router'
+import { fetchRoadshowPosterBlob, fetchRoadshowActivityBlob } from '../services/api'
 
 // ===========================
 // CONSTANTS
@@ -377,6 +378,13 @@ const str_Editing_Roadshow_ID = ref<string | null>(null)
 // ===========================
 // Roadshow data array - will be populated from backend
 const arr_Roadshows = ref<any[]>([])
+const roadshowPosterBlobs = ref<Record<string, string>>({})
+const roadshowActivityBlobs = ref<Record<string, string[]>>({})
+const Get_Editing_Activity_Blob = (index: number): string => {
+  const roadshowId = str_Editing_Roadshow_ID.value
+  if (!roadshowId) return CONST_EMPTY_IMAGE_SVG
+  return roadshowActivityBlobs.value[roadshowId]?.[index] || CONST_EMPTY_IMAGE_SVG
+}
 const str_Search_Query = ref('')
 const { currentLanguage, text } = useLanguage()
 
@@ -617,7 +625,10 @@ const Edit_Roadshow = (obj_Roadshow: any) => {
     obj_Form_Data.posted_date = obj_Roadshow.posted_date || ''
     obj_Form_Data.deleted_date = obj_Roadshow.deleted_date || ''
     obj_Form_Data.isPublic = obj_Roadshow.is_public ?? obj_Roadshow.isPublic ?? false
-    obj_Form_Data.existingActivityImagePaths = obj_Roadshow.activity_image_paths || obj_Roadshow.activityImagePaths || []
+    obj_Form_Data.existingActivityImagePaths =
+      obj_Roadshow.activity_gridfs_ids?.length
+        ? obj_Roadshow.activity_gridfs_ids
+        : (obj_Roadshow.activity_image_paths || obj_Roadshow.activityImagePaths || [])
     obj_Form_Data.deleteActivityImageIndices = []
     
     // DEBUG: Log entire roadshow object
@@ -1088,7 +1099,7 @@ const Remove_Poster_File = () => {
  * Side effects: None
  */
 const Str_Get_Image_URL = (str_Poster_Path: string | null): string => {
-  return str_Poster_Path ? `${CONST_BACKEND_URL}${str_Poster_Path}` : CONST_EMPTY_IMAGE_SVG
+  return CONST_EMPTY_IMAGE_SVG
 }
 
 /**
@@ -1130,6 +1141,7 @@ const Obj_Create_Roadshow_From_Response = (obj_Response_Data: any): any => {
     posted_date: Extract_Date_Part(obj_Response_Data.posted_date),
     deleted_date: Extract_Date_Part(obj_Response_Data.deleted_date),
     activityImagePaths: obj_Response_Data.activity_image_paths || [],
+    activity_gridfs_ids: obj_Response_Data.activity_gridfs_ids || [],
     organization_en: obj_Response_Data.organization_en
       || obj_Response_Data.organization
       || obj_Response_Data.organization_name
@@ -1361,6 +1373,21 @@ const Load_Roadshows_From_API = async (): Promise<void> => {
     arr_Roadshows.value = obj_Result.data.map((obj_Item: any) => 
       Obj_Create_Roadshow_From_Response(obj_Item)
     )
+    roadshowPosterBlobs.value = {}
+    roadshowActivityBlobs.value = {}
+    await Promise.all(obj_Result.data.map(async (item: any) => {
+      const id = String(item._id)
+      try {
+        roadshowPosterBlobs.value[id] = await fetchRoadshowPosterBlob(id)
+      } catch {}
+      roadshowActivityBlobs.value[id] = await Promise.all(
+        (item.activity_gridfs_ids || item.activity_image_paths || []).map(
+          async (_: unknown, index: number) => {
+            try { return await fetchRoadshowActivityBlob(id, index) } catch { return '' }
+          }
+        )
+      )
+    }))
     
     console.log('Roadshow data loaded:', arr_Roadshows.value.length, 'items')
   } catch (error) {

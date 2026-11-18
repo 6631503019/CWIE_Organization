@@ -1,33 +1,48 @@
 const Roadshow = require('../models/Roadshow');
 const InternshipRecord = require('../models/InternshipRecord');
-const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
-const { deleteStoredFile } = require('../utils/fileCleanup');
+const {
+    CustomError,
+    createNotFoundError,
+    ERROR_CODES
+} = require('../utils/customError');
+const fs = require('fs');
+const { resolveStoredPath } = require('../utils/fileCleanup');
 const { normalizeRoadshowTime } = require('../utils/roadshowTime');
-const { getPublicUploadPath } = require('../config/uploads');
+
+const {
+    uploadRoadshowImageToGridFS,
+    openGridFSFile,
+    deleteGridFSFile
+} = require('../config/gridfs');
 
 // @desc    Get all roadshows
 // @route   GET /api/roadshows
 // @access  Public
 const getRoadshows = async (req, res, next) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
         const skip = (page - 1) * limit;
 
-        const filter = req.query.public !== 'false' ? { is_public: true } : {};
+        const filter = req.query.public !== 'false'
+            ? { is_public: true }
+            : {};
 
-        // Filter by upcoming events only if requested
         if (req.query.upcoming === 'true') {
             filter.event_date = { $gte: new Date() };
         }
 
         const roadshows = await Roadshow.find(filter)
-            .populate('organization_id', 'organization_name_en organization_name_th')
+            .populate(
+                'organization_id',
+                'organization_name_en organization_name_th'
+            )
             .sort({ event_date: -1 })
             .skip(skip)
             .limit(limit);
 
         const total = await Roadshow.countDocuments(filter);
+        const pages = Math.ceil(total / limit);
 
         res.status(200).json({
             success: true,
@@ -35,9 +50,9 @@ const getRoadshows = async (req, res, next) => {
             data: roadshows,
             pagination: {
                 page,
-                pages: Math.ceil(total / limit),
+                pages,
                 total,
-                hasNext: page < Math.ceil(total / limit),
+                hasNext: page < pages,
                 hasPrev: page > 1
             }
         });
@@ -52,13 +67,15 @@ const getRoadshows = async (req, res, next) => {
 const getRoadshow = async (req, res, next) => {
     try {
         const roadshow = await Roadshow.findById(req.params.id)
-            .populate('organization_id', 'organization_name_en organization_name_th');
+            .populate(
+                'organization_id',
+                'organization_name_en organization_name_th'
+            );
 
         if (!roadshow) {
             throw createNotFoundError('roadshow', req.params.id);
         }
 
-        // Check if roadshow is public or user has permission
         if (!roadshow.is_public && (!req.user || req.user.role !== 'admin')) {
             throw new CustomError(
                 ERROR_CODES.FORBIDDEN_RESOURCE_ACCESS_DENIED,
@@ -81,12 +98,29 @@ const getRoadshow = async (req, res, next) => {
 // @route   POST /api/roadshows
 // @access  Private (Admin)
 const createRoadshow = async (req, res, next) => {
-    try {
-        const { topic, details, event_date, organization_id, organization } = req.body;
+    const uploadedPosterId = null;
+    const uploadedActivityIds = [];
 
-        // Check required fields
-        const requiredFields = ['topic', 'details', 'event_date', 'posted_date'];
-        const missingFields = requiredFields.filter(field => !req.body[field]);
+    try {
+        const {
+            event_date,
+            organization_id
+        } = req.body;
+
+        // Validate required fields.
+        const requiredFields = [
+            'topic',
+            'details',
+            'event_date',
+            'posted_date'
+        ];
+
+        const missingFields = requiredFields.filter(
+            field =>
+                req.body[field] === undefined ||
+                req.body[field] === null ||
+                String(req.body[field]).trim() === ''
+        );
 
         if (missingFields.length > 0) {
             throw new CustomError(
@@ -95,21 +129,36 @@ const createRoadshow = async (req, res, next) => {
                 { missingFields }
             );
         }
-        if (organization !== undefined) {
-            req.body.organization = String(organization).trim();
+
+        // Normalize text fields.
+        if (req.body.organization !== undefined) {
+            req.body.organization = String(req.body.organization).trim();
         }
-        ['organization_en', 'organization_th', 'title_en', 'title_th'].forEach((field) => {
+
+        [
+            'organization_en',
+            'organization_th',
+            'title_en',
+            'title_th'
+        ].forEach(field => {
             if (req.body[field] !== undefined) {
                 req.body[field] = String(req.body[field]).trim();
             }
         });
+
+        // Validate organization reference.
         if (organization_id) {
-            const organization = await InternshipRecord.findOne({ _id: organization_id, record_type: 'organization' });
+            const organization = await InternshipRecord.findOne({
+                _id: organization_id,
+                record_type: 'organization'
+            });
+
             if (!organization) {
                 throw createNotFoundError('organization', organization_id);
             }
         }
 
+        // Validate and normalize time.
         if (req.body.time !== undefined && req.body.time !== '') {
             try {
                 req.body.time = normalizeRoadshowTime(req.body.time);
@@ -122,8 +171,9 @@ const createRoadshow = async (req, res, next) => {
             }
         }
 
-        // Validate event date
+        // Validate event date.
         const eventDate = new Date(event_date);
+
         if (isNaN(eventDate.getTime())) {
             throw new CustomError(
                 ERROR_CODES.VALIDATION_DATE_INVALID,
@@ -131,31 +181,54 @@ const createRoadshow = async (req, res, next) => {
             );
         }
 
-        // Check if event date is in the past (optional warning)
         if (eventDate < new Date()) {
-            console.warn('Warning: Event date is in the past');
+            console.warn('[Roadshow] Warning: Event date is in the past');
         }
 
-        // Handle file uploads
-        if (req.files) {
-            if (req.files.poster) {
-                req.body.poster_path = getPublicUploadPath('posters', req.files.poster[0].filename);
-            }
-            if (req.files.activity_image) {
-                req.body.activity_image_paths = req.files.activity_image.map(file =>
-                    getPublicUploadPath('activities', file.filename)
-                );
-            }
-        }
-
-        // Convert is_public from string to boolean (FormData always sends strings)
+        // Convert FormData boolean.
         if (typeof req.body.is_public === 'string') {
-            req.body.is_public = req.body.is_public === 'true' || req.body.is_public === '1';
+            req.body.is_public =
+                req.body.is_public === 'true' ||
+                req.body.is_public === '1';
         }
 
-        // Add admin ID from authenticated user
+        // Upload poster to GridFS.
+        if (req.files?.poster?.length) {
+            const posterId = await uploadRoadshowImageToGridFS(
+                req.files.poster[0],
+                { kind: 'poster' }
+            );
+
+            // Keep track of uploaded files for cleanup.
+            uploadedActivityIds.push(...[]);
+            req.body.poster_gridfs_id = posterId;
+            req.body.poster_path = null;
+
+            // Store the ID for cleanup if database creation fails.
+            req._uploadedRoadshowPosterId = posterId;
+        }
+
+        // Upload activity images to GridFS.
+        if (req.files?.activity_image?.length) {
+            req.body.activity_gridfs_ids = [];
+
+            for (const file of req.files.activity_image) {
+                const id = await uploadRoadshowImageToGridFS(
+                    file,
+                    { kind: 'activity' }
+                );
+
+                req.body.activity_gridfs_ids.push(id);
+                uploadedActivityIds.push(id);
+            }
+
+            req.body.activity_image_paths = [];
+        }
+
+        // Add authenticated admin ID.
         req.body.admin_id = req.user._id;
 
+        // Create MongoDB document.
         const roadshow = await Roadshow.create(req.body);
 
         res.status(201).json({
@@ -164,6 +237,35 @@ const createRoadshow = async (req, res, next) => {
             data: roadshow
         });
     } catch (error) {
+        // Clean up newly uploaded files if creation fails.
+        const posterId = req._uploadedRoadshowPosterId;
+
+        if (posterId) {
+            await deleteGridFSFile(
+                posterId,
+                'roadshowFiles'
+            ).catch(cleanupError => {
+                console.error(
+                    '[Roadshow] Poster cleanup failed:',
+                    cleanupError.message
+                );
+            });
+        }
+
+        if (uploadedActivityIds.length > 0) {
+            await Promise.all(
+                uploadedActivityIds.map(id =>
+                    deleteGridFSFile(id, 'roadshowFiles').catch(cleanupError => {
+                        console.error(
+                            '[Roadshow] Activity image cleanup failed:',
+                            id,
+                            cleanupError.message
+                        );
+                    })
+                )
+            );
+        }
+
         next(error);
     }
 };
@@ -172,39 +274,60 @@ const createRoadshow = async (req, res, next) => {
 // @route   PUT /api/roadshows/:id
 // @access  Private (Admin)
 const updateRoadshow = async (req, res, next) => {
+    let newPosterGridfsId = null;
+    const newlyUploadedActivityIds = [];
+
     try {
         const roadshow = await Roadshow.findById(req.params.id);
 
         if (!roadshow) {
             throw createNotFoundError('roadshow', req.params.id);
         }
+
+        // Normalize text fields.
         if (req.body.organization !== undefined) {
             req.body.organization = String(req.body.organization).trim();
         }
-        ['organization_en', 'organization_th', 'title_en', 'title_th'].forEach((field) => {
+
+        [
+            'organization_en',
+            'organization_th',
+            'title_en',
+            'title_th'
+        ].forEach(field => {
             if (req.body[field] !== undefined) {
                 req.body[field] = String(req.body[field]).trim();
             }
         });
+
+        // Validate organization.
         if (req.body.organization_id) {
-            const organization = await InternshipRecord.findOne({ _id: req.body.organization_id, record_type: 'organization' });
+            const organization = await InternshipRecord.findOne({
+                _id: req.body.organization_id,
+                record_type: 'organization'
+            });
+
             if (!organization) {
-                throw createNotFoundError('organization', req.body.organization_id);
+                throw createNotFoundError(
+                    'organization',
+                    req.body.organization_id
+                );
             }
         }
 
-        // Validate event date if provided
+        // Validate event date.
         if (req.body.event_date) {
             const eventDate = new Date(req.body.event_date);
+
             if (isNaN(eventDate.getTime())) {
                 throw new CustomError(
                     ERROR_CODES.VALIDATION_DATE_INVALID,
                     'Invalid event date format'
                 );
             }
-
         }
 
+        // Normalize time.
         if (req.body.time !== undefined && req.body.time !== '') {
             try {
                 req.body.time = normalizeRoadshowTime(req.body.time);
@@ -217,44 +340,212 @@ const updateRoadshow = async (req, res, next) => {
             }
         }
 
-        // Handle file uploads
-        if (req.files) {
-            if (req.files.poster) {
-                if (roadshow.poster_path) {
-                    deleteStoredFile(roadshow.poster_path, 'old roadshow poster');
-                }
-                req.body.poster_path = getPublicUploadPath('posters', req.files.poster[0].filename);
+        // Convert FormData boolean.
+        if (typeof req.body.is_public === 'string') {
+            req.body.is_public =
+                req.body.is_public === 'true' ||
+                req.body.is_public === '1';
+        }
+
+        // Do not allow clients to directly overwrite GridFS references.
+        delete req.body.poster_gridfs_id;
+        delete req.body.activity_gridfs_ids;
+
+        // Upload new poster.
+        if (req.files?.poster?.length) {
+            newPosterGridfsId = await uploadRoadshowImageToGridFS(
+                req.files.poster[0],
+                { kind: 'poster' }
+            );
+
+            req.body.poster_gridfs_id = newPosterGridfsId;
+            req.body.poster_path = null;
+        }
+
+        // Upload replacement activity images.
+        // If no new images are uploaded, existing images remain unchanged.
+        if (req.files?.activity_image?.length) {
+            const newActivityIds = [];
+
+            for (const file of req.files.activity_image) {
+                const id = await uploadRoadshowImageToGridFS(
+                    file,
+                    { kind: 'activity' }
+                );
+
+                newActivityIds.push(id);
+                newlyUploadedActivityIds.push(id);
             }
-            if (req.files.activity_image) {
-                if (Array.isArray(roadshow.activity_image_paths)) {
-                    roadshow.activity_image_paths.forEach(path =>
-                        deleteStoredFile(path, 'old roadshow activity image')
-                    );
-                }
-                req.body.activity_image_paths = req.files.activity_image.map(file =>
-                    getPublicUploadPath('activities', file.filename)
+
+            req.body.activity_gridfs_ids = newActivityIds;
+            req.body.activity_image_paths = [];
+        }
+
+        // Handle deletion of selected activity images.
+        const removedGridfsIds = [];
+
+        if (
+            !req.files?.activity_image?.length &&
+            req.body.delete_activity_image_indices !== undefined
+        ) {
+            let deleteIndices;
+
+            try {
+                deleteIndices = JSON.parse(
+                    req.body.delete_activity_image_indices
+                );
+            } catch (error) {
+                throw new CustomError(
+                    ERROR_CODES.VALIDATION_INVALID_FORMAT,
+                    'Invalid activity image deletion indices'
                 );
             }
+
+            if (!Array.isArray(deleteIndices)) {
+                throw new CustomError(
+                    ERROR_CODES.VALIDATION_INVALID_FORMAT,
+                    'Activity image deletion indices must be an array'
+                );
+            }
+
+            const indexSet = new Set(
+                deleteIndices
+                    .map(Number)
+                    .filter(index =>
+                        Number.isInteger(index) && index >= 0
+                    )
+            );
+
+            const existingGridfsIds = Array.isArray(
+                roadshow.activity_gridfs_ids
+            )
+                ? roadshow.activity_gridfs_ids
+                : [];
+
+            const existingLegacyPaths = Array.isArray(
+                roadshow.activity_image_paths
+            )
+                ? roadshow.activity_image_paths
+                : [];
+
+            req.body.activity_gridfs_ids = existingGridfsIds.filter(
+                (_, index) => !indexSet.has(index)
+            );
+
+            req.body.activity_image_paths = existingLegacyPaths.filter(
+                (_, index) => !indexSet.has(index)
+            );
+
+            existingGridfsIds.forEach((id, index) => {
+                if (indexSet.has(index)) {
+                    removedGridfsIds.push(id);
+                }
+            });
         }
 
-        // Convert is_public from string to boolean (FormData always sends strings)
-        if (typeof req.body.is_public === 'string') {
-            req.body.is_public = req.body.is_public === 'true' || req.body.is_public === '1';
-        }
+        delete req.body.delete_activity_image_indices;
 
+        // Update MongoDB before deleting old GridFS files.
         const updatedRoadshow = await Roadshow.findByIdAndUpdate(
             req.params.id,
             req.body,
-            { new: true, runValidators: true }
-        ).populate('organization_id', 'organization_name_en organization_name_th');
+            {
+                new: true,
+                runValidators: true
+            }
+        ).populate(
+            'organization_id',
+            'organization_name_en organization_name_th'
+        );
 
-        res.status(200).json({
+        if (!updatedRoadshow) {
+            throw createNotFoundError('roadshow', req.params.id);
+        }
+
+        // Database update succeeded. Clean up replaced poster.
+        if (newPosterGridfsId && roadshow.poster_gridfs_id) {
+            await deleteGridFSFile(
+                roadshow.poster_gridfs_id,
+                'roadshowFiles'
+            ).catch(error => {
+                console.error(
+                    '[Roadshow] Failed to delete old poster:',
+                    error.message
+                );
+            });
+        }
+
+        // If new activity images replaced the old set, delete old GridFS images.
+        if (req.files?.activity_image?.length) {
+            const oldActivityIds = Array.isArray(
+                roadshow.activity_gridfs_ids
+            )
+                ? roadshow.activity_gridfs_ids
+                : [];
+
+            await Promise.all(
+                oldActivityIds.map(id =>
+                    deleteGridFSFile(id, 'roadshowFiles').catch(error => {
+                        console.error(
+                            '[Roadshow] Failed to delete old activity image:',
+                            id,
+                            error.message
+                        );
+                    })
+                )
+            );
+        } else if (removedGridfsIds.length > 0) {
+            // Delete only selected activity images.
+            await Promise.all(
+                removedGridfsIds.map(id =>
+                    deleteGridFSFile(id, 'roadshowFiles').catch(error => {
+                        console.error(
+                            '[Roadshow] Failed to delete removed activity image:',
+                            id,
+                            error.message
+                        );
+                    })
+                )
+            );
+        }
+
+        return res.status(200).json({
             success: true,
             message: 'Roadshow updated successfully',
             data: updatedRoadshow
         });
+
     } catch (error) {
-        next(error);
+        // Update failed. Delete only newly uploaded files.
+        // Existing files must remain because MongoDB may still reference them.
+
+        if (newPosterGridfsId) {
+            await deleteGridFSFile(
+                newPosterGridfsId,
+                'roadshowFiles'
+            ).catch(cleanupError => {
+                console.error(
+                    '[Roadshow] Failed to clean up new poster:',
+                    cleanupError.message
+                );
+            });
+        }
+
+        if (newlyUploadedActivityIds.length > 0) {
+            await Promise.all(
+                newlyUploadedActivityIds.map(id =>
+                    deleteGridFSFile(id, 'roadshowFiles').catch(cleanupError => {
+                        console.error(
+                            '[Roadshow] Failed to clean up new activity image:',
+                            id,
+                            cleanupError.message
+                        );
+                    })
+                )
+            );
+        }
+
+        return next(error);
     }
 };
 
@@ -269,17 +560,41 @@ const deleteRoadshow = async (req, res, next) => {
             throw createNotFoundError('roadshow', req.params.id);
         }
 
-        if (roadshow.poster_path) {
-            deleteStoredFile(roadshow.poster_path, 'roadshow poster');
+        // Delete the MongoDB document first.
+        const deletedRoadshow = await Roadshow.findByIdAndDelete(
+            req.params.id
+        );
+
+        if (!deletedRoadshow) {
+            throw createNotFoundError('roadshow', req.params.id);
         }
 
-        if (Array.isArray(roadshow.activity_image_paths)) {
-            roadshow.activity_image_paths.forEach(path =>
-                deleteStoredFile(path, 'roadshow activity image')
+        // Clean up GridFS files after document deletion.
+        if (roadshow.poster_gridfs_id) {
+            await deleteGridFSFile(
+                roadshow.poster_gridfs_id,
+                'roadshowFiles'
+            ).catch(error => {
+                console.error(
+                    '[Roadshow] Failed to delete poster:',
+                    error.message
+                );
+            });
+        }
+
+        if (Array.isArray(roadshow.activity_gridfs_ids)) {
+            await Promise.all(
+                roadshow.activity_gridfs_ids.map(id =>
+                    deleteGridFSFile(id, 'roadshowFiles').catch(error => {
+                        console.error(
+                            '[Roadshow] Failed to delete activity image:',
+                            id,
+                            error.message
+                        );
+                    })
+                )
             );
         }
-
-        await Roadshow.findByIdAndDelete(req.params.id);
 
         res.status(200).json({
             success: true,
@@ -291,10 +606,223 @@ const deleteRoadshow = async (req, res, next) => {
     }
 };
 
+// Stream GridFS or legacy image.
+const streamRoadshowImage = async (
+    req,
+    res,
+    gridfsId,
+    legacyPath,
+    kind
+) => {
+    const roadshow = await Roadshow.findById(req.params.id);
+
+    if (!roadshow) {
+        throw createNotFoundError('roadshow', req.params.id);
+    }
+
+    if (!roadshow.is_public && req.user?.role !== 'admin') {
+        throw new CustomError(
+            ERROR_CODES.FORBIDDEN_RESOURCE_ACCESS_DENIED,
+            'This roadshow is private',
+            { roadshowId: req.params.id }
+        );
+    }
+
+    // Prefer GridFS.
+    if (gridfsId) {
+        try {
+            const gridfs = await openGridFSFile(
+                gridfsId,
+                'roadshowFiles'
+            );
+
+            res.setHeader(
+                'Content-Type',
+                gridfs.file.contentType || 'application/octet-stream'
+            );
+
+            res.setHeader(
+                'Content-Length',
+                gridfs.file.length
+            );
+
+            res.setHeader(
+                'Cache-Control',
+                'private, max-age=300'
+            );
+
+            res.setHeader(
+                'X-Content-Type-Options',
+                'nosniff'
+            );
+
+            gridfs.stream.on('error', error => {
+                console.error(
+                    '[Roadshow] GridFS stream error:',
+                    error.message
+                );
+
+                if (!res.headersSent) {
+                    res.status(500).end();
+                } else {
+                    res.destroy(error);
+                }
+            });
+
+            gridfs.stream.pipe(res);
+            return;
+        } catch (error) {
+            if (error.code === 'DATABASE_UNAVAILABLE') {
+                throw new CustomError(
+                    ERROR_CODES.SERVICE_DATABASE_UNAVAILABLE,
+                    'Roadshow image storage is temporarily unavailable'
+                );
+            }
+
+            if (error.code === 'GRIDFS_FILE_NOT_FOUND') {
+                throw createNotFoundError('file', req.params.id);
+            }
+
+            console.error(
+                '[Roadshow] Unable to open GridFS image:',
+                error.message
+            );
+
+            throw new CustomError(
+                ERROR_CODES.SERVICE_DATABASE_UNAVAILABLE,
+                'Roadshow image storage is temporarily unavailable'
+            );
+        }
+    }
+
+    // Fallback to legacy local storage.
+    if (legacyPath) {
+        const absolutePath = resolveStoredPath(legacyPath);
+
+        if (absolutePath && fs.existsSync(absolutePath)) {
+            const stat = fs.statSync(absolutePath);
+
+            res.setHeader(
+                'Content-Type',
+                'application/octet-stream'
+            );
+
+            res.setHeader(
+                'Content-Length',
+                stat.size
+            );
+
+            res.setHeader(
+                'Cache-Control',
+                'private, max-age=300'
+            );
+
+            res.setHeader(
+                'X-Content-Type-Options',
+                'nosniff'
+            );
+
+            const fileStream = fs.createReadStream(absolutePath);
+
+            fileStream.on('error', error => {
+                console.error(
+                    '[Roadshow] Legacy image stream error:',
+                    error.message
+                );
+
+                if (!res.headersSent) {
+                    res.status(500).end();
+                } else {
+                    res.destroy(error);
+                }
+            });
+
+            fileStream.pipe(res);
+            return;
+        }
+    }
+
+    throw createNotFoundError('file', req.params.id);
+};
+
+// @desc    Get roadshow poster
+// @route   GET /api/roadshows/:id/poster
+// @access  Public / Admin for private roadshows
+const getRoadshowPoster = async (req, res, next) => {
+    try {
+        const roadshow = await Roadshow.findById(req.params.id);
+
+        if (!roadshow) {
+            throw createNotFoundError('roadshow', req.params.id);
+        }
+
+        await streamRoadshowImage(
+            req,
+            res,
+            roadshow.poster_gridfs_id,
+            roadshow.poster_path,
+            'poster'
+        );
+    } catch (error) {
+        if (!res.headersSent) {
+            next(error);
+        } else {
+            res.destroy(error);
+        }
+    }
+};
+
+// @desc    Get roadshow activity image
+// @route   GET /api/roadshows/:id/activity/:index
+// @access  Public / Admin for private roadshows
+const getRoadshowActivityImage = async (req, res, next) => {
+    try {
+        const roadshow = await Roadshow.findById(req.params.id);
+
+        if (!roadshow) {
+            throw createNotFoundError('roadshow', req.params.id);
+        }
+
+        const index = Number(req.params.index);
+
+        if (!Number.isInteger(index) || index < 0) {
+            throw createNotFoundError('file', req.params.id);
+        }
+
+        const gridfsId = Array.isArray(roadshow.activity_gridfs_ids)
+            ? roadshow.activity_gridfs_ids[index]
+            : null;
+
+        const legacyPath = Array.isArray(roadshow.activity_image_paths)
+            ? roadshow.activity_image_paths[index]
+            : null;
+
+        if (!gridfsId && !legacyPath) {
+            throw createNotFoundError('file', req.params.id);
+        }
+
+        await streamRoadshowImage(
+            req,
+            res,
+            gridfsId,
+            legacyPath,
+            'activity'
+        );
+    } catch (error) {
+        if (!res.headersSent) {
+            next(error);
+        } else {
+            res.destroy(error);
+        }
+    }
+};
+
 module.exports = {
     getRoadshows,
     getRoadshow,
     createRoadshow,
     updateRoadshow,
-    deleteRoadshow
+    deleteRoadshow,
+    getRoadshowPoster,
+    getRoadshowActivityImage
 };

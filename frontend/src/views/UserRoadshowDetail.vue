@@ -22,7 +22,7 @@
         <!-- Image -->
         <div class="roadshow_image_detail">
           <img 
-            :src="roadshow.poster_path ? `${BACKEND_URL}${roadshow.poster_path}` : 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27493%27 height=%27495%27%3E%3Crect fill=%27%23ddd%27 width=%27493%27 height=%27495%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'" 
+            :src="posterBlob || 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27493%27 height=%27495%27%3E%3Crect fill=%27%23ddd%27 width=%27493%27 height=%27495%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'"
             :alt="roadshow.topic"
             @error="(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27493%27 height=%27495%27%3E%3Crect fill=%27%23ddd%27 width=%27493%27 height=%27495%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'"
           />
@@ -38,10 +38,10 @@
         </div>
 
         <!-- Activity Images Grid -->
-        <div v-if="roadshow.activity_image_paths && roadshow.activity_image_paths.length > 0" class="activity_images_grid">
-          <div v-for="(str_Image_Path, index) in roadshow.activity_image_paths" :key="index" class="activity_image_card">
+        <div v-if="(roadshow.activity_gridfs_ids?.length || roadshow.activity_image_paths?.length) > 0" class="activity_images_grid">
+          <div v-for="(_, index) in (roadshow.activity_gridfs_ids?.length ? roadshow.activity_gridfs_ids : roadshow.activity_image_paths)" :key="index" class="activity_image_card">
             <img 
-              :src="`${BACKEND_URL}${str_Image_Path}`"
+              :src="activityBlobs[index] || 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27493%27 height=%27495%27%3E%3Crect fill=%27%23ddd%27 width=%27493%27 height=%27495%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'"
               :alt="`Activity photo ${Number(index) + 1}`" 
             />
           </div>
@@ -56,7 +56,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 
-import { BACKEND_URL, roadshowAPI } from '../services/api'
+import { roadshowAPI, fetchRoadshowPosterBlob, fetchRoadshowActivityBlob } from '../services/api'
 import { formatRoadshowTime } from '../utils/roadshowTime'
 import { useLanguage } from '../composables/useLanguage'
 
@@ -69,6 +69,8 @@ const state = reactive({
 })
 
 const roadshow = ref<any>(null)
+const posterBlob = ref('')
+const activityBlobs = ref<string[]>([])
 
 onMounted(async () => {
   console.log('UserRoadshowDetail mounted, ID:', route.params.id)
@@ -77,6 +79,14 @@ onMounted(async () => {
   try {
     const response = await roadshowAPI.getById(route.params.id as string)
     roadshow.value = response.data.data
+    try { posterBlob.value = await fetchRoadshowPosterBlob(roadshow.value._id) } catch {}
+    activityBlobs.value = await Promise.all(
+      (roadshow.value.activity_gridfs_ids || roadshow.value.activity_image_paths || []).map(
+        async (_: unknown, index: number) => {
+          try { return await fetchRoadshowActivityBlob(roadshow.value._id, index) } catch { return '' }
+        }
+      )
+    )
     console.log('Roadshow detail loaded:', roadshow.value)
   } catch (error: any) {
     state.error = error.response?.data?.message || 'Failed to load roadshow details'

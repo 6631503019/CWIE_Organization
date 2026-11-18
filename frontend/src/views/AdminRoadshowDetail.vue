@@ -28,7 +28,7 @@
           <div class="detail_layout">
             <div class="roadshow_image_detail">
               <img
-                :src="Str_Get_Image_URL(obj_Roadshow_Data.poster_path)"
+                :src="posterBlob || Str_Get_Image_URL(null)"
                 :alt="Get_Roadshow_Title(obj_Roadshow_Data)"
                 @error="(e) => (e.target as HTMLImageElement).src = Str_Get_Image_URL(null)"
               />
@@ -57,9 +57,9 @@
               {{ obj_Roadshow_Data.details || '—' }}
             </section>
 
-            <div v-if="obj_Roadshow_Data.activity_image_paths && obj_Roadshow_Data.activity_image_paths.length" class="activity_images_grid">
-              <div v-for="(str_Image_Path, index) in obj_Roadshow_Data.activity_image_paths" :key="index" class="activity_image_card">
-                <img :src="Str_Get_Image_URL(str_Image_Path)" :alt="`Activity photo ${Number(index) + 1}`" />
+            <div v-if="activityImageCount > 0" class="activity_images_grid">
+              <div v-for="imageIndex in activityImageCount" :key="imageIndex" class="activity_image_card">
+                <img :src="activityBlobs[imageIndex - 1] || Str_Get_Image_URL(null)" :alt="`Activity photo ${imageIndex}`" />
               </div>
             </div>
           </div>
@@ -86,12 +86,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import { formatRoadshowTime } from '../utils/roadshowTime'
 import { useLanguage } from '../composables/useLanguage'
+import { fetchRoadshowPosterBlob, fetchRoadshowActivityBlob } from '../services/api'
 
 // ============================================================================
 // Constants (naming convention: ALL_CAPS)
@@ -113,6 +114,15 @@ const obj_UI_State = reactive({
 })
 
 const obj_Roadshow_Data = ref<any>(null)  // Object: roadshow details from API
+const posterBlob = ref('')
+const activityBlobs = ref<string[]>([])
+const activityImageCount = computed(() => {
+  const gridfsIds = obj_Roadshow_Data.value?.activity_gridfs_ids
+  if (Array.isArray(gridfsIds) && gridfsIds.length > 0) return gridfsIds.length
+
+  const legacyPaths = obj_Roadshow_Data.value?.activity_image_paths
+  return Array.isArray(legacyPaths) ? legacyPaths.length : 0
+})
 
 const route = useRoute()
 const router = useRouter()
@@ -147,14 +157,7 @@ function Get_Organization_Name(obj_Roadshow: any): string {
 // Output: string - Complete image URL
 // ============================================================================
 function Str_Get_Image_URL(str_Image_Path: string | null): string {
-  // Validation: Check if image path exists and is valid
-  if (!str_Image_Path || typeof str_Image_Path !== 'string') {
-    return CONST_DEFAULT_NO_IMAGE_SVG
-  }
-  
-  // Return complete URL by combining base URL with image path
-  const normalizedPath = str_Image_Path.replace(/\\/g, '/')
-  return `${CONST_BACKEND_URL}${normalizedPath.startsWith('/') ? normalizedPath : `/${normalizedPath}`}`
+  return CONST_DEFAULT_NO_IMAGE_SVG
 }
 
 // ============================================================================
@@ -306,6 +309,14 @@ async function Load_Roadshow_Details(): Promise<void> {
     
     // Step 9: Update component data
     obj_Roadshow_Data.value = obj_Response.data
+    try { posterBlob.value = await fetchRoadshowPosterBlob(obj_Roadshow_Data.value._id) } catch {}
+    activityBlobs.value = await Promise.all(
+      (obj_Roadshow_Data.value.activity_gridfs_ids || obj_Roadshow_Data.value.activity_image_paths || []).map(
+        async (_: unknown, index: number) => {
+          try { return await fetchRoadshowActivityBlob(obj_Roadshow_Data.value._id, index) } catch { return '' }
+        }
+      )
+    )
     console.log('Roadshow details loaded successfully:', obj_Roadshow_Data.value)
     
   } catch (error) {

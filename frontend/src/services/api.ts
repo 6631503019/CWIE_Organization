@@ -489,5 +489,23 @@ export const fetchMouFileBlob = async (mouId: unknown): Promise<string> => {
     })
     return URL.createObjectURL(response.data)
 }
+
+export const fetchRoadshowPosterBlob = async (roadshowId: unknown): Promise<string> => {
+    if (!roadshowId) return ''
+    const response = await obj_API_Client.get(
+        `/roadshows/${encodeURIComponent(String(roadshowId))}/image/poster`,
+        { responseType: 'blob' }
+    )
+    return URL.createObjectURL(response.data)
+}
+
+export const fetchRoadshowActivityBlob = async (roadshowId: unknown, index: number): Promise<string> => {
+    if (!roadshowId) return ''
+    const response = await obj_API_Client.get(
+        `/roadshows/${encodeURIComponent(String(roadshowId))}/image/activity/${index}`,
+        { responseType: 'blob' }
+    )
+    return URL.createObjectURL(response.data)
+}
 export const isTokenExpired = Bln_Is_Token_Expired
 export const checkTokenValidity = Bln_Check_Token_Validity

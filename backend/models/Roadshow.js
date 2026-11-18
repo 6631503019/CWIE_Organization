@@ -67,8 +67,15 @@ const roadshowSchema = new mongoose.Schema({
     poster_path: {
         type: String
     },
+    poster_gridfs_id: {
+        type: mongoose.Schema.Types.ObjectId
+    },
     activity_image_paths: {
         type: [String],
+        default: []
+    },
+    activity_gridfs_ids: {
+        type: [mongoose.Schema.Types.ObjectId],
         default: []
     },
     is_public: {

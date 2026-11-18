@@ -10,6 +10,7 @@
         "migrate:organization-email-index": "node migrations/remove-organization-email-unique-index.js",
         "migrate:organizations-to-internshiprecords": "node scripts/migrateOrganizationsToInternshipRecords.js",
         "migrate:mou-files-to-gridfs": "node scripts/migrateMouFilesToGridFS.js",
+        "migrate:roadshow-files-to-gridfs": "node scripts/migrateRoadshowFilesToGridFS.js",
         "inspect:mou": "node scripts/inspectMou.js"
     },
     "dependencies": {

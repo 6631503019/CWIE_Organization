@@ -2,20 +2,20 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const { Readable } = require('stream');
 
-const getBucket = () => {
+const getBucket = (bucketName = 'mouFiles') => {
     if (mongoose.connection.readyState !== 1 || !mongoose.connection.db) {
         const error = new Error('MongoDB connection is unavailable');
         error.code = 'DATABASE_UNAVAILABLE';
         throw error;
     }
-    return new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'mouFiles' });
+    return new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName });
 };
 
-const uploadPdfToGridFS = (file, metadata = {}) => {
+const uploadFileToGridFS = (bucketName, file, contentType, metadata = {}) => {
     return new Promise((resolve, reject) => {
-        const bucket = getBucket();
+        const bucket = getBucket(bucketName);
         const uploadStream = bucket.openUploadStream(file.originalname, {
-            contentType: 'application/pdf',
+            contentType,
             metadata: {
                 originalName: file.originalname,
                 size: file.size,
@@ -34,8 +34,14 @@ const uploadPdfToGridFS = (file, metadata = {}) => {
     });
 };
 
-const openGridFSFile = async fileId => {
-    const bucket = getBucket();
+const uploadPdfToGridFS = (file, metadata = {}) =>
+    uploadFileToGridFS('mouFiles', file, 'application/pdf', metadata);
+
+const uploadRoadshowImageToGridFS = (file, metadata = {}) =>
+    uploadFileToGridFS('roadshowFiles', file, file.mimetype || 'application/octet-stream', metadata);
+
+const openGridFSFile = async (fileId, bucketName = 'mouFiles') => {
+    const bucket = getBucket(bucketName);
     const objectId = mongoose.Types.ObjectId.isValid(fileId)
         ? new mongoose.Types.ObjectId(fileId)
         : null;
@@ -57,9 +63,9 @@ const openGridFSFile = async fileId => {
     };
 };
 
-const deleteGridFSFile = async fileId => {
+const deleteGridFSFile = async (fileId, bucketName = 'mouFiles') => {
     if (!mongoose.Types.ObjectId.isValid(fileId)) return false;
-    const bucket = getBucket();
+    const bucket = getBucket(bucketName);
     await bucket.delete(new mongoose.Types.ObjectId(fileId));
     return true;
 };
@@ -67,6 +73,7 @@ const deleteGridFSFile = async fileId => {
 module.exports = {
     getBucket,
     uploadPdfToGridFS,
+    uploadRoadshowImageToGridFS,
     openGridFSFile,
     deleteGridFSFile
 };

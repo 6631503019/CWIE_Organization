@@ -55,7 +55,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 import Pagination from '../components/Pagination.vue'
-import { roadshowAPI, BACKEND_URL } from '../services/api'
+import { roadshowAPI, fetchRoadshowPosterBlob } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
 
 const router = useRouter()
@@ -97,19 +97,15 @@ const fetchPublicRoadshows = async () => {
     const response = await roadshowAPI.getAll({ limit: 100 })
     console.log('All public roadshows:', response.data.data)
     
-    roadshows.value = response.data.data
+    roadshows.value = await Promise.all(response.data.data
       .filter((item: any) => {
         return item.is_public === true || item.is_public === 'true' || item.is_public === 1
-      })
-      .map((item: any) => {
-        let posterPath = item.poster_path
-        if (posterPath) {
-          posterPath = posterPath.replace(/\\/g, '/')
-          if (!posterPath.startsWith('/')) {
-            posterPath = '/' + posterPath
-          }
-        }
-        const imageUrl = posterPath ? `${BACKEND_URL}${posterPath}` : 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27271%27 height=%27272%27%3E%3Crect fill=%27%23ddd%27 width=%27271%27 height=%27272%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'
+      }))
+      .map(async (item: any) => {
+        let imageUrl = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27271%27 height=%27272%27%3E%3Crect fill=%27%23ddd%27 width=%27271%27 height=%27272%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'
+        try {
+          imageUrl = await fetchRoadshowPosterBlob(item._id)
+        } catch {}
         
         return {
           id: item._id,

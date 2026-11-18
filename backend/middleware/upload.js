@@ -68,5 +68,15 @@ const uploadMou = multer({
     fileFilter
 });
 
+const uploadRoadshow = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 10 * 1024 * 1024,
+        files: 11
+    },
+    fileFilter
+});
+
 module.exports = upload;
 module.exports.uploadMou = uploadMou;
+module.exports.uploadRoadshow = uploadRoadshow;
