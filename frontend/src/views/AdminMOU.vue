@@ -177,163 +177,14 @@
         </div>
       </div>
 
-      <!-- Add MOU Modal -->
-  <Teleport to="body">
-    <div
-      v-if="bln_Show_Add_MOU_Modal"
-      class="add_mou_overlay"
-      @click.self="Close_Add_MOU"
-    >
-      <form
-        class="add_mou_modal"
-        @submit.prevent="Submit_Add_MOU"
-      >
-        <!-- Close -->
-        <button
-          type="button"
-          class="add_mou_close"
-          aria-label="Close"
-          @click="Close_Add_MOU"
-        >
-          ×
-        </button>
-
-        <!-- Title -->
-        <h2 class="add_mou_title">Add MOU</h2>
-
-        <div class="add_mou_divider"></div>
-
-        <!-- Organization -->
-        <div class="add_mou_field">
-          <label
-            class="add_mou_label"
-            for="mou-organization"
-          >
-            Organization<span>*</span>
-          </label>
-
-          <div class="add_mou_organization_picker">
-    <input
-      id="mou-organization"
-      v-model="str_Add_MOU_Organization_Search"
-      type="text"
-      class="add_mou_input"
-      placeholder="Search organization"
-      autocomplete="off"
-      :disabled="obj_state.loading"
-      @focus="bln_Show_Add_MOU_Organization_List = true"
-    />
-
-    <div
-      v-if="bln_Show_Add_MOU_Organization_List"
-      class="add_mou_organization_dropdown"
-    >
-      <button
-        v-for="organization in arr_Filtered_Add_MOU_Organizations"
-        :key="organization._id"
-        type="button"
-        class="add_mou_organization_option"
-        @click="Select_Add_MOU_Organization(organization)"
-      >
-        {{ organization.name_en || organization.name_th || 'Unnamed Organization' }}
-      </button>
-
-      <div
-        v-if="arr_Filtered_Add_MOU_Organizations.length === 0"
-        class="add_mou_organization_empty"
-      >
-        No organizations found
-      </div>
-
-      <div class="add_mou_dates">
-        <label class="add_mou_field">
-          <span class="add_mou_label">Publication Start</span>
-          <input v-model="obj_Add_MOU.publicationStartAt" class="add_mou_input" type="datetime-local">
-        </label>
-        <label class="add_mou_field">
-          <span class="add_mou_label">Publication End</span>
-          <input v-model="obj_Add_MOU.publicationEndAt" class="add_mou_input" type="datetime-local">
-        </label>
-      </div>
-
-      <label class="add_mou_field">
-        <span class="add_mou_label">Publication Status</span>
-        <select v-model="obj_Add_MOU.isPublished" class="add_mou_input">
-          <option :value="true">Published</option>
-          <option :value="false">Hidden</option>
-        </select>
-      </label>
-    </div>
-  </div>
-        </div>
-
-        <!-- MOU File -->
-        <div class="add_mou_field">
-          <label
-            class="add_mou_label"
-            for="mou-file"
-          >
-            MOU Document<span>*</span>
-          </label>
-
-          <label
-            class="add_mou_file_box"
-            for="mou-file"
-          >
-            <span class="add_mou_file_text">
-              {{ obj_Add_MOU.file?.name || 'Browse Files (PDF)' }}
-            </span>
-
-            <input
-              id="mou-file"
-              type="file"
-              accept=".pdf,application/pdf"
-              required
-              @change="Handle_Add_MOU_File"
-            />
-          </label>
-        </div>
-
-        <!-- Error -->
-        <p
-          v-if="obj_state.error"
-          class="add_mou_error"
-        >
-          {{ obj_state.error }}
-        </p>
-
-        <!-- Actions -->
-        <div class="add_mou_actions">
-          <button
-            type="button"
-            class="add_mou_cancel"
-            :disabled="obj_state.loading"
-            @click="Close_Add_MOU"
-          >
-            Cancel
-          </button>
-
-          <button
-            type="submit"
-            class="add_mou_submit"
-            :disabled="
-              obj_state.loading ||
-              !obj_Add_MOU.organizationId ||
-              !obj_Add_MOU.file
-            "
-          >
-            {{ obj_state.loading ? 'Uploading...' : 'Upload' }}
-          </button>
-        </div>
-      </form>
-    </div>
-  </Teleport>
-      
       <!-- Edit Modal -->
-      <OrganizationEditModal 
+      <MouModal
+        v-model="bln_Show_Add_MOU_Modal"
+        @saved="Handle_Modal_Saved"
+      />
+      <MouModal
         v-model="bln_Show_Edit_Modal"
-        :organization-id="str_Editing_Org_ID"
-        :initial-tab="str_Editing_Tab"
+        :mou-id="str_Editing_MOU_ID"
         @saved="Handle_Modal_Saved"
       />
     </div>
@@ -345,7 +196,7 @@
   import AdminNavbar from '../components/AdminNavbar.vue'
   import AdminTopBar from '../components/admin/AdminTopBar.vue'
   import Pagination from '../components/Pagination.vue'
-  import OrganizationEditModal from '../components/OrganizationEditModal.vue'
+  import MouModal from '../components/MouModal.vue'
   import { organizationAPI, mouAPI, BACKEND_URL, getUploadedFileUrl } from '../services/api'
   import { useLanguage } from '../composables/useLanguage'
 
@@ -396,39 +247,8 @@
   // MODAL STATES
   // ===========================
   const bln_Show_Edit_Modal = ref(false)
-  const str_Editing_Org_ID = ref<string | null>(null)
-  const str_Editing_Tab = ref<'organization' | 'review' | 'mou'>('organization')
+  const str_Editing_MOU_ID = ref<string | null>(null)
   const bln_Show_Add_MOU_Modal = ref(false)
-  const arr_Add_MOU_Organizations = ref<any[]>([])
-  const obj_Add_MOU = reactive({
-    organizationId: '',
-    file: null as File | null,
-    publicationStartAt: '',
-    publicationEndAt: '',
-    isPublished: true
-  })
-  const str_Add_MOU_Organization_Search = ref('')
-  const bln_Show_Add_MOU_Organization_List = ref(false)
-
-  const arr_Filtered_Add_MOU_Organizations = computed(() => {
-    const search = str_Add_MOU_Organization_Search.value
-      .trim()
-      .toLowerCase()
-
-    if (!search) {
-      return arr_Add_MOU_Organizations.value
-    }
-
-    return arr_Add_MOU_Organizations.value.filter((organization) => {
-      const nameEn = String(organization.name_en || '').toLowerCase()
-      const nameTh = String(organization.name_th || '').toLowerCase()
-
-      return (
-        nameEn.includes(search) ||
-        nameTh.includes(search)
-      )
-    })
-  })
 
 
 
@@ -496,109 +316,6 @@
   const Open_Add_MOU = async () => {
     obj_state.error = null
     bln_Show_Add_MOU_Modal.value = true
-    if (arr_Add_MOU_Organizations.value.length > 0) return
-    try {
-      const response = await organizationAPI.getAll({ limit: 10000, public: 'false' })
-      arr_Add_MOU_Organizations.value = response.data.data || []
-    } catch (error: any) {
-      obj_state.error = error.response?.data?.message || 'Failed to load organizations'
-    }
-  }
-
-  const Close_Add_MOU = () => {
-    bln_Show_Add_MOU_Modal.value = false
-    obj_Add_MOU.organizationId = ''
-    obj_Add_MOU.file = null
-    obj_Add_MOU.publicationStartAt = ''
-    obj_Add_MOU.publicationEndAt = ''
-    obj_Add_MOU.isPublished = true
-    obj_state.error = null
-    str_Add_MOU_Organization_Search.value = ''
-  bln_Show_Add_MOU_Organization_List.value = false
-  obj_state.error = null
-  }
-
-  const Handle_Add_MOU_File = (event: Event) => {
-    const input = event.target as HTMLInputElement
-    const file = input.files?.[0] || null
-
-    if (file && file.type !== 'application/pdf') {
-      obj_Add_MOU.file = null
-      input.value = ''
-      obj_state.error = 'MOU file must be a PDF document'
-      return
-    }
-
-    obj_state.error = null
-    obj_Add_MOU.file = file
-  }
-
-  const Select_Add_MOU_Organization = (organization: any) => {
-    obj_Add_MOU.organizationId = organization._id
-
-    str_Add_MOU_Organization_Search.value =
-      organization.name_en ||
-      organization.name_th ||
-      'Unnamed Organization'
-
-    bln_Show_Add_MOU_Organization_List.value = false
-  }
-
-  const Submit_Add_MOU = async () => {
-    // Validate organization
-    if (!obj_Add_MOU.organizationId) {
-      obj_state.error = 'Please select an organization'
-      return
-    }
-
-    // Validate file
-    const file = obj_Add_MOU.file
-
-    if (!file) {
-      obj_state.error = 'Please select an MOU document'
-      return
-    }
-
-    if (file.type !== 'application/pdf') {
-      obj_state.error = 'MOU file must be a PDF document'
-      return
-    }
-
-    obj_state.loading = true
-    obj_state.error = null
-
-    try {
-      const formData = new FormData()
-
-      formData.append(
-        'organization_id',
-        String(obj_Add_MOU.organizationId)
-      )
-
-      // ใช้ตัวแปร file ที่ผ่าน null check แล้ว
-      formData.append('mou', file)
-      if (obj_Add_MOU.publicationStartAt) formData.append('publication_start_at', obj_Add_MOU.publicationStartAt)
-      if (obj_Add_MOU.publicationEndAt) formData.append('publication_end_at', obj_Add_MOU.publicationEndAt)
-      formData.append('is_published', String(obj_Add_MOU.isPublished))
-
-      await mouAPI.create(formData)
-
-      Close_Add_MOU()
-
-      await Load_Organizations_From_API()
-
-    } catch (error: any) {
-      console.error('Submit_Add_MOU error:', error)
-
-      obj_state.error =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        error?.message ||
-        'Failed to upload MOU'
-
-    } finally {
-      obj_state.loading = false
-    }
   }
 
   /**
@@ -729,8 +446,7 @@
         throw new Error('Organization ID is missing for this MOU')
       }
 
-      str_Editing_Org_ID.value = String(str_Organization_ID)
-      str_Editing_Tab.value = 'organization'
+      str_Editing_MOU_ID.value = String(obj_MOU.id)
       bln_Show_Edit_Modal.value = true
     } catch (error) {
       console.error('Error in Edit_MOU:', error)

@@ -345,6 +345,31 @@
               <label>Phone Number</label>
               <input type="tel" v-model="formData.phoneNumber" />
             </div>
+
+            <div class="form_group">
+              <label>Country (EN)</label>
+              <input type="text" v-model="formData.countryEN" />
+            </div>
+            <div class="form_group">
+              <label>Country (TH)</label>
+              <input type="text" v-model="formData.countryTH" />
+            </div>
+            <div class="form_group">
+              <label>Province (EN)</label>
+              <input type="text" v-model="formData.provinceEN" />
+            </div>
+            <div class="form_group">
+              <label>Province (TH)</label>
+              <input type="text" v-model="formData.provinceTH" />
+            </div>
+            <div class="form_group">
+              <label>School (EN)</label>
+              <input type="text" v-model="formData.schoolEN" />
+            </div>
+            <div class="form_group">
+              <label>School (TH)</label>
+              <input type="text" v-model="formData.schoolTH" />
+            </div>
             
             <div class="form_group">
               <label>Details</label>
@@ -1307,8 +1332,14 @@ const formData = reactive<Record<string, any>>({
   organizationType: '',
   industryCategory: '',
   country: '',
+  countryEN: '',
+  countryTH: '',
   geography: '',
   province: '',
+  provinceEN: '',
+  provinceTH: '',
+  schoolEN: '',
+  schoolTH: '',
   email: '',
   phoneNumber: '',
   details: '',
@@ -1601,6 +1632,12 @@ const saveAllData = async () => {
     if (formData.province) {
       formDataToSend.append('province_id', formData.province)
     }
+    formDataToSend.append('country_en', formData.countryEN)
+    formDataToSend.append('country_th', formData.countryTH)
+    formDataToSend.append('province_en', formData.provinceEN)
+    formDataToSend.append('province_th', formData.provinceTH)
+    formDataToSend.append('school_en', formData.schoolEN)
+    formDataToSend.append('school_th', formData.schoolTH)
     
     formDataToSend.append('email', formData.email)
     formDataToSend.append('phone_number', formData.phoneNumber)
@@ -1850,7 +1887,7 @@ const saveMOUData = async (orgId: string) => {
   formDataToSend.append('organization_id', orgId)
   formDataToSend.append('start_date', mouData.startDate)
   formDataToSend.append('end_date', mouData.endDate)
-  formDataToSend.append('status', mouData.publishMOU ? 'active' : 'inactive')
+  formDataToSend.append('is_published', String(mouData.publishMOU))
   formDataToSend.append('mou', mouData.mouFile)
 
   await mouAPI.create(formDataToSend)
@@ -1897,8 +1934,14 @@ const editOrganization = async (id: string | number) => {
     formData.industryCategory = orgData.industry_category_id || ''
     // Handle both ObjectId (old) and String (new) formats
     formData.country = getOrganizationDisplayField(orgData, ['country_en', 'country'], ['country_th'], ['country_id'])
+    formData.countryEN = orgData.country_en || ''
+    formData.countryTH = orgData.country_th || ''
     formData.geography = typeof orgData.geography_id === 'string' ? orgData.geography_id : (orgData.geography_id?.name_en || orgData.geography_id?.name_th || '')
     formData.province = getOrganizationDisplayField(orgData, ['province_en', 'province'], ['province_th'], ['province_id'])
+    formData.provinceEN = orgData.province_en || ''
+    formData.provinceTH = orgData.province_th || ''
+    formData.schoolEN = orgData.school_en || ''
+    formData.schoolTH = orgData.school_th || ''
     formData.email = orgData.email || ''
     formData.phoneNumber = orgData.phone_number || ''
     formData.details = orgData.details || ''
@@ -3049,10 +3092,11 @@ onBeforeUnmount(() => {
 /* Add Organization Modal Styles */
 .modal_overlay {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100dvh;
+  padding: 24px;
+  box-sizing: border-box;
   background: rgba(84, 84, 84, 0.5);
   display: flex;
   align-items: center;
@@ -3062,18 +3106,18 @@ onBeforeUnmount(() => {
 
 .add_org_modal {
   position: relative;
-  width: 657px;
+  width: min(657px, calc(100vw - 48px));
   min-height: 400px;
-  max-height: 657px;
+  max-height: calc(100dvh - 48px);
   background: #FFFFFF;
   border-radius: 12px;
   display: flex;
 }
 
 .add_org_modal.organization_active {
-  height: 657px;
+  height: auto;
   min-height: 657px;
-  max-height: 657px;
+  max-height: calc(100dvh - 48px);
 }
 
 .add_org_modal.review_active,
@@ -3160,6 +3204,7 @@ onBeforeUnmount(() => {
   border-radius: 12px;
   padding: 20px;
   overflow-y: auto;
+  max-height: calc(100dvh - 48px);
   box-sizing: border-box;
 }
 

@@ -730,7 +730,7 @@ const saveAllData = async () => {
 
     // Step 3: Save MOU Data (if provided)
     if ((mouData.startDate && mouData.endDate) || existingMouId.value) {
-      if (new Date(mouData.endDate) <= new Date(mouData.startDate)) {
+      if (mouData.startDate && mouData.endDate && new Date(mouData.endDate) <= new Date(mouData.startDate)) {
         errors.push('MOU (End date must be after start date)')
       } else if (!mouData.mouFile && !existingMouId.value) {
         errors.push('MOU (No file selected)')
@@ -888,10 +888,12 @@ watch(() => props.modelValue, (newValue) => {
 
 .modal_overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
+  width: 100%;
+  height: 100dvh;
+  padding: 24px;
+  box-sizing: border-box;
+  overflow-y: auto;
   background: rgba(84, 84, 84, 0.5);
   display: flex;
   align-items: center;
@@ -901,24 +903,24 @@ watch(() => props.modelValue, (newValue) => {
 
 .add_org_modal {
   position: relative;
-  width: 657px;
-  min-height: 400px;
-  max-height: 657px;
+  width: min(657px, calc(100vw - 48px));
+  min-height: 0;
+  max-height: calc(100dvh - 48px);
   background: #FFFFFF;
   border-radius: 12px;
   display: flex;
 }
 
 .add_org_modal.organization_active {
-  height: 657px;
-  min-height: 657px;
-  max-height: 657px;
+  height: auto;
+  min-height: 0;
+  max-height: calc(100dvh - 48px);
 }
 
 .add_org_modal.review_active,
 .add_org_modal.mou_active {
   min-height: 400px;
-  max-height: 657px;
+  max-height: calc(100dvh - 48px);
   height: auto;
 }
 
@@ -970,7 +972,8 @@ watch(() => props.modelValue, (newValue) => {
   flex: 1;
   padding: 35px 45px;
   overflow-y: auto;
-  max-height: 657px;
+  min-width: 0;
+  max-height: calc(100dvh - 48px);
   max-width: 657px;
 }
 
@@ -986,6 +989,48 @@ watch(() => props.modelValue, (newValue) => {
 .modal_content::-webkit-scrollbar-thumb {
   background: #888;
   border-radius: 4px;
+}
+
+.organization_tab,
+.review_tab,
+.mou_tab {
+  min-width: 0;
+}
+
+.form_row,
+.mou_date_row {
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.form_field,
+.form_group,
+.form_field input,
+.form_field select,
+.form_field textarea,
+.form_group input,
+.form_group select {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.modal_actions {
+  position: sticky;
+  bottom: -35px;
+  z-index: 4;
+  margin: 24px -45px -35px;
+  padding: 14px 45px;
+  border-top: 1px solid #ededed;
+  background: #fff;
+}
+
+@media (max-width: 760px) {
+  .modal_overlay { padding: 12px; }
+  .add_org_modal { width: 100%; max-height: calc(100dvh - 24px); }
+  .modal_tabs { display: none; }
+  .modal_content { width: 100%; max-width: none; max-height: calc(100dvh - 24px); padding: 20px 16px; }
+  .form_row, .mou_date_row { grid-template-columns: 1fr; }
+  .modal_actions { margin: 20px -16px -20px; padding: 12px 16px; }
 }
 
 .modal_content::-webkit-scrollbar-thumb:hover {
