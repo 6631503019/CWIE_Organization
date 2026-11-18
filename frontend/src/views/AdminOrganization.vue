@@ -29,7 +29,7 @@
           <!-- School dropdown -->
           <div class="dropdown_container industry_cat" :class="{ active: dropdowns.industryCat }">
             <div class="dropdown_header" @click="toggleDropdown('industryCat')">
-              <span class="dropdown_text">{{ selectedFilters.industryCat === 'All' ? text('--School--', '--เลือกสำนักวิชา--') : selectedFilters.industryCat }}</span>
+              <span class="dropdown_text">{{ getSelectedFilterLabel('industryCat', selectedFilters.industryCat) }}</span>
               <div class="dropdown_arrow"></div>
             </div>
             <div v-if="dropdowns.industryCat" class="dropdown_options">
@@ -43,7 +43,7 @@
                 />
               </div>
               <div class="dropdown_option" v-for="option in filteredIndustryCat" :key="option" @click="selectOption('industryCat', option)">
-                {{ option }}
+                {{ getFilterOptionLabel('industryCat', option) }}
               </div>
             </div>
           </div>
@@ -51,7 +51,7 @@
           <!-- Country dropdown -->
           <div class="dropdown_container country" :class="{ active: dropdowns.country }">
             <div class="dropdown_header" @click="toggleDropdown('country')">
-              <span class="dropdown_text">{{ selectedFilters.country === 'All' ? text('---Country---', '---เลือกประเทศ---') : selectedFilters.country }}</span>
+              <span class="dropdown_text">{{ getSelectedFilterLabel('country', selectedFilters.country) }}</span>
               <div class="dropdown_arrow"></div>
             </div>
             <div v-if="dropdowns.country" class="dropdown_options">
@@ -65,7 +65,7 @@
                 />
               </div>
               <div class="dropdown_option" v-for="option in filteredCountry" :key="option" @click="selectOption('country', option)">
-                {{ option }}
+                {{ getFilterOptionLabel('country', option) }}
               </div>
             </div>
           </div>
@@ -73,7 +73,7 @@
           <!-- Type dropdown -->
           <div class="dropdown_container type" :class="{ active: dropdowns.type }">
             <div class="dropdown_header" @click="toggleDropdown('type')">
-              <span class="dropdown_text">{{ selectedFilters.type === 'All' ? text('--Type--', '--เลือกประเภท--') : selectedFilters.type }}</span>
+              <span class="dropdown_text">{{ getSelectedFilterLabel('type', selectedFilters.type) }}</span>
               <div class="dropdown_arrow"></div>
             </div>
             <div v-if="dropdowns.type" class="dropdown_options">
@@ -87,7 +87,7 @@
                 />
               </div>
               <div class="dropdown_option" v-for="option in filteredType" :key="option" @click="selectOption('type', option)">
-                {{ option }}
+                {{ getFilterOptionLabel('type', option) }}
               </div>
             </div>
           </div>
@@ -95,7 +95,7 @@
           <!-- Province dropdown -->
           <div class="dropdown_container province" :class="{ active: dropdowns.province }">
             <div class="dropdown_header" @click="toggleDropdown('province')">
-              <span class="dropdown_text">{{ selectedFilters.province === 'All' ? text('--Province--', '--เลือกจังหวัด--') : selectedFilters.province }}</span>
+              <span class="dropdown_text">{{ getSelectedFilterLabel('province', selectedFilters.province) }}</span>
               <div class="dropdown_arrow"></div>
             </div>
             <div v-if="dropdowns.province" class="dropdown_options">
@@ -109,7 +109,7 @@
                 />
               </div>
               <div class="dropdown_option" v-for="option in filteredProvince" :key="option" @click="selectOption('province', option)">
-                {{ option }}
+                {{ getFilterOptionLabel('province', option) }}
               </div>
             </div>
           </div>
@@ -122,10 +122,10 @@
           <div class="table_header"><span>{{ text('Organization', 'องค์กร') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Province', 'จังหวัด') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Status', 'สถานะ') }}</span><span>{{ text('Actions', 'การดำเนินการ') }}</span></div>
           <div v-for="org in paginatedOrganizations" :key="org.id" class="table_row">
             <div class="org_name" @click="viewOrganizationDetail(org.id)">{{ getLocalizedOrganizationName(org.rawData) }}</div>
-            <div class="org_category">{{ org.org_category }}</div>
-            <div class="org_school">{{ org.org_school }}</div>
-            <div class="org_province">{{ org.org_province }}</div>
-            <div class="org_country">{{ org.org_country }}</div>
+            <div class="org_category">{{ getOrganizationDisplayField(org.rawData, ['organization_type', 'business_type_en', 'business_type'], ['business_type_th', 'organization_type_th']) }}</div>
+            <div class="org_school">{{ getOrganizationDisplayField(org.rawData, ['school_en', 'school', 'school_name_en'], ['school_th', 'school_name_th'], ['school_id']) }}</div>
+            <div class="org_province">{{ getOrganizationDisplayField(org.rawData, ['province_en', 'province'], ['province_th'], ['province_id']) }}</div>
+            <div class="org_country">{{ getOrganizationDisplayField(org.rawData, ['country_en', 'country'], ['country_th'], ['country_id']) }}</div>
             <div><span class="status_pill" :class="org.status">{{ org.status === 'active' ? text('Active', 'ใช้งาน') : text('Inactive', 'ไม่ใช้งาน') }}</span></div>
             <div class="action_buttons"><button class="text_action" @click="!state.loading && editOrganization(org.id)" :disabled="state.loading">{{ text('Edit', 'แก้ไข') }}</button><button class="text_action danger" @click="!state.loading && deleteOrganization(org.id)" :disabled="state.loading">{{ text('Delete', 'ลบ') }}</button><button v-if="org.hasMOU" class="text_action" @click="!state.loading && viewDocument(org.id)">{{ text('View', 'ดู') }}</button></div>
           </div>
@@ -672,14 +672,15 @@ const getOrganizationDisplayField = (
   organization: any,
   englishFields: string[],
   thaiFields: string[],
-  referenceFields: string[] = []
+  referenceFields: string[] = [],
+  language: 'EN' | 'TH' = currentLanguage.value
 ): string => {
   const pick = (fields: string[]) => {
     for (const field of fields) {
       const value = organization?.[field]
       if (value !== undefined && value !== null && value !== '') {
         if (typeof value === 'object') {
-          const localized = currentLanguage.value === 'TH'
+          const localized = language === 'TH'
             ? (value.name_th || value.name_en || value.label_th || value.label_en)
             : (value.name_en || value.name_th || value.label_en || value.label_th)
           if (localized) return String(localized)
@@ -690,13 +691,17 @@ const getOrganizationDisplayField = (
     }
     return ''
   }
-  const localized = currentLanguage.value === 'TH'
+  const localized = language === 'TH'
     ? (pick(thaiFields) || pick(englishFields))
     : (pick(englishFields) || pick(thaiFields))
   if (localized) return localized
   for (const field of referenceFields) {
     const value = organization?.[field]
-    const name = getLocalizedReferenceName(value)
+    const name = typeof value === 'object' && value
+      ? String(language === 'TH'
+          ? (value.name_th || value.name_en || 'N/A')
+          : (value.name_en || value.name_th || 'N/A'))
+      : String(value || 'N/A')
     if (name !== 'N/A') return name
   }
   return 'N/A'
@@ -985,10 +990,81 @@ const normalizeLocationValue = (value: string): string => {
 }
 
 // Function to display value (show English but accept Thai)
+const englishToThaiMap: Record<string, string> = Object.fromEntries(
+  Object.entries(thaiToEnglishMap).map(([thai, english]) => [english, thai])
+)
+
 const displayLocationValue = (value: string, placeholder: string): string => {
   if (!value) return placeholder
-  return normalizeLocationValue(value)
+  const normalized = normalizeLocationValue(value)
+  if (currentLanguage.value === 'TH') {
+    return englishToThaiMap[normalized] || value
+  }
+  return normalized
 }
+
+// Filter options keep English canonical values for filtering, but labels are
+// resolved from the original bilingual API record whenever the language changes.
+const getFilterOptionLabel = (
+  field: 'industryCat' | 'type' | 'country' | 'province',
+  option: string
+): string => {
+  if (option === 'All') return text('All', 'ทั้งหมด')
+
+  const fieldConfig = {
+    industryCat: {
+      key: 'org_school',
+      en: ['school_en', 'school', 'school_name_en'],
+      th: ['school_th', 'school_name_th'],
+      refs: ['school_id']
+    },
+    type: {
+      key: 'org_category',
+      en: ['organization_type', 'business_type_en', 'business_type'],
+      th: ['business_type_th', 'organization_type_th'],
+      refs: []
+    },
+    country: {
+      key: 'org_country',
+      en: ['country_en', 'country'],
+      th: ['country_th'],
+      refs: ['country_id']
+    },
+    province: {
+      key: 'org_province',
+      en: ['province_en', 'province'],
+      th: ['province_th'],
+      refs: ['province_id']
+    }
+  }[field]
+
+  const matched = allOrganizations.value.find(org =>
+    String(org[fieldConfig.key] || '').trim().toLowerCase() === option.trim().toLowerCase()
+  )
+
+  if (matched?.rawData) {
+    return getOrganizationDisplayField(
+      matched.rawData,
+      fieldConfig.en,
+      fieldConfig.th,
+      fieldConfig.refs
+    )
+  }
+
+  return displayLocationValue(option, option)
+}
+
+const getSelectedFilterLabel = (
+  field: 'industryCat' | 'type' | 'country' | 'province',
+  value: string
+): string => value === 'All'
+  ? ({
+      industryCat: text('--School--', '--เลือกสำนักวิชา--'),
+      country: text('---Country---', '---เลือกประเทศ---'),
+      type: text('--Type--', '--เลือกประเภท--'),
+      province: text('--Province--', '--เลือกจังหวัด--')
+    }[field])
+  : getFilterOptionLabel(field, value)
 
 // Filtered options based on search
 // Build School filter options from the actual organization records.
@@ -1641,26 +1717,28 @@ const fetchOrganizations = async () => {
       const orgCategory = getOrganizationDisplayField(
         item,
         ['organization_type', 'business_type_en', 'business_type'],
-        ['business_type_th', 'organization_type_th']
-      )
+        ['business_type_th', 'organization_type_th'],
+        ['organization_type_id']
+      , 'EN')
+
       const orgSchool = getOrganizationDisplayField(
         item,
         ['school_en', 'school', 'school_name_en'],
         ['school_th', 'school_name_th'],
         ['school_id']
-      )
+      , 'EN')
       const orgProvince = getOrganizationDisplayField(
         item,
         ['province_en', 'province'],
         ['province_th'],
         ['province_id']
-      )
+      , 'EN')
       const orgCountry = getOrganizationDisplayField(
         item,
         ['country_en', 'country'],
         ['country_th'],
         ['country_id']
-      )
+      , 'EN')
       const orgIndustry = getOrganizationDisplayField(
         item,
         ['business_category_en', 'industry_category_en', 'industry_category_id'],
