@@ -17,8 +17,7 @@ const CONST_HTTP_UNAUTHORIZED = 401
 // ============================================================================
 // CONSTANTS - Token Management
 // ============================================================================
-let bln_Is_Token_Refreshing = false
-let arr_Failed_Request_Queue: any[] = []
+let obj_Refresh_Promise: Promise<string> | null = null
 let bln_Session_Expiry_Handled = false
 
 if (typeof window !== 'undefined') {
@@ -27,34 +26,6 @@ if (typeof window !== 'undefined') {
     })
 }
 
-// ============================================================================
-// Function: Process_Token_Refresh_Queue
-// Purpose: Process queued requests after token refresh
-// Input: obj_Error (error to reject with) or str_New_Token (new token)
-// Output: None (resolves/rejects all queued promises)
-// Side Effects: Clears arr_Failed_Request_Queue, resets bln_Is_Token_Refreshing
-// ============================================================================
-const Process_Token_Refresh_Queue = (obj_Error: any = null, str_New_Token: string | null = null): void => {
-    try {
-        arr_Failed_Request_Queue.forEach(obj_Promise => {
-            // Reject if error occurred, resolve with new token otherwise
-            if (obj_Error) {
-                obj_Promise.reject(obj_Error)
-            } else {
-                obj_Promise.resolve(str_New_Token)
-            }
-        })
-
-        bln_Is_Token_Refreshing = false
-        arr_Failed_Request_Queue = []
-    } catch (error) {
-        console.error('Error processing token refresh queue:', error)
-        bln_Is_Token_Refreshing = false
-        arr_Failed_Request_Queue = []
-    }
-}
-
-// ============================================================================
 // Function: Str_Get_Stored_Auth_Token
 // Purpose: Retrieve stored authentication token from localStorage
 // Input: None
@@ -89,9 +60,49 @@ const Clear_All_Auth_Data = (): void => {
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('auth:expired'))
         }
+
     } catch (error) {
         console.error('Error clearing auth data:', error)
     }
+}
+
+const Redirect_To_Login_Once = (): void => {
+    if (typeof window === 'undefined' || window.location.pathname === '/' || window.location.pathname === '/login') return
+    if (!bln_Session_Expiry_Handled) {
+        bln_Session_Expiry_Handled = true
+        window.location.assign('/')
+    }
+}
+
+const Is_Auth_Endpoint = (url: unknown): boolean => {
+    const value = String(url || '')
+    return value.includes('/auth/google') || value.includes('/auth/refresh')
+}
+
+const Refresh_Access_Token = (): Promise<string> => {
+    if (obj_Refresh_Promise) return obj_Refresh_Promise
+
+    const refreshToken = typeof localStorage !== 'undefined'
+        ? localStorage.getItem(CONST_AUTH_REFRESH_TOKEN_KEY)
+        : null
+    if (!refreshToken) return Promise.reject(new Error('No refresh token available'))
+
+    obj_Refresh_Promise = axios.post(
+        `${CONST_API_BASE_URL}${CONST_AUTH_ENDPOINT_REFRESH}`,
+        { refreshToken },
+        { timeout: CONST_REFRESH_TIMEOUT_MS }
+    ).then(response => {
+        const token = response.data?.token
+        if (!token || typeof token !== 'string') throw new Error('Refresh response did not contain a valid access token')
+        localStorage.setItem(CONST_AUTH_TOKEN_STORAGE_KEY, token)
+        obj_API_Client.defaults.headers.common[CONST_AUTH_HEADER_NAME] = `Bearer ${token}`
+        bln_Session_Expiry_Handled = false
+        return token
+    }).finally(() => {
+        obj_Refresh_Promise = null
+    })
+
+    return obj_Refresh_Promise
 }
 
 // ============================================================================
@@ -152,7 +163,7 @@ obj_API_Client.interceptors.response.use(
             })
 
             // Step 1: Check if error is 401 Unauthorized
-            if (int_Status === CONST_HTTP_UNAUTHORIZED && !obj_Original_Request._retry) {
+            if (int_Status === CONST_HTTP_UNAUTHORIZED && !obj_Original_Request._retry && !Is_Auth_Endpoint(obj_Original_Request.url)) {
                 console.debug('401 Unauthorized - attempting token refresh')
 
                 // Early exit if no token (public endpoint access attempt)
@@ -163,88 +174,21 @@ obj_API_Client.interceptors.response.use(
                     return Promise.reject(error)
                 }
 
-                // Step 2: If already refreshing, queue this request
-                if (bln_Is_Token_Refreshing) {
-                    return new Promise((resolve, reject) => {
-                        arr_Failed_Request_Queue.push({ resolve, reject })
-                    }).then(str_New_Token => {
-                        obj_Original_Request.headers[CONST_AUTH_HEADER_NAME] = `Bearer ${str_New_Token}`
-                        return obj_API_Client(obj_Original_Request)
-                    }).catch(err => {
-                        return Promise.reject(err)
-                    })
-                }
-
-                // Step 3: Mark as retry and start refresh process
                 obj_Original_Request._retry = true
-                bln_Is_Token_Refreshing = true
-
                 try {
-                    // Step 4: Get refresh token from storage
-                    const str_Refresh_Token = localStorage.getItem(CONST_AUTH_REFRESH_TOKEN_KEY)
-
-                    if (!str_Refresh_Token) {
-                        throw new Error('No refresh token available')
-                    }
-
-                    // Step 5: Make refresh token request
-                    const obj_Response = await axios.post(
-                        `${CONST_API_BASE_URL}${CONST_AUTH_ENDPOINT_REFRESH}`,
-                        { refreshToken: str_Refresh_Token },
-                        { timeout: CONST_REFRESH_TIMEOUT_MS }
-                    )
-
-                    const str_New_Token = obj_Response.data.token
-                    if (!str_New_Token || typeof str_New_Token !== 'string') {
-                        throw new Error('Refresh response did not contain a valid access token')
-                    }
-
-                    // Step 6: Update token in storage and headers
-                    localStorage.setItem(CONST_AUTH_TOKEN_STORAGE_KEY, str_New_Token)
-                    obj_API_Client.defaults.headers.common[CONST_AUTH_HEADER_NAME] = `Bearer ${str_New_Token}`
+                    const str_New_Token = await Refresh_Access_Token()
                     obj_Original_Request.headers[CONST_AUTH_HEADER_NAME] = `Bearer ${str_New_Token}`
-
-                    // Step 7: Process queued requests with new token
-                    Process_Token_Refresh_Queue(null, str_New_Token)
-
-                    // Step 8: Retry original request
                     return obj_API_Client(obj_Original_Request)
                 } catch (err) {
-                    // Check if user had token BEFORE clearing
-                    const str_Had_Token_Before = Str_Get_Stored_Auth_Token()
-
-                    // Token refresh failed - clear auth and redirect
                     Clear_All_Auth_Data()
-                    Process_Token_Refresh_Queue(err, null)
-
-                    // Only redirect if user had a token before (was logged in)
-                    // No token = expected for public endpoints
-                    const bln_Should_Redirect_On_Refresh_Fail = !str_Skip_Redirect && str_Had_Token_Before && typeof window !== 'undefined' && window.location.pathname !== '/login'
-
-                    console.debug('Token refresh failed:', {
-                        skipRedirect: str_Skip_Redirect,
-                        hadTokenBefore: !!str_Had_Token_Before,
-                        shouldRedirect: bln_Should_Redirect_On_Refresh_Fail,
-                        error: (err as any).message
-                    })
-
-                    if (bln_Should_Redirect_On_Refresh_Fail && !bln_Session_Expiry_Handled) {
-                        bln_Session_Expiry_Handled = true
-                        console.debug('User was logged in but token refresh failed - redirecting to login')
-                        window.location.href = '/login'
-                    } else {
-                        console.debug('No token or skip requested - not redirecting on refresh fail')
-                    }
-
+                    if (!str_Skip_Redirect) Redirect_To_Login_Once()
                     return Promise.reject(err)
                 }
             }
 
             // Step 9: Handle other 401 errors (already retried)
             if (int_Status === CONST_HTTP_UNAUTHORIZED) {
-                // Check if user had token BEFORE clearing auth data
                 const str_Had_Token = Str_Get_Stored_Auth_Token()
-
                 Clear_All_Auth_Data()
 
                 const str_Error_Message = error.response?.data?.message || 'Session expired. Please login again.'
@@ -254,13 +198,7 @@ obj_API_Client.interceptors.response.use(
                 // If user has no token, a 401 is expected for public endpoints with optional auth
                 const bln_Should_Redirect = !str_Skip_Redirect && str_Had_Token && typeof window !== 'undefined' && window.location.pathname !== '/login'
 
-                if (bln_Should_Redirect && !bln_Session_Expiry_Handled) {
-                    bln_Session_Expiry_Handled = true
-                    console.debug('User was logged in but auth failed - redirecting to login')
-                    window.location.href = '/login'
-                } else {
-                    console.debug('No active token or skip requested - not redirecting to login')
-                }
+                if (bln_Should_Redirect) Redirect_To_Login_Once()
             }
 
             return Promise.reject(error)
@@ -299,7 +237,9 @@ export const Bln_Is_Token_Expired = (str_Token: string): boolean => {
             Math.ceil(str_Base64_Payload_Unpadded.length / 4) * 4,
             '='
         )
-        const obj_Payload = JSON.parse(atob(str_Base64_Payload))
+        const binary = atob(str_Base64_Payload)
+        const bytes = Uint8Array.from(binary, character => character.charCodeAt(0))
+        const obj_Payload = JSON.parse(new TextDecoder().decode(bytes))
         if (typeof obj_Payload.exp !== 'number') {
             return true
         }

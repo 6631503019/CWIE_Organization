@@ -141,7 +141,7 @@
       v-model="bln_Show_Edit_Modal"
       :organization-id="organization?._id || ''"
       initial-tab="organization"
-      @saved="fetchMOU"
+      @saved="refreshAfterOrganizationSave"
     />
 
     <NotificationModal
@@ -477,6 +477,10 @@ const fetchReviews = async () => {
   }
 }
 
+const refreshAfterOrganizationSave = async () => {
+  await fetchMOU()
+  await fetchReviews()
+}
 
 const editOrganization = async () => {
   const orgId = organization.value?._id ||

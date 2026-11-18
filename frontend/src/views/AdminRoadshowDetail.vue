@@ -75,13 +75,20 @@
 <button
   class="btn_edit"
   type="button"
-  @click="router.push({ name: 'AdminRoadshow', query: { edit: String(route.params.id) } })"
+  @click="editOpen = true"
 >
   Edit
 </button>
         </template>
       </section>
     </main>
+    <RoadshowEditModal
+      v-if="obj_Roadshow_Data"
+      v-model="editOpen"
+      :roadshow="obj_Roadshow_Data"
+      :poster-url="posterBlob"
+      @saved="refreshAfterSave"
+    />
   </div>
 </template>
 
@@ -90,9 +97,10 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import AdminTopBar from '../components/admin/AdminTopBar.vue'
+import RoadshowEditModal from '../components/RoadshowEditModal.vue'
 import { formatRoadshowTime } from '../utils/roadshowTime'
 import { useLanguage } from '../composables/useLanguage'
-import { fetchRoadshowPosterBlob, fetchRoadshowActivityBlob } from '../services/api'
+import { fetchRoadshowPosterBlob, fetchRoadshowActivityBlob, roadshowAPI } from '../services/api'
 
 // ============================================================================
 // Constants (naming convention: ALL_CAPS)
@@ -116,6 +124,7 @@ const obj_UI_State = reactive({
 const obj_Roadshow_Data = ref<any>(null)  // Object: roadshow details from API
 const posterBlob = ref('')
 const activityBlobs = ref<string[]>([])
+const editOpen = ref(false)
 const activityImageCount = computed(() => {
   const gridfsIds = obj_Roadshow_Data.value?.activity_gridfs_ids
   if (Array.isArray(gridfsIds) && gridfsIds.length > 0) return gridfsIds.length
@@ -276,39 +285,11 @@ async function Load_Roadshow_Details(): Promise<void> {
     obj_UI_State.bln_Is_Loading = true
     obj_UI_State.str_Error_Message = null
     
-    // Step 3: Retrieve authentication token
-    const str_Auth_Token = localStorage.getItem('auth_token')
-    if (!str_Auth_Token) {
-      throw new Error('Authentication token not found')
-    }
-    
-    // Step 4: Construct API request URL
-    const str_API_URL = `${CONST_API_BASE_URL}${CONST_API_ENDPOINT_ROADSHOWS}/${str_Roadshow_ID}`
-    
-    console.log('Loading roadshow details for ID:', str_Roadshow_ID)
-    
-    // Step 5: Fetch data from API
-    const response = await fetch(str_API_URL, {
-      headers: {
-        'Authorization': `Bearer ${str_Auth_Token}`
-      }
-    })
-    
-    // Step 6: Check if response is successful
-    if (!response.ok) {
-      throw new Error(`HTTP Error: ${response.status}`)
-    }
-    
-    // Step 7: Parse JSON response
-    const obj_Response = await response.json()
-    
-    // Step 8: Validate response data
-    if (!obj_Response.data) {
-      throw new Error('Invalid response format: missing data')
-    }
+    const obj_Response = await roadshowAPI.getById(str_Roadshow_ID)
+    const obj_Response_Data = obj_Response.data?.data || obj_Response.data
     
     // Step 9: Update component data
-    obj_Roadshow_Data.value = obj_Response.data
+    obj_Roadshow_Data.value = obj_Response_Data
     try { posterBlob.value = await fetchRoadshowPosterBlob(obj_Roadshow_Data.value._id) } catch {}
     activityBlobs.value = await Promise.all(
       (obj_Roadshow_Data.value.activity_gridfs_ids || obj_Roadshow_Data.value.activity_image_paths || []).map(
@@ -340,6 +321,10 @@ async function Load_Roadshow_Details(): Promise<void> {
     // Always reset loading state
     obj_UI_State.bln_Is_Loading = false
   }
+}
+
+const refreshAfterSave = async () => {
+  await Load_Roadshow_Details()
 }
 
 // ============================================================================

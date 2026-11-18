@@ -117,7 +117,7 @@ router.beforeEach(async (to, from, next) => {
             const authStore = useAuthStore()
 
             // CRITICAL: Initialize auth from localStorage before checking
-            authStore.Initialize_Auth()
+            await authStore.Initialize_Auth()
 
             // Check if user is logged in
             if (!authStore.bln_Is_Logged_In) {
@@ -153,7 +153,7 @@ router.beforeEach(async (to, from, next) => {
             const authStore = useAuthStore()
 
             // CRITICAL: Initialize auth from localStorage before checking
-            authStore.Initialize_Auth()
+            await authStore.Initialize_Auth()
 
             if (authStore.bln_Is_Logged_In) {
                 if (authStore.bln_Is_Admin) {

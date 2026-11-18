@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { signInWithPopup, signOut } from 'firebase/auth'
 import { firebaseAuth, googleProvider } from '../config/firebase'
+import { Bln_Is_Token_Expired } from '../services/api'
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -202,7 +203,7 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
          * Output: None (updates state if valid data found)
          * Side Effects: Restores state from localStorage or clears invalid data
          */
-        Initialize_Auth(): void {
+        async Initialize_Auth(): Promise<void> {
             try {
                 // Step 1: Retrieve token and user from localStorage
                 const str_Stored_Token = localStorage.getItem(CONST_AUTH_TOKEN_STORAGE_KEY)
@@ -214,11 +215,32 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
                         // Step 3: Parse user data
                         this.str_Auth_Token = str_Stored_Token
                         this.obj_Current_User = JSON.parse(str_Stored_User)
+                        if (Bln_Is_Token_Expired(str_Stored_Token)) {
+                            const refreshToken = localStorage.getItem(CONST_AUTH_REFRESH_TOKEN_STORAGE_KEY)
+                            if (!refreshToken) {
+                                this.Clear_All_Auth_Data()
+                                return
+                            }
+                            const response = await fetch(`${CONST_API_BASE_URL}/auth/refresh`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ refreshToken })
+                            })
+                            const data = await response.json()
+                            if (!response.ok || !data.token) {
+                                this.Clear_All_Auth_Data()
+                                return
+                            }
+                            this.str_Auth_Token = data.token
+                            localStorage.setItem(CONST_AUTH_TOKEN_STORAGE_KEY, data.token)
+                        }
                     } catch (error) {
                         // Step 4: Handle parse error by clearing invalid data
                         console.error(CONST_ERROR_PARSE_USER_DATA, error)
                         this.Clear_All_Auth_Data()
                     }
+                } else if (str_Stored_Token || str_Stored_User || localStorage.getItem(CONST_AUTH_REFRESH_TOKEN_STORAGE_KEY)) {
+                    this.Clear_All_Auth_Data()
                 }
             } catch (error) {
                 console.error('Initialize auth error:', error)
@@ -265,8 +287,8 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
          * Purpose: Alias for Initialize_Auth action
          * @deprecated Use Initialize_Auth instead
          */
-        initAuth(): void {
-            this.Initialize_Auth()
+        async initAuth(): Promise<void> {
+            await this.Initialize_Auth()
         }
     }
 })

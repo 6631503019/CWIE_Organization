@@ -35,6 +35,9 @@
             <h2>{{ text('Description', 'รายละเอียดองค์กร') }}</h2>
             <p>{{ organization.details || text('No description available.', 'ไม่มีรายละเอียด') }}</p>
           </div>
+          <button v-if="mouId" type="button" class="mou-link" :disabled="mouLoading" @click="openMou">
+            {{ mouLoading ? text('Opening PDF...', 'กำลังเปิด PDF...') : text('View MOU PDF', 'ดูเอกสาร MOU PDF') }}
+          </button>
         </article>
 
         <section v-if="organization" class="reviews-panel">
@@ -77,7 +80,7 @@ import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import OrganizationEditModal from '../components/OrganizationEditModal.vue'
 import ReviewEditModal from '../components/ReviewEditModal.vue'
 import NotificationModal from '../components/NotificationModal.vue'
-import { organizationAPI, reviewAPI, getOrganizationLogoUrl } from '../services/api'
+import { organizationAPI, reviewAPI, getOrganizationLogoUrl, mouAPI, fetchMouFileBlob } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
 
 const route = useRoute()
@@ -93,6 +96,9 @@ const editOpen = ref(false)
 const reviewModalOpen = ref(false)
 const editingReview = ref<any | null>(null)
 const logoUrl = ref('')
+const mouId = ref('')
+const mouLoading = ref(false)
+let mouObjectUrl = ''
 const requestVersion = ref(0)
 const notification = reactive({ show: false, message: '', type: 'success' as 'success' | 'error' | 'warning' })
 const organizationId = computed(() => String(route.params.id || ''))
@@ -117,12 +123,38 @@ const loadOrganization = async (id: string) => {
     if (version !== requestVersion.value) return
     organization.value = response.data.data
     logoUrl.value = getOrganizationLogoUrl(organization.value)
+    try {
+      const mouResponse = await mouAPI.getAll({ limit: 1000 })
+      const records = mouResponse.data?.data || mouResponse.data || []
+      const match = records.find((item: any) => {
+        const related = item.organization_id
+        return String(typeof related === 'object' ? related?._id : related) === id
+      })
+      mouId.value = match?._id ? String(match._id) : ''
+    } catch (error) {
+      console.warn('Unable to load organization MOU reference', error)
+      mouId.value = ''
+    }
   } catch (error: any) {
     if (version !== requestVersion.value) return
     organizationError.value = error.response?.data?.message || text('Unable to load organization.', 'ไม่สามารถโหลดข้อมูลองค์กรได้')
     organization.value = null
   } finally {
     if (version === requestVersion.value) loadingOrganization.value = false
+  }
+
+  const openMou = async () => {
+    if (!mouId.value) return
+    mouLoading.value = true
+    try {
+      if (mouObjectUrl) URL.revokeObjectURL(mouObjectUrl)
+      mouObjectUrl = await fetchMouFileBlob(mouId.value)
+      window.open(mouObjectUrl, '_blank', 'noopener,noreferrer')
+    } catch (error: any) {
+      showNotification(error.response?.data?.message || text('Unable to open MOU PDF.', 'ไม่สามารถเปิดเอกสาร MOU ได้'), 'error')
+    } finally {
+      mouLoading.value = false
+    }
   }
 }
 
@@ -169,7 +201,10 @@ const goBack = () => router.push('/admin/organization')
 
 onMounted(() => loadPage(organizationId.value))
 watch(organizationId, (id, previous) => { if (id && id !== previous) loadPage(id) })
-onBeforeUnmount(() => { requestVersion.value++ })
+onBeforeUnmount(() => {
+  requestVersion.value++
+  if (mouObjectUrl) URL.revokeObjectURL(mouObjectUrl)
+})
 </script>
 
 <style scoped>
