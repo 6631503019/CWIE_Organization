@@ -23,13 +23,13 @@
         <section class="filter_section">
           <input type="text" :placeholder="text('Search organization...', 'ค้นหาองค์กร...')" class="search_input" v-model="searchText" />
           <div class="filter_labels">
-            <span>{{ text('Business Category', 'หมวดหมู่ธุรกิจ') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Region', 'ภูมิภาค') }}</span><span>{{ text('Province', 'จังหวัด') }}</span>
+            <span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('Province', 'จังหวัด') }}</span>
           </div>
           <div class="dropdowns_grid">
-          <!-- Industry Category dropdown -->
+          <!-- School dropdown -->
           <div class="dropdown_container industry_cat" :class="{ active: dropdowns.industryCat }">
             <div class="dropdown_header" @click="toggleDropdown('industryCat')">
-              <span class="dropdown_text">{{ selectedFilters.industryCat === 'All' ? text('--Industry Category--', '--เลือกหมวดหมู่ธุรกิจ--') : selectedFilters.industryCat }}</span>
+              <span class="dropdown_text">{{ selectedFilters.industryCat === 'All' ? text('--School--', '--เลือกสำนักวิชา--') : selectedFilters.industryCat }}</span>
               <div class="dropdown_arrow"></div>
             </div>
             <div v-if="dropdowns.industryCat" class="dropdown_options">
@@ -70,28 +70,28 @@
             </div>
           </div>
           
-          <!-- Geography dropdown -->
-          <div class="dropdown_container geography" :class="{ active: dropdowns.geography }">
-            <div class="dropdown_header" @click="toggleDropdown('geography')">
-              <span class="dropdown_text">{{ selectedFilters.geography === 'All' ? text('--Geography--', '--เลือกภูมิภาค--') : selectedFilters.geography }}</span>
+          <!-- Type dropdown -->
+          <div class="dropdown_container type" :class="{ active: dropdowns.type }">
+            <div class="dropdown_header" @click="toggleDropdown('type')">
+              <span class="dropdown_text">{{ selectedFilters.type === 'All' ? text('--Type--', '--เลือกประเภท--') : selectedFilters.type }}</span>
               <div class="dropdown_arrow"></div>
             </div>
-            <div v-if="dropdowns.geography" class="dropdown_options">
+            <div v-if="dropdowns.type" class="dropdown_options">
               <div class="dropdown_search">
-                <input 
-                  type="text" 
-                  v-model="dropdownSearch.geography" 
+                <input
+                  type="text"
+                  v-model="dropdownSearch.type"
                   placeholder="Search..."
                   @click.stop
                   class="dropdown_search_input"
                 />
               </div>
-              <div class="dropdown_option" v-for="option in filteredGeography" :key="option" @click="selectOption('geography', option)">
+              <div class="dropdown_option" v-for="option in filteredType" :key="option" @click="selectOption('type', option)">
                 {{ option }}
               </div>
             </div>
           </div>
-          
+
           <!-- Province dropdown -->
           <div class="dropdown_container province" :class="{ active: dropdowns.province }">
             <div class="dropdown_header" @click="toggleDropdown('province')">
@@ -732,7 +732,7 @@ const mouPreviewUrl = ref<string | null>(null)
 const dropdowns = ref({
   industryCat: false,
   country: false,
-  geography: false,
+  type: false,
   province: false
 })
 
@@ -740,7 +740,7 @@ const dropdowns = ref({
 const dropdownSearch = ref({
   industryCat: '',
   country: '',
-  geography: '',
+  type: '',
   province: ''
 })
 
@@ -748,12 +748,11 @@ const dropdownSearch = ref({
 const selectedFilters = reactive({
   industryCat: 'All',
   country: 'All',
-  geography: 'All',
+  type: 'All',
   province: 'All'
 })
 
-// Organization Type choices are retained for the Add/Edit Organization form.
-// The broken Type filter dropdown above the table has been removed.
+// Organization Type choices are retained for the Add/Edit Organization form and Type table column.
 const orgTypeOptions = [
   { value: 'private company', label: 'Private Company' },
   { value: 'Government', label: 'Government' },
@@ -992,9 +991,17 @@ const displayLocationValue = (value: string, placeholder: string): string => {
 }
 
 // Filtered options based on search
+// Build School filter options from the actual organization records.
+const schoolOptions = computed(() => {
+  const schools = allOrganizations.value
+    .map(org => String(org.org_school || '').trim())
+    .filter(value => value && value !== 'N/A')
+  return ['All', ...Array.from(new Set(schools)).sort((a, b) => a.localeCompare(b))]
+})
+
 const filteredIndustryCat = computed(() => {
-  if (!dropdownSearch.value.industryCat) return industryCatOptions
-  return industryCatOptions.filter(option => 
+  if (!dropdownSearch.value.industryCat) return schoolOptions.value
+  return schoolOptions.value.filter(option =>
     option.toLowerCase().includes(dropdownSearch.value.industryCat.toLowerCase())
   )
 })
@@ -1006,10 +1013,18 @@ const filteredCountry = computed(() => {
   )
 })
 
-const filteredGeography = computed(() => {
-  if (!dropdownSearch.value.geography) return geographyOptions
-  return geographyOptions.filter(option => 
-    option.toLowerCase().includes(dropdownSearch.value.geography.toLowerCase())
+// Build Type filter options from the actual organization type values shown in the table.
+const typeFilterOptions = computed(() => {
+  const values = allOrganizations.value
+    .map(org => String(org.org_category || '').trim())
+    .filter(value => value && value !== 'N/A')
+  return ['All', ...Array.from(new Set(values)).sort((a, b) => a.localeCompare(b))]
+})
+
+const filteredType = computed(() => {
+  if (!dropdownSearch.value.type) return typeFilterOptions.value
+  return typeFilterOptions.value.filter(option =>
+    option.toLowerCase().includes(dropdownSearch.value.type.toLowerCase())
   )
 })
 
@@ -1073,15 +1088,15 @@ const filteredOrganizations = computed(() => {
   }
 
   if (selectedFilters.industryCat !== 'All') {
-    filtered = filtered.filter(org => String(org.industry || '').trim().toLowerCase() === String(selectedFilters.industryCat).trim().toLowerCase())
+    filtered = filtered.filter(org => String(org.org_school || '').trim().toLowerCase() === String(selectedFilters.industryCat).trim().toLowerCase())
   }
 
   if (selectedFilters.country !== 'All') {
     filtered = filtered.filter(org => String(org.org_country || '').trim().toLowerCase() === String(selectedFilters.country).trim().toLowerCase())
   }
 
-  if (selectedFilters.geography !== 'All') {
-    filtered = filtered.filter(org => org.geography === selectedFilters.geography)
+  if (selectedFilters.type !== 'All') {
+    filtered = filtered.filter(org => String(org.org_category || '').trim().toLowerCase() === String(selectedFilters.type).trim().toLowerCase())
   }
   
   return filtered
@@ -1615,7 +1630,12 @@ const fetchOrganizations = async () => {
       // Normalize all Thai values to English
       const normalizedProvince = normalizeLocationValue(item.province_id || 'N/A')
       const normalizedCountry = normalizeLocationValue(item.country_id || '')
-      const normalizedGeography = normalizeLocationValue(item.geography_id || '')
+      const normalizedGeography = getOrganizationDisplayField(
+        item,
+        ['geography_en', 'geography', 'geography_id'],
+        ['geography_th'],
+        ['geography_id']
+      )
       const normalizedCategory = normalizeLocationValue(item.industry_category_id || '')
       
       const orgCategory = getOrganizationDisplayField(
@@ -2274,7 +2294,7 @@ onBeforeUnmount(() => {
 }
 
 .dropdown_container.country,
-.dropdown_container.geography,
+.dropdown_container.type,
 .dropdown_container.province {
   grid-column: span 1;
 }
