@@ -95,6 +95,15 @@ const Refresh_Access_Token = (): Promise<string> => {
         const token = response.data?.token
         if (!token || typeof token !== 'string') throw new Error('Refresh response did not contain a valid access token')
         localStorage.setItem(CONST_AUTH_TOKEN_STORAGE_KEY, token)
+        if (response.data?.data) {
+            const refreshedUser = {
+                ...response.data.data,
+                role: response.data.data.loginType === 'student'
+                    ? 'user'
+                    : response.data.data.role
+            }
+            localStorage.setItem(CONST_AUTH_USER_STORAGE_KEY, JSON.stringify(refreshedUser))
+        }
         obj_API_Client.defaults.headers.common[CONST_AUTH_HEADER_NAME] = `Bearer ${token}`
         bln_Session_Expiry_Handled = false
         return token

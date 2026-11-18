@@ -15,6 +15,7 @@ interface obj_User {
     name: string
     email: string
     role: 'admin' | 'user' | 'test'
+    loginType?: 'admin' | 'student'
 }
 
 /**
@@ -155,6 +156,11 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
                 }
 
                 this.obj_Current_User = data.data
+                    ? {
+                        ...data.data,
+                        role: loginType === 'student' ? 'user' : data.data.role
+                    }
+                    : null
                 this.str_Auth_Token = data.token
                 localStorage.setItem(CONST_AUTH_TOKEN_STORAGE_KEY, data.token)
                 localStorage.setItem(CONST_AUTH_USER_STORAGE_KEY, JSON.stringify(data.data))
@@ -215,6 +221,13 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
                         // Step 3: Parse user data
                         this.str_Auth_Token = str_Stored_Token
                         this.obj_Current_User = JSON.parse(str_Stored_User)
+                        if (this.obj_Current_User?.loginType === 'student') {
+                            this.obj_Current_User.role = 'user'
+                            localStorage.setItem(
+                                CONST_AUTH_USER_STORAGE_KEY,
+                                JSON.stringify(this.obj_Current_User)
+                            )
+                        }
                         if (Bln_Is_Token_Expired(str_Stored_Token)) {
                             const refreshToken = localStorage.getItem(CONST_AUTH_REFRESH_TOKEN_STORAGE_KEY)
                             if (!refreshToken) {
@@ -233,6 +246,16 @@ export const useAuthStore = defineStore(CONST_AUTH_STORE_NAME, {
                             }
                             this.str_Auth_Token = data.token
                             localStorage.setItem(CONST_AUTH_TOKEN_STORAGE_KEY, data.token)
+                            if (data.data) {
+                                this.obj_Current_User = {
+                                    ...data.data,
+                                    role: data.data.loginType === 'student' ? 'user' : data.data.role
+                                }
+                                localStorage.setItem(
+                                    CONST_AUTH_USER_STORAGE_KEY,
+                                    JSON.stringify(this.obj_Current_User)
+                                )
+                            }
                         }
                     } catch (error) {
                         // Step 4: Handle parse error by clearing invalid data

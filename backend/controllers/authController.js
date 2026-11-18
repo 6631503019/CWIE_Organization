@@ -31,7 +31,9 @@ const loginWithGoogle = async (req, res, next) => {
         const SPECIAL_ADMIN_EMAIL = '6631503019@lamduan.mfu.ac.th';
 
         const isSpecialAccount = email === SPECIAL_ADMIN_EMAIL;
-        const isAdminDomain = email?.endsWith('@mfu.ac.th');
+        const isAdminDomain =
+            email?.endsWith('@mfu.ac.th') &&
+            !email?.endsWith('@lamduan.mfu.ac.th');
         const isStudentDomain = email?.endsWith('@lamduan.mfu.ac.th');
 
         if (!decodedToken.email_verified || !email) {
@@ -68,16 +70,29 @@ const loginWithGoogle = async (req, res, next) => {
             );
         }
 
+        const effectiveRole =
+            loginType === 'admin' && (isAdminDomain || isSpecialAccount)
+                ? 'admin'
+                : 'user';
+
         if (!user) {
             user = await User.create({
                 firebaseUid: decodedToken.uid,
                 email,
                 name: decodedToken.name || email.split('@')[0],
-                role: isSpecialAccount ? 'admin' : 'user'
+                role: effectiveRole
             });
-        } else if (user.firebaseUid !== decodedToken.uid) {
-            user.firebaseUid = decodedToken.uid;
-            await user.save();
+        } else {
+            let userChanged = false;
+            if (user.firebaseUid !== decodedToken.uid) {
+                user.firebaseUid = decodedToken.uid;
+                userChanged = true;
+            }
+            if (user.role !== effectiveRole) {
+                user.role = effectiveRole;
+                userChanged = true;
+            }
+            if (userChanged) await user.save();
         }
 
         const token = generateToken({
@@ -171,7 +186,9 @@ const refresh = async (req, res, next) => {
         const specialEmail = '6631503019@lamduan.mfu.ac.th';
 
         const isSpecial = email === specialEmail;
-        const isAdmin = email?.endsWith('@mfu.ac.th') || isSpecial;
+        const isAdmin =
+            (email?.endsWith('@mfu.ac.th') && !email?.endsWith('@lamduan.mfu.ac.th')) ||
+            isSpecial;
         const isStudent = email?.endsWith('@lamduan.mfu.ac.th') || isSpecial;
 
         const isAuthorized =
@@ -185,6 +202,13 @@ const refresh = async (req, res, next) => {
             );
         }
 
+        const effectiveRole =
+            loginType === 'admin' && isAdmin ? 'admin' : 'user';
+        if (user.role !== effectiveRole) {
+            user.role = effectiveRole;
+            await user.save();
+        }
+
         const token = generateToken({
             id: user._id,
             loginType
@@ -193,7 +217,14 @@ const refresh = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             message: 'Token refreshed successfully',
-            token
+            token,
+            data: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: effectiveRole,
+                loginType
+            }
         });
 
     } catch (error) {
