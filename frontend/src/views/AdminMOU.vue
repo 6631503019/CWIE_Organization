@@ -197,7 +197,7 @@
   import AdminTopBar from '../components/admin/AdminTopBar.vue'
   import Pagination from '../components/Pagination.vue'
   import MouModal from '../components/MouModal.vue'
-  import { organizationAPI, mouAPI, BACKEND_URL, getUploadedFileUrl } from '../services/api'
+  import { organizationAPI, mouAPI, BACKEND_URL, getUploadedFileUrl, getMouFileUrl } from '../services/api'
   import { useLanguage } from '../composables/useLanguage'
 
   const router = useRouter()
@@ -547,7 +547,9 @@ const getMOUFileURL = (value: unknown): string => {
   return getUploadedFileUrl(value)
 }
 
-const str_MOU_URL = getMOUFileURL(str_MOU_Path)
+const str_MOU_URL = obj_MOU_Data?._id
+  ? getMouFileUrl(obj_MOU_Data._id)
+  : getMOUFileURL(str_MOU_Path)
 
   return {
   id: obj_MOU_Data?._id,

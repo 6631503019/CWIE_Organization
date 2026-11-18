@@ -78,7 +78,7 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { organizationAPI, mouAPI, getUploadedFileUrl } from '../services/api'
+import { organizationAPI, mouAPI, fetchMouFileBlob } from '../services/api'
 
 const props = defineProps<{ modelValue: boolean; mouId?: string | null }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [] }>()
@@ -149,7 +149,12 @@ const load = async () => {
       form.publicationStartAt = toDateTimeLocal(mouRecord.value.publication_start_at)
       form.publicationEndAt = toDateTimeLocal(mouRecord.value.publication_end_at)
       form.isPublished = mouRecord.value.is_published !== false
-      existingDocumentUrl.value = getUploadedFileUrl(mouRecord.value.mou_path || mouRecord.value.mou_file_path)
+      try {
+        existingDocumentUrl.value = await fetchMouFileBlob(props.mouId)
+      } catch {
+        existingDocumentUrl.value = ''
+        error.value = 'The existing MOU file is unavailable.'
+      }
     } else {
       mouRecord.value = null
       form.organizationId = ''

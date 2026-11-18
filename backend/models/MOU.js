@@ -10,6 +10,22 @@ const mouSchema = new mongoose.Schema({
         type: String,
         required: [true, 'MOU file path is required']
     },
+    mou_object_key: {
+        type: String,
+        trim: true
+    },
+    mou_storage_provider: {
+        type: String,
+        enum: ['r2', 'disk', 'legacy'],
+        trim: true
+    },
+    mou_original_name: {
+        type: String,
+        trim: true
+    },
+    mou_file_size: {
+        type: Number
+    },
     start_date: {
         type: Date,
         required: false

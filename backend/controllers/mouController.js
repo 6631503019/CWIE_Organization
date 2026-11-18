@@ -1,8 +1,40 @@
 const MOU = require('../models/MOU');
 const InternshipRecord = require('../models/InternshipRecord');
+const fs = require('fs');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
-const { deleteStoredFile } = require('../utils/fileCleanup');
+const { deleteStoredFile, resolveStoredPath } = require('../utils/fileCleanup');
 const { getPublicUploadPath } = require('../config/uploads');
+const {
+    isR2Configured,
+    uploadMouFile,
+    getMouObject,
+    deleteMouObject
+} = require('../config/objectStorage');
+
+const removeTemporaryUpload = file => {
+    if (file?.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
+};
+
+const persistMouUpload = async file => {
+    if (!file) return null;
+    if (isR2Configured()) {
+        const stored = await uploadMouFile(file);
+        removeTemporaryUpload(file);
+        return {
+            mou_file_path: `/api/mou/pending/file`,
+            mou_object_key: stored.objectKey,
+            mou_storage_provider: stored.provider,
+            mou_original_name: stored.originalName,
+            mou_file_size: stored.size
+        };
+    }
+    return {
+        mou_file_path: getPublicUploadPath('mou', file.filename),
+        mou_storage_provider: 'disk',
+        mou_original_name: file.originalname,
+        mou_file_size: file.size
+    };
+};
 
 const parseOptionalDate = (value, field) => {
     if (value === undefined || value === null) return undefined;
@@ -158,18 +190,23 @@ const createMOU = async (req, res, next) => {
             );
         }
 
+        let uploadedStorage;
+        try {
+            uploadedStorage = await persistMouUpload(req.file);
+        } catch (uploadError) {
+            removeTemporaryUpload(req.file);
+            throw uploadError;
+        }
+
         // Check if MOU already exists for this organization
         const existingMOU = await MOU.findOne({ organization_id });
         if (existingMOU) {
             // Update existing MOU instead of throwing error
             console.log('MOU already exists, updating instead:', existingMOU._id);
-
-            // Delete old MOU file if a new file is uploaded
-            if (req.file && existingMOU.mou_file_path) {
-                deleteStoredFile(existingMOU.mou_file_path, 'old MOU file');
-            }
-
-            req.body.mou_file_path = getPublicUploadPath('mou', req.file.filename);
+            Object.assign(req.body, uploadedStorage);
+            req.body.mou_file_path = uploadedStorage.provider === 'r2'
+                ? `/api/mou/${existingMOU._id}/file`
+                : uploadedStorage.mou_file_path;
             req.body.admin_id = req.user._id;
 
             // Convert is_published from string to boolean if needed
@@ -189,6 +226,12 @@ const createMOU = async (req, res, next) => {
                 { new: true, runValidators: true }
             );
 
+            if (existingMOU.mou_storage_provider === 'r2' && existingMOU.mou_object_key) {
+                await deleteMouObject(existingMOU.mou_object_key).catch(() => undefined);
+            } else if (existingMOU.mou_file_path) {
+                deleteStoredFile(existingMOU.mou_file_path, 'old MOU file');
+            }
+
             console.log('CREATE - Updated MOU:', updatedMOU._id, 'is_published:', updatedMOU.is_published);
 
             return res.status(200).json({
@@ -198,7 +241,10 @@ const createMOU = async (req, res, next) => {
             });
         }
 
-        req.body.mou_file_path = getPublicUploadPath('mou', req.file.filename);
+        Object.assign(req.body, uploadedStorage);
+        req.body.mou_file_path = uploadedStorage.provider === 'r2'
+            ? '/api/mou/pending/file'
+            : uploadedStorage.mou_file_path;
 
         // Add admin ID from authenticated user
         req.body.admin_id = req.user._id;
@@ -214,7 +260,19 @@ const createMOU = async (req, res, next) => {
             console.log('CREATE NEW - Converted is_published to:', req.body.is_published, 'Type:', typeof req.body.is_published);
         }
 
-        const mou = await MOU.create(req.body);
+        let mou;
+        try {
+            mou = await MOU.create(req.body);
+            if (uploadedStorage.provider === 'r2') {
+                mou.mou_file_path = `/api/mou/${mou._id}/file`;
+                await mou.save();
+            }
+        } catch (createError) {
+            if (uploadedStorage.provider === 'r2' && uploadedStorage.mou_object_key) {
+                await deleteMouObject(uploadedStorage.mou_object_key).catch(() => undefined);
+            }
+            throw createError;
+        }
 
         console.log('CREATE NEW - Created MOU:', mou._id, 'is_published:', mou.is_published);
 
@@ -257,8 +315,8 @@ const updateMOU = async (req, res, next) => {
             console.log('Converted is_published to:', req.body.is_published, 'Type:', typeof req.body.is_published);
         }
 
+        let newUpload = null;
         if (req.file) {
-            // Validate file type (should be PDF)
             if (req.file.mimetype !== 'application/pdf') {
                 throw new CustomError(
                     ERROR_CODES.VALIDATION_FILE_TYPE_INVALID,
@@ -266,13 +324,11 @@ const updateMOU = async (req, res, next) => {
                     { receivedType: req.file.mimetype }
                 );
             }
-            
-            // Delete old MOU file if exists
-            if (mou.mou_file_path) {
-                deleteStoredFile(mou.mou_file_path, 'old MOU file');
+            newUpload = await persistMouUpload(req.file);
+            Object.assign(req.body, newUpload);
+            if (newUpload.provider === 'r2') {
+                req.body.mou_file_path = `/api/mou/${mou._id}/file`;
             }
-            
-            req.body.mou_file_path = getPublicUploadPath('mou', req.file.filename);
         }
 
         const updatedMOU = await MOU.findByIdAndUpdate(
@@ -280,6 +336,14 @@ const updateMOU = async (req, res, next) => {
             req.body,
             { new: true, runValidators: true }
         );
+
+        if (newUpload) {
+            if (mou.mou_storage_provider === 'r2' && mou.mou_object_key) {
+                await deleteMouObject(mou.mou_object_key).catch(() => undefined);
+            } else if (mou.mou_file_path) {
+                deleteStoredFile(mou.mou_file_path, 'old MOU file');
+            }
+        }
 
         console.log('Updated MOU:', updatedMOU._id, 'is_published:', updatedMOU.is_published);
 
@@ -306,7 +370,11 @@ const deleteMOU = async (req, res, next) => {
 
         // Delete associated MOU file if exists
         if (mou.mou_file_path) {
-            deleteStoredFile(mou.mou_file_path, 'MOU file');
+            if (mou.mou_storage_provider === 'r2' && mou.mou_object_key) {
+                await deleteMouObject(mou.mou_object_key).catch(() => undefined);
+            } else {
+                deleteStoredFile(mou.mou_file_path, 'MOU file');
+            }
         }
 
         await MOU.findByIdAndDelete(req.params.id);
@@ -321,10 +389,52 @@ const deleteMOU = async (req, res, next) => {
     }
 };
 
+// @desc    Stream or download MOU PDF
+// @route   GET /api/mou/:id/file
+// @access  Private/Public according to publication and schedule
+const getMOUFile = async (req, res, next) => {
+    try {
+        const mou = await MOU.findById(req.params.id);
+        if (!mou) {
+            throw createNotFoundError('mou', req.params.id);
+        }
+
+        if (!isPublishedNow(mou) && req.user?.role !== 'admin') {
+            throw new CustomError(
+                ERROR_CODES.FORBIDDEN_RESOURCE_ACCESS_DENIED,
+                'This MOU is not published',
+                { mouId: req.params.id }
+            );
+        }
+
+        const download = req.query.download === '1';
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition',
+            `${download ? 'attachment' : 'inline'}; filename="${mou.mou_original_name || 'mou.pdf'}"`);
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+
+        if (mou.mou_storage_provider === 'r2' && mou.mou_object_key) {
+            const object = await getMouObject(mou.mou_object_key);
+            if (object.ContentLength) res.setHeader('Content-Length', object.ContentLength);
+            object.Body.pipe(res);
+            return;
+        }
+
+        const absolutePath = resolveStoredPath(mou.mou_file_path);
+        if (!absolutePath || !fs.existsSync(absolutePath)) {
+            throw createNotFoundError('file', req.params.id);
+        }
+        fs.createReadStream(absolutePath).pipe(res);
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getMOUs,
     getMOU,
     createMOU,
     updateMOU,
-    deleteMOU
+    deleteMOU,
+    getMOUFile
 };

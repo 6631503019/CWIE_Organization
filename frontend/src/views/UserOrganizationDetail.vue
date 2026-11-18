@@ -104,7 +104,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
-import { organizationAPI, reviewAPI, mouAPI, BACKEND_URL } from '../services/api'
+import { organizationAPI, reviewAPI, mouAPI, BACKEND_URL, fetchMouFileBlob } from '../services/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -231,8 +231,8 @@ const fetchMOUDocument = async () => {
       return String(mouOrgId) === String(orgId) && item.is_published === true
     })
     
-    if (mou && mou.mou_path) {
-      mouDocumentUrl.value = `${BACKEND_URL}${mou.mou_path}`
+    if (mou) {
+      mouDocumentUrl.value = await fetchMouFileBlob(mou._id)
       console.log('MOU document found')
     } else {
       mouDocumentUrl.value = null

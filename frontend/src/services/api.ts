@@ -475,5 +475,19 @@ export const getUploadedFileUrl = (value: unknown): string => {
     if (normalized.startsWith('uploads/')) return `${CONST_BACKEND_URL}/${normalized}`
     return `${CONST_BACKEND_URL}/uploads/${normalized}`
 }
+
+export const getMouFileUrl = (mouId: unknown, download = false): string => {
+    if (!mouId) return ''
+    const id = String(mouId)
+    return `${CONST_API_BASE_URL}/mou/${encodeURIComponent(id)}/file${download ? '?download=1' : ''}`
+}
+
+export const fetchMouFileBlob = async (mouId: unknown): Promise<string> => {
+    if (!mouId) return ''
+    const response = await obj_API_Client.get(`/mou/${encodeURIComponent(String(mouId))}/file`, {
+        responseType: 'blob'
+    })
+    return URL.createObjectURL(response.data)
+}
 export const isTokenExpired = Bln_Is_Token_Expired
 export const checkTokenValidity = Bln_Check_Token_Validity

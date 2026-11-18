@@ -111,7 +111,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 import Pagination from '../components/Pagination.vue'
-import { organizationAPI, mouAPI, BACKEND_URL, getUploadedFileUrl } from '../services/api'
+import { organizationAPI, mouAPI, BACKEND_URL, getUploadedFileUrl, fetchMouFileBlob } from '../services/api'
 
 const router = useRouter()
 const route = useRoute()
@@ -234,8 +234,8 @@ const fetchMOUDocument = async (orgId: string) => {
     console.log('Found MOU:', mou)
     
     if (mou && mou.mou_path) {
-      mouDocumentImage.value = getUploadedFileUrl(mou.mou_path)
-      isMOUDocumentPDF.value = mou.mou_path.toLowerCase().endsWith('.pdf')
+      mouDocumentImage.value = await fetchMouFileBlob(mou._id)
+      isMOUDocumentPDF.value = true
       console.log('MOU document URL set to:', mouDocumentImage.value)
     } else {
       console.log('No MOU found for this organization')
