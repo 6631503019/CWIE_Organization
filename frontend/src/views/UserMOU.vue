@@ -193,7 +193,11 @@ const Select_Status = (status: string) => { str_Selected_Status.value = status; 
 const Reset_Filters = () => { str_Search_Text.value = ''; str_Selected_Status.value = ''; str_Status_Dropdown_Search.value = ''; obj_state.currentPage = 1 }
 const Apply_Filters = () => { obj_state.currentPage = 1 }
 const Handle_Page_Change = (page: number) => { if (page >= 1 && page <= i_Get_Total_Pages.value) obj_state.currentPage = page }
-const View_MOU_Details = (mou: any) => { if (mou.documentUrl) window.open(mou.documentUrl, '_blank', 'noopener,noreferrer') }
+const View_MOU_Details = (mou: any) => {
+  if (mou.organizationId) {
+    router.push(`/user/organization/${mou.organizationId}`)
+  }
+}
 
 const isPublished = (value: any) => value === true || value === 'true' || value === 1 || value === '1'
 const loadPublishedMOUs = async () => {
@@ -211,6 +215,7 @@ const loadPublishedMOUs = async () => {
       const path = record.mou_file_path || record.mou_path || ''
       return {
         id: record._id,
+        organizationId: organizationId ? String(organizationId) : '',
         name_en: organization.name_en || organization.organization_name_en || '',
         name_th: organization.name_th || organization.organization_name_th || '',
         documentName: String(path).replace(/\\/g, '/').split('/').pop() || 'MOU Document',
