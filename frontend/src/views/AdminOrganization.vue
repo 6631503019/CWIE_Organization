@@ -310,7 +310,7 @@
                 <label>Province*</label>
                 <div class="modal_dropdown_wrapper">
                   <div class="modal_dropdown_header" @click="modalDropdownOpen.province = !modalDropdownOpen.province">
-                    <span class="modal_dropdown_text">{{ displayLocationValue(formData.province, '--Province--') }}</span>
+                    <span class="modal_dropdown_text">{{ getSelectedFilterLabel('province', formData.province) || displayLocationValue(formData.province, '--Province--') }}</span>
                     <div class="modal_dropdown_arrow" :class="{ open: modalDropdownOpen.province }"></div>
                   </div>
                   <div v-if="modalDropdownOpen.province" class="modal_dropdown_options">
@@ -329,7 +329,7 @@
                       :key="option" 
                       @click="formData.province = option; modalDropdownOpen.province = false"
                     >
-                      {{ option }}
+                      {{ getFilterOptionLabel('province', option) }}
                     </div>
                   </div>
                 </div>
@@ -767,24 +767,7 @@ const orgTypeOptions = [
 
 // Country filter options are derived from countries present in organization records.
 const geographyOptions = ['Central Region', 'Northern Region', 'Northeastern Region', 'Southern Region', 'Eastern Region', 'Western Region']
-const provinceOptions = [
-  'Amnat Charoen', 'Ang Thong', 'Bangkok', 'Bueng Kan', 'Buri Ram', 
-  'Chachoengsao', 'Chai Nat', 'Chaiyaphum', 'Chanthaburi', 'Chiang Mai', 
-  'Chiang Rai', 'Chon Buri', 'Chumphon', 'Kalasin', 'Kamphaeng Phet', 
-  'Kanchanaburi', 'Khon Kaen', 'Krabi', 'Lampang', 'Lamphun', 
-  'Loei', 'Lop Buri', 'Mae Hong Son', 'Maha Sarakham', 'Mukdahan', 
-  'Nakhon Nayok', 'Nakhon Pathom', 'Nakhon Phanom', 'Nakhon Ratchasima', 'Nakhon Sawan', 
-  'Nakhon Si Thammarat', 'Nan', 'Narathiwat', 'Nong Bua Lam Phu', 'Nong Khai', 
-  'Nonthaburi', 'Pathum Thani', 'Pattani', 'Phang Nga', 'Phatthalung', 
-  'Phayao', 'Phetchabun', 'Phetchaburi', 'Phichit', 'Phitsanulok', 
-  'Phra Nakhon Si Ayutthaya', 'Phrae', 'Phuket', 'Prachin Buri', 'Prachuap Khiri Khan', 
-  'Ranong', 'Ratchaburi', 'Rayong', 'Roi Et', 'Sa Kaeo', 
-  'Sakon Nakhon', 'Samut Prakan', 'Samut Sakhon', 'Samut Songkhram', 'Saraburi', 
-  'Satun', 'Sing Buri', 'Si Sa Ket', 'Songkhla', 'Sukhothai', 
-  'Suphan Buri', 'Surat Thani', 'Surin', 'Tak', 'Trang', 
-  'Trat', 'Ubon Ratchathani', 'Udon Thani', 'Uthai Thani', 'Uttaradit', 
-  'Yala', 'Yasothon'
-]
+// Province options are derived dynamically from the provinces in organization records.
 
 // Thai to English mapping
 const thaiToEnglishMap: Record<string, string> = {
@@ -1097,10 +1080,43 @@ const filteredType = computed(() => {
   )
 })
 
+// Province options are generated from the actual organization data returned by the API.
+// No province names are hard-coded here: new province values appear automatically
+// as soon as an organization containing that province is loaded.
+const provinceOptions = computed(() => {
+  const provinces = allOrganizations.value.flatMap(org => {
+    const raw = org.rawData || {}
+    const provinceRef = raw.province_id
+    const candidates = [
+      org.org_province,
+      raw.province_en,
+      raw.province_th,
+      raw.province,
+      typeof provinceRef === 'object' && provinceRef !== null
+        ? provinceRef.name_en || provinceRef.province_en || provinceRef.name || provinceRef.name_th || provinceRef.province_th
+        : '',
+      // Keep a selected legacy value available even when the API returns an unpopulated reference.
+      org.province
+    ]
+
+    return candidates
+      .map(value => typeof value === 'string' ? value.trim() : '')
+      .filter(value => value && value !== 'N/A')
+      .map(value => normalizeLocationValue(value))
+  })
+
+  return [
+    'All',
+    ...Array.from(new Set(provinces)).sort((a, b) => a.localeCompare(b))
+  ]
+})
+
 const filteredProvince = computed(() => {
-  if (!dropdownSearch.value.province) return provinceOptions
-  return provinceOptions.filter(option => 
-    option.toLowerCase().includes(dropdownSearch.value.province.toLowerCase())
+  const search = dropdownSearch.value.province.trim().toLowerCase()
+  if (!search) return provinceOptions.value
+
+  return provinceOptions.value.filter(option =>
+    option === 'All' || getFilterOptionLabel('province', option).toLowerCase().includes(search)
   )
 })
 
@@ -1343,16 +1359,21 @@ const modalFilteredGeography = computed(() => {
   )
 })
 
+const modalProvinceOptions = computed(() => {
+  const provinces = provinceOptions.value.filter(option => option !== 'All')
+  const selectedProvince = normalizeLocationValue(String(formData.province || '').trim())
+  if (selectedProvince && selectedProvince !== 'N/A' && !provinces.includes(selectedProvince)) {
+    provinces.push(selectedProvince)
+  }
+  return provinces
+})
+
 const modalFilteredProvince = computed(() => {
-  const allProvinceOptions = [
-    ...provinceOptions,
-    'เชียงราย', 'เชียงใหม่', 'กรุงเทพมหานคร', 'นนทบุรี', 'ปทุมธานี', 'สมุทรปราการ',
-    'ภูเก็ต', 'ชลบุรี', 'ระยอง', 'ขอนแก่น', 'นครราชสีมา', 'อุบลราชธานี', 'สงขลา',
-    'ลำปาง', 'ลำพูน', 'แม่ฮ่องสอน', 'น่าน', 'พะเยา', 'แพร่', 'อุตรดิตถ์'
-  ]
-  if (!modalDropdownSearch.value.province) return allProvinceOptions
-  return allProvinceOptions.filter(option => 
-    option.toLowerCase().includes(modalDropdownSearch.value.province.toLowerCase())
+  const search = modalDropdownSearch.value.province.trim().toLowerCase()
+  if (!search) return modalProvinceOptions.value
+
+  return modalProvinceOptions.value.filter(option =>
+    getFilterOptionLabel('province', option).toLowerCase().includes(search)
   )
 })
 
