@@ -2,14 +2,13 @@ const MOU = require('../models/MOU');
 const InternshipRecord = require('../models/InternshipRecord');
 const fs = require('fs');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
-const { deleteStoredFile, resolveStoredPath } = require('../utils/fileCleanup');
+const { resolveStoredPath } = require('../utils/fileCleanup');
 const { getPublicUploadPath } = require('../config/uploads');
 const {
-    isR2Configured,
-    uploadMouFile,
-    getMouObject,
-    deleteMouObject
-} = require('../config/objectStorage');
+    uploadPdfToGridFS,
+    openGridFSFile,
+    deleteGridFSFile
+} = require('../config/gridfs');
 
 const removeTemporaryUpload = file => {
     if (file?.path && fs.existsSync(file.path)) fs.unlinkSync(file.path);
@@ -17,20 +16,11 @@ const removeTemporaryUpload = file => {
 
 const persistMouUpload = async file => {
     if (!file) return null;
-    if (isR2Configured()) {
-        const stored = await uploadMouFile(file);
-        removeTemporaryUpload(file);
-        return {
-            mou_file_path: `/api/mou/pending/file`,
-            mou_object_key: stored.objectKey,
-            mou_storage_provider: stored.provider,
-            mou_original_name: stored.originalName,
-            mou_file_size: stored.size
-        };
-    }
+    const gridfsId = await uploadPdfToGridFS(file);
+    removeTemporaryUpload(file);
     return {
-        mou_file_path: getPublicUploadPath('mou', file.filename),
-        mou_storage_provider: 'disk',
+        mou_gridfs_id: gridfsId,
+        mou_file_path: null,
         mou_original_name: file.originalname,
         mou_file_size: file.size
     };
@@ -204,9 +194,7 @@ const createMOU = async (req, res, next) => {
             // Update existing MOU instead of throwing error
             console.log('MOU already exists, updating instead:', existingMOU._id);
             Object.assign(req.body, uploadedStorage);
-            req.body.mou_file_path = uploadedStorage.provider === 'r2'
-                ? `/api/mou/${existingMOU._id}/file`
-                : uploadedStorage.mou_file_path;
+            req.body.mou_file_path = null;
             req.body.admin_id = req.user._id;
 
             // Convert is_published from string to boolean if needed
@@ -224,12 +212,15 @@ const createMOU = async (req, res, next) => {
                 existingMOU._id,
                 req.body,
                 { new: true, runValidators: true }
-            );
+            ).catch(async updateError => {
+                if (uploadedStorage.mou_gridfs_id) {
+                    await deleteGridFSFile(uploadedStorage.mou_gridfs_id).catch(() => undefined);
+                }
+                throw updateError;
+            });
 
-            if (existingMOU.mou_storage_provider === 'r2' && existingMOU.mou_object_key) {
-                await deleteMouObject(existingMOU.mou_object_key).catch(() => undefined);
-            } else if (existingMOU.mou_file_path) {
-                deleteStoredFile(existingMOU.mou_file_path, 'old MOU file');
+            if (existingMOU.mou_gridfs_id) {
+                await deleteGridFSFile(existingMOU.mou_gridfs_id).catch(() => undefined);
             }
 
             console.log('CREATE - Updated MOU:', updatedMOU._id, 'is_published:', updatedMOU.is_published);
@@ -242,9 +233,7 @@ const createMOU = async (req, res, next) => {
         }
 
         Object.assign(req.body, uploadedStorage);
-        req.body.mou_file_path = uploadedStorage.provider === 'r2'
-            ? '/api/mou/pending/file'
-            : uploadedStorage.mou_file_path;
+        req.body.mou_file_path = null;
 
         // Add admin ID from authenticated user
         req.body.admin_id = req.user._id;
@@ -263,13 +252,9 @@ const createMOU = async (req, res, next) => {
         let mou;
         try {
             mou = await MOU.create(req.body);
-            if (uploadedStorage.provider === 'r2') {
-                mou.mou_file_path = `/api/mou/${mou._id}/file`;
-                await mou.save();
-            }
         } catch (createError) {
-            if (uploadedStorage.provider === 'r2' && uploadedStorage.mou_object_key) {
-                await deleteMouObject(uploadedStorage.mou_object_key).catch(() => undefined);
+            if (uploadedStorage.mou_gridfs_id) {
+                await deleteGridFSFile(uploadedStorage.mou_gridfs_id).catch(() => undefined);
             }
             throw createError;
         }
@@ -326,22 +311,26 @@ const updateMOU = async (req, res, next) => {
             }
             newUpload = await persistMouUpload(req.file);
             Object.assign(req.body, newUpload);
-            if (newUpload.provider === 'r2') {
-                req.body.mou_file_path = `/api/mou/${mou._id}/file`;
-            }
+            req.body.mou_file_path = null;
         }
 
-        const updatedMOU = await MOU.findByIdAndUpdate(
-            req.params.id,
-            req.body,
-            { new: true, runValidators: true }
-        );
+        let updatedMOU;
+        try {
+            updatedMOU = await MOU.findByIdAndUpdate(
+                req.params.id,
+                req.body,
+                { new: true, runValidators: true }
+            );
+        } catch (updateError) {
+            if (newUpload?.mou_gridfs_id) {
+                await deleteGridFSFile(newUpload.mou_gridfs_id).catch(() => undefined);
+            }
+            throw updateError;
+        }
 
         if (newUpload) {
-            if (mou.mou_storage_provider === 'r2' && mou.mou_object_key) {
-                await deleteMouObject(mou.mou_object_key).catch(() => undefined);
-            } else if (mou.mou_file_path) {
-                deleteStoredFile(mou.mou_file_path, 'old MOU file');
+            if (mou.mou_gridfs_id) {
+                await deleteGridFSFile(mou.mou_gridfs_id).catch(() => undefined);
             }
         }
 
@@ -368,14 +357,15 @@ const deleteMOU = async (req, res, next) => {
             throw createNotFoundError('mou', req.params.id);
         }
 
-        // Delete associated MOU file if exists
-        if (mou.mou_file_path) {
-            if (mou.mou_storage_provider === 'r2' && mou.mou_object_key) {
-                await deleteMouObject(mou.mou_object_key).catch(() => undefined);
-            } else {
-                deleteStoredFile(mou.mou_file_path, 'MOU file');
-            }
+        if (mou.mou_gridfs_id) {
+            await deleteGridFSFile(mou.mou_gridfs_id).catch(error => {
+                console.error('Failed to delete MOU GridFS file', {
+                    mouId: String(mou._id),
+                    code: error?.code || error?.name || 'UNKNOWN'
+                });
+            });
         }
+        // Keep legacy local files untouched.
 
         await MOU.findByIdAndDelete(req.params.id);
 
@@ -408,23 +398,54 @@ const getMOUFile = async (req, res, next) => {
         }
 
         const download = req.query.download === '1';
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition',
-            `${download ? 'attachment' : 'inline'}; filename="${mou.mou_original_name || 'mou.pdf'}"`);
-        res.setHeader('X-Content-Type-Options', 'nosniff');
+        const setPdfHeaders = contentLength => {
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition',
+                `${download ? 'attachment' : 'inline'}; filename="${mou.mou_original_name || 'mou.pdf'}"`);
+            res.setHeader('X-Content-Type-Options', 'nosniff');
+            if (contentLength) res.setHeader('Content-Length', contentLength);
+        };
 
-        if (mou.mou_storage_provider === 'r2' && mou.mou_object_key) {
-            const object = await getMouObject(mou.mou_object_key);
-            if (object.ContentLength) res.setHeader('Content-Length', object.ContentLength);
-            object.Body.pipe(res);
-            return;
+        if (mou.mou_gridfs_id) {
+            try {
+                const gridfs = await openGridFSFile(mou.mou_gridfs_id);
+                setPdfHeaders(gridfs.file.length);
+                gridfs.stream.pipe(res);
+                return;
+            } catch (error) {
+                const code = error?.code;
+                if (code === 'DATABASE_UNAVAILABLE') {
+                    throw new CustomError(
+                        ERROR_CODES.SERVICE_DATABASE_UNAVAILABLE,
+                        'MOU file storage is temporarily unavailable',
+                        { mouId: req.params.id }
+                    );
+                }
+                if (code === 'GRIDFS_FILE_NOT_FOUND') {
+                    throw createNotFoundError('file', req.params.id);
+                }
+                if (code === 'INVALID_GRIDFS_ID') {
+                    throw createNotFoundError('file', req.params.id);
+                }
+                throw new CustomError(
+                    ERROR_CODES.SERVICE_DATABASE_UNAVAILABLE,
+                    'MOU file storage is temporarily unavailable',
+                    { mouId: req.params.id }
+                );
+            }
         }
 
-        const absolutePath = resolveStoredPath(mou.mou_file_path);
-        if (!absolutePath || !fs.existsSync(absolutePath)) {
-            throw createNotFoundError('file', req.params.id);
+        if (mou.mou_file_path) {
+            const absolutePath = resolveStoredPath(mou.mou_file_path);
+            if (absolutePath && fs.existsSync(absolutePath)) {
+                const stat = fs.statSync(absolutePath);
+                setPdfHeaders(stat.size);
+                fs.createReadStream(absolutePath).pipe(res);
+                return;
+            }
         }
-        fs.createReadStream(absolutePath).pipe(res);
+
+        throw createNotFoundError('file', req.params.id);
     } catch (error) {
         next(error);
     }

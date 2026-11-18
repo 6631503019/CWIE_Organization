@@ -8,16 +8,11 @@ const mouSchema = new mongoose.Schema({
     },
     mou_file_path: {
         type: String,
-        required: [true, 'MOU file path is required']
-    },
-    mou_object_key: {
-        type: String,
+        required: false,
         trim: true
     },
-    mou_storage_provider: {
-        type: String,
-        enum: ['r2', 'disk', 'legacy'],
-        trim: true
+    mou_gridfs_id: {
+        type: mongoose.Schema.Types.ObjectId
     },
     mou_original_name: {
         type: String,

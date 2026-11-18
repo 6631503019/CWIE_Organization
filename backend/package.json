@@ -9,10 +9,10 @@
         "test": "jest",
         "migrate:organization-email-index": "node migrations/remove-organization-email-unique-index.js",
         "migrate:organizations-to-internshiprecords": "node scripts/migrateOrganizationsToInternshipRecords.js",
-        "migrate:mou-files-to-r2": "node scripts/migrateMouFilesToR2.js"
+        "migrate:mou-files-to-gridfs": "node scripts/migrateMouFilesToGridFS.js",
+        "inspect:mou": "node scripts/inspectMou.js"
     },
     "dependencies": {
-        "@aws-sdk/client-s3": "^3.1171.0",
         "bcryptjs": "^2.4.3",
         "cors": "^2.8.5",
         "csv-parser": "^3.2.0",

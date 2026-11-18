@@ -60,4 +60,13 @@ const upload = multer({
     fileFilter: fileFilter
 });
 
+const uploadMou = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 10 * 1024 * 1024
+    },
+    fileFilter
+});
+
 module.exports = upload;
+module.exports.uploadMou = uploadMou;
