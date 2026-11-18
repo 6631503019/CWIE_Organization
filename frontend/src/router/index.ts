@@ -31,12 +31,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: 'Admin - MOU Management', requiresAuth: true, requiresAdmin: true }
     },
     {
-        path: '/admin/mou/:id/more',
-        name: 'AdminMOUMoreDetail',
-        component: () => import('../views/AdminMOUMoreDetail.vue'),
-        meta: { title: 'Admin - MOU More Detail', requiresAuth: true, requiresAdmin: true }
-    },
-    {
         path: '/admin/roadshow',
         name: 'AdminRoadshow',
         component: () => import('../views/AdminRoadshow.vue'),
@@ -65,18 +59,6 @@ const routes: RouteRecordRaw[] = [
         name: 'UserMOU',
         component: () => import('../views/UserMOU.vue'),
         meta: { title: 'MOU', requiresAuth: true, requiresUser: true }
-    },
-    {
-        path: '/user/mou/:id',
-        name: 'UserMOUDetail',
-        component: () => import('../views/UserMOUDetail.vue'),
-        meta: { title: 'MOU Detail', requiresAuth: true, requiresUser: true }
-    },
-    {
-        path: '/user/mou/:id/more',
-        name: 'UserMOUMoreDetail',
-        component: () => import('../views/UserMOUDetail.vue'),
-        meta: { title: 'MOU More Detail', requiresAuth: true, requiresUser: true }
     },
     {
         path: '/user/roadshow',
