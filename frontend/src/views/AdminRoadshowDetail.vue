@@ -25,7 +25,7 @@
               <h1 class="roadshow_title_detail">{{ Get_Roadshow_Title(obj_Roadshow_Data) }}</h1>
               <p class="organized_by">{{ Get_Organization_Name(obj_Roadshow_Data) }}</p>
             </div>
-            <img class="header_poster" :src="posterBlob || Str_Get_Image_URL(null)" :alt="Get_Roadshow_Title(obj_Roadshow_Data)" @error="(e) => (e.target as HTMLImageElement).src = Str_Get_Image_URL(null)" />
+            <img class="header_poster" :src="posterBlob || Str_Get_Image_URL(null)" :alt="Get_Roadshow_Title(obj_Roadshow_Data)" @click="posterBlob && openImage(posterBlob, Get_Roadshow_Title(obj_Roadshow_Data))" @error="(e) => (e.target as HTMLImageElement).src = Str_Get_Image_URL(null)" />
           </section>
           <section class="detail_card">
             <h2>{{ text('Roadshow Information', 'ข้อมูลโรดโชว์') }}</h2>
@@ -45,7 +45,7 @@
           <section v-if="activityImageCount > 0" class="detail_card">
             <h2>{{ text('Activity images', 'รูปภาพกิจกรรม') }}</h2>
             <div class="activity_images_grid">
-              <img v-for="imageIndex in activityImageCount" :key="imageIndex" :src="activityBlobs[imageIndex - 1] || Str_Get_Image_URL(null)" :alt="`Activity photo ${imageIndex}`" @error="(e) => (e.target as HTMLImageElement).src = Str_Get_Image_URL(null)" />
+              <img v-for="imageIndex in activityImageCount" :key="imageIndex" :src="activityBlobs[imageIndex - 1] || Str_Get_Image_URL(null)" :alt="`Activity photo ${imageIndex}`" @click="activityBlobs[imageIndex - 1] && openImage(activityBlobs[imageIndex - 1], `Activity photo ${imageIndex}`)" @error="(e) => (e.target as HTMLImageElement).src = Str_Get_Image_URL(null)" />
             </div>
           </section>
         </template>
@@ -60,6 +60,10 @@
       :activity-urls="activityBlobs"
       @saved="refreshAfterSave"
     />
+    <div v-if="lightboxUrl" class="image_lightbox" @click.self="closeImage">
+      <button type="button" class="lightbox_close" aria-label="Close image" @click="closeImage">×</button>
+      <img :src="lightboxUrl" :alt="lightboxAlt" />
+    </div>
   </div>
 </template>
 
@@ -96,6 +100,8 @@ const obj_Roadshow_Data = ref<any>(null)  // Object: roadshow details from API
 const posterBlob = ref('')
 const activityBlobs = ref<string[]>([])
 const editOpen = ref(false)
+const lightboxUrl = ref('')
+const lightboxAlt = ref('')
 const activityImageCount = computed(() => {
   const gridfsIds = obj_Roadshow_Data.value?.activity_gridfs_ids
   if (Array.isArray(gridfsIds) && gridfsIds.length > 0) return gridfsIds.length
@@ -103,6 +109,14 @@ const activityImageCount = computed(() => {
   const legacyPaths = obj_Roadshow_Data.value?.activity_image_paths
   return Array.isArray(legacyPaths) ? legacyPaths.length : 0
 })
+const openImage = (url: string, alt: string) => {
+  lightboxUrl.value = url
+  lightboxAlt.value = alt
+}
+const closeImage = () => {
+  lightboxUrl.value = ''
+  lightboxAlt.value = ''
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -655,6 +669,7 @@ onMounted(async () => {
 .roadshow_title_detail { position: static; width: auto; height: auto; margin: 14px 0 8px; font-size: clamp(22px, 3vw, 32px); line-height: 1.2; white-space: normal; overflow-wrap: anywhere; }
 .organized_by { position: static; width: auto; height: auto; white-space: normal; overflow-wrap: anywhere; }
 .header_poster { width: 180px; height: 130px; flex: 0 0 180px; object-fit: contain; border-radius: 8px; background: #f3f4f6; }
+.header_poster, .activity_images_grid img { cursor: zoom-in; }
 .detail_card { margin-top: 20px; padding: 22px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; }
 .detail_card h2 { margin: 0 0 16px; font-size: 18px; }
 .detail_grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
@@ -679,5 +694,8 @@ onMounted(async () => {
   .detail_toolbar button { width: 100%; }
   .detail_grid { grid-template-columns: 1fr; }
 }
+.image_lightbox { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 28px; background: rgba(0,0,0,.82); }
+.image_lightbox img { max-width: min(1100px, 94vw); max-height: 90vh; object-fit: contain; }
+.lightbox_close { position: fixed; top: 18px; right: 24px; width: 42px; height: 42px; border: 0; border-radius: 50%; background: #fff; color: #333; font-size: 28px; line-height: 1; cursor: pointer; }
 
 </style>

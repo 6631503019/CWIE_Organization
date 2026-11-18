@@ -64,7 +64,7 @@
             <span>{{ text('Poster image', 'โปสเตอร์') }}</span>
             <input type="file" accept="image/jpeg,image/png,image/webp" @change="selectPoster" />
           </label>
-          <img v-if="posterPreview" class="poster_preview" :src="posterPreview" alt="Roadshow poster preview" />
+          <img v-if="posterPreview" class="poster_preview" :src="posterPreview" alt="Roadshow poster preview" @click="openImage(posterPreview, 'Roadshow poster')" />
         </div>
         <label class="upload_control">
           <span>{{ text('Activity images', 'รูปภาพกิจกรรม') }}</span>
@@ -72,11 +72,15 @@
         </label>
         <div v-if="activityPreviewUrls.length" class="activity_preview_grid">
           <div v-for="(url, index) in activityPreviewUrls" :key="`${url}-${index}`" class="activity_preview">
-            <img :src="url" :alt="`Activity ${index + 1}`" />
+            <img :src="url" :alt="`Activity ${index + 1}`" @click="openImage(url, `Activity ${index + 1}`)" />
             <button type="button" @click="removeActivity(index)">×</button>
           </div>
         </div>
       </section>
+      <div v-if="lightboxUrl" class="image_lightbox" @click.self="closeImage">
+        <button type="button" class="lightbox_close" @click="closeImage">×</button>
+        <img :src="lightboxUrl" :alt="lightboxAlt" />
+      </div>
 
       <section class="form_section form_footer_section">
         <label class="public_control">
@@ -121,10 +125,13 @@ const emit = defineEmits<{
 const { text } = useLanguage()
 const saving = ref(false)
 const errorMessage = ref('')
+const lightboxUrl = ref('')
+const lightboxAlt = ref('')
 const posterFile = ref<File | null>(null)
 const activityFiles = ref<File[]>([])
 const posterPreview = ref('')
 const activityPreviewUrls = ref<string[]>([])
+const activityOriginalIndexes = ref<Array<number | null>>([])
 const removedActivityIndices = ref<number[]>([])
 const form = reactive({
   topic: '',
@@ -180,6 +187,7 @@ const loadInitialValues = () => {
   removedActivityIndices.value = []
   posterPreview.value = props.posterUrl || ''
   activityPreviewUrls.value = [...(props.activityUrls || [])]
+  activityOriginalIndexes.value = (props.activityUrls || []).map((_, index) => index)
   errorMessage.value = ''
 }
 
@@ -210,24 +218,39 @@ const selectActivities = (event: Event) => {
     files.forEach(validateImage)
     activityFiles.value.push(...files)
     activityPreviewUrls.value.push(...files.map(file => URL.createObjectURL(file)))
+    activityOriginalIndexes.value.push(...files.map(() => null))
     errorMessage.value = ''
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : String(error)
   }
 }
 const removeActivity = (index: number) => {
-  if (index < (props.activityUrls || []).length) {
-    removedActivityIndices.value.push(index)
+  const originalIndex = activityOriginalIndexes.value[index]
+  if (originalIndex !== null && originalIndex !== undefined) {
+    if (!removedActivityIndices.value.includes(originalIndex)) {
+      removedActivityIndices.value.push(originalIndex)
+    }
   } else {
-    const newIndex = index - (props.activityUrls || []).length
+    const newIndex = activityOriginalIndexes.value
+      .slice(0, index)
+      .filter(value => value === null).length
     const [file] = activityFiles.value.splice(newIndex, 1)
     if (file && activityPreviewUrls.value[index]?.startsWith('blob:')) URL.revokeObjectURL(activityPreviewUrls.value[index])
   }
   activityPreviewUrls.value.splice(index, 1)
+  activityOriginalIndexes.value.splice(index, 1)
 }
 const cancel = () => {
   revokeBlobUrls()
   emit('update:modelValue', false)
+}
+const openImage = (url: string, alt: string) => {
+  lightboxUrl.value = url
+  lightboxAlt.value = alt
+}
+const closeImage = () => {
+  lightboxUrl.value = ''
+  lightboxAlt.value = ''
 }
 const save = async () => {
   if (saving.value) return
@@ -295,6 +318,7 @@ onBeforeUnmount(revokeBlobUrls)
 .upload_control { margin-bottom: 14px; }
 .upload_control input { padding: 8px; }
 .poster_preview { width: 120px; height: 120px; object-fit: contain; border-radius: 6px; background: #f3f3f3; }
+.poster_preview, .activity_preview img { cursor: zoom-in; }
 .activity_preview_grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .activity_preview { position: relative; aspect-ratio: 1; overflow: hidden; border-radius: 6px; background: #f3f3f3; }
 .activity_preview img { width: 100%; height: 100%; object-fit: cover; }
@@ -306,5 +330,8 @@ onBeforeUnmount(revokeBlobUrls)
 .btn_cancel { background: #f1f1f1; color: #555; }
 .btn_save { background: #8b0000; color: #fff; }
 .btn_save:disabled { opacity: .6; cursor: wait; }
+.image_lightbox { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; padding: 28px; background: rgba(0,0,0,.82); }
+.image_lightbox img { max-width: min(1100px, 94vw); max-height: 90vh; object-fit: contain; }
+.lightbox_close { position: fixed; top: 18px; right: 24px; width: 42px; height: 42px; border: 0; border-radius: 50%; background: #fff; color: #333; font-size: 28px; cursor: pointer; }
 @media (max-width: 640px) { .roadshow_form { padding: 20px 16px; } .form_grid { grid-template-columns: 1fr; } .form_grid .wide { grid-column: auto; } .upload_grid { align-items: flex-start; flex-direction: column; } }
 </style>
