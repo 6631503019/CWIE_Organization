@@ -23,22 +23,9 @@
         <section class="filter_section">
           <input type="text" :placeholder="text('Search organization...', 'ค้นหาองค์กร...')" class="search_input" v-model="searchText" />
           <div class="filter_labels">
-            <span>{{ text('Business Type', 'ประเภทธุรกิจ') }}</span><span>{{ text('Business Category', 'หมวดหมู่ธุรกิจ') }}</span><span>{{ text('Region', 'ภูมิภาค') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Province', 'จังหวัด') }}</span>
+            <span>{{ text('Business Category', 'หมวดหมู่ธุรกิจ') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Region', 'ภูมิภาค') }}</span><span>{{ text('Province', 'จังหวัด') }}</span>
           </div>
           <div class="dropdowns_grid">
-          <!-- Organization Type dropdown -->
-          <div class="dropdown_container org_type" :class="{ active: dropdowns.orgType }">
-            <div class="dropdown_header" @click="toggleDropdown('orgType')">
-              <span class="dropdown_text">{{ selectedFilters.orgType === 'All' ? text('--Organization Type--', '--เลือกประเภทองค์กร--') : orgTypeOptions.find(o => o.value === selectedFilters.orgType)?.label }}</span>
-              <div class="dropdown_arrow"></div>
-            </div>
-            <div v-if="dropdowns.orgType" class="dropdown_options">
-              <div class="dropdown_option" v-for="option in orgTypeOptions" :key="option.value" @click="selectOption('orgType', option.value)">
-                {{ option.label }}
-              </div>
-            </div>
-          </div>
-          
           <!-- Industry Category dropdown -->
           <div class="dropdown_container industry_cat" :class="{ active: dropdowns.industryCat }">
             <div class="dropdown_header" @click="toggleDropdown('industryCat')">
@@ -135,10 +122,10 @@
           <div class="table_header"><span>{{ text('Organization', 'องค์กร') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Province', 'จังหวัด') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Status', 'สถานะ') }}</span><span>{{ text('Actions', 'การดำเนินการ') }}</span></div>
           <div v-for="org in paginatedOrganizations" :key="org.id" class="table_row">
             <div class="org_name" @click="viewOrganizationDetail(org.id)">{{ getLocalizedOrganizationName(org.rawData) }}</div>
-            <div class="org_category">{{ getLocalizedOrganizationField(org.rawData, 'organization_type', 'business_type_en', 'business_type_th') }}</div>
-            <div class="org_school">{{ getLocalizedOrganizationField(org.rawData, 'school_en', 'school_en', 'school_th') }}</div>
-            <div class="org_province">{{ getLocalizedOrganizationField(org.rawData, 'province_id', 'province_en', 'province_th') }}</div>
-            <div class="org_country">{{ getLocalizedOrganizationField(org.rawData, 'country_id', 'country_en', 'country_th') }}</div>
+            <div class="org_category">{{ org.org_category }}</div>
+            <div class="org_school">{{ org.org_school }}</div>
+            <div class="org_province">{{ org.org_province }}</div>
+            <div class="org_country">{{ org.org_country }}</div>
             <div><span class="status_pill" :class="org.status">{{ org.status === 'active' ? text('Active', 'ใช้งาน') : text('Inactive', 'ไม่ใช้งาน') }}</span></div>
             <div class="action_buttons"><button class="text_action" @click="!state.loading && editOrganization(org.id)" :disabled="state.loading">{{ text('Edit', 'แก้ไข') }}</button><button class="text_action danger" @click="!state.loading && deleteOrganization(org.id)" :disabled="state.loading">{{ text('Delete', 'ลบ') }}</button><button v-if="org.hasMOU" class="text_action" @click="!state.loading && viewDocument(org.id)">{{ text('View', 'ดู') }}</button></div>
           </div>
@@ -681,6 +668,40 @@ const getLocalizedReferenceName = (value: any): string => {
   return String(value)
 }
 
+const getOrganizationDisplayField = (
+  organization: any,
+  englishFields: string[],
+  thaiFields: string[],
+  referenceFields: string[] = []
+): string => {
+  const pick = (fields: string[]) => {
+    for (const field of fields) {
+      const value = organization?.[field]
+      if (value !== undefined && value !== null && value !== '') {
+        if (typeof value === 'object') {
+          const localized = currentLanguage.value === 'TH'
+            ? (value.name_th || value.name_en || value.label_th || value.label_en)
+            : (value.name_en || value.name_th || value.label_en || value.label_th)
+          if (localized) return String(localized)
+          if (value._id) continue
+        }
+        return String(value)
+      }
+    }
+    return ''
+  }
+  const localized = currentLanguage.value === 'TH'
+    ? (pick(thaiFields) || pick(englishFields))
+    : (pick(englishFields) || pick(thaiFields))
+  if (localized) return localized
+  for (const field of referenceFields) {
+    const value = organization?.[field]
+    const name = getLocalizedReferenceName(value)
+    if (name !== 'N/A') return name
+  }
+  return 'N/A'
+}
+
 const showDeleteModal = ref(false)
 const showNotificationModal = ref(false)
 const showImportModal = ref(false)
@@ -709,7 +730,6 @@ const selectedOrganization = ref<any>(null)
 const logoPreviewUrl = ref<string | null>(null)
 const mouPreviewUrl = ref<string | null>(null)
 const dropdowns = ref({
-  orgType: false,
   industryCat: false,
   country: false,
   geography: false,
@@ -718,7 +738,6 @@ const dropdowns = ref({
 
 // Search text for each dropdown
 const dropdownSearch = ref({
-  orgType: '',
   industryCat: '',
   country: '',
   geography: '',
@@ -727,20 +746,22 @@ const dropdownSearch = ref({
 
 // Filter selections
 const selectedFilters = reactive({
-  orgType: 'All',
   industryCat: 'All',
   country: 'All',
   geography: 'All',
   province: 'All'
 })
 
-// Dropdown options - match backend values
+// Organization Type choices are retained for the Add/Edit Organization form.
+// The broken Type filter dropdown above the table has been removed.
 const orgTypeOptions = [
   { value: 'private company', label: 'Private Company' },
   { value: 'Government', label: 'Government' },
   { value: 'Oversea', label: 'Oversea' },
   { value: 'MFU', label: 'MFU' }
 ]
+
+// Dropdown options - match backend values
 const industryCatOptions = [
   'All', 
   'School of Applied Digital Technology',
@@ -1040,30 +1061,23 @@ const filteredOrganizations = computed(() => {
   // Search filter
   if (searchText.value.trim()) {
     const search = searchText.value.toLowerCase()
-    filtered = filtered.filter(org => 
-      org.name.toLowerCase().includes(search) ||
-      org.category.toLowerCase().includes(search) ||
-      org.province.toLowerCase().includes(search) ||
-      org.country.toLowerCase().includes(search) ||
-      org.industry.toLowerCase().includes(search)
+    filtered = filtered.filter(org =>
+      [org.name, org.org_category, org.org_school, org.org_province, org.org_country, org.industry]
+        .some(value => String(value || '').toLowerCase().includes(search))
     )
   }
   
   // Dropdown filters
-  if (selectedFilters.orgType !== 'All') {
-    filtered = filtered.filter(org => org.category === selectedFilters.orgType)
-  }
-  
   if (selectedFilters.province !== 'All') {
-    filtered = filtered.filter(org => org.province === selectedFilters.province)
+    filtered = filtered.filter(org => String(org.org_province || '').trim().toLowerCase() === String(selectedFilters.province).trim().toLowerCase())
   }
 
   if (selectedFilters.industryCat !== 'All') {
-    filtered = filtered.filter(org => org.industry === selectedFilters.industryCat)
+    filtered = filtered.filter(org => String(org.industry || '').trim().toLowerCase() === String(selectedFilters.industryCat).trim().toLowerCase())
   }
 
   if (selectedFilters.country !== 'All') {
-    filtered = filtered.filter(org => org.country === selectedFilters.country)
+    filtered = filtered.filter(org => String(org.org_country || '').trim().toLowerCase() === String(selectedFilters.country).trim().toLowerCase())
   }
 
   if (selectedFilters.geography !== 'All') {
@@ -1604,16 +1618,50 @@ const fetchOrganizations = async () => {
       const normalizedGeography = normalizeLocationValue(item.geography_id || '')
       const normalizedCategory = normalizeLocationValue(item.industry_category_id || '')
       
+      const orgCategory = getOrganizationDisplayField(
+        item,
+        ['organization_type', 'business_type_en', 'business_type'],
+        ['business_type_th', 'organization_type_th']
+      )
+      const orgSchool = getOrganizationDisplayField(
+        item,
+        ['school_en', 'school', 'school_name_en'],
+        ['school_th', 'school_name_th'],
+        ['school_id']
+      )
+      const orgProvince = getOrganizationDisplayField(
+        item,
+        ['province_en', 'province'],
+        ['province_th'],
+        ['province_id']
+      )
+      const orgCountry = getOrganizationDisplayField(
+        item,
+        ['country_en', 'country'],
+        ['country_th'],
+        ['country_id']
+      )
+      const orgIndustry = getOrganizationDisplayField(
+        item,
+        ['business_category_en', 'industry_category_en', 'industry_category_id'],
+        ['business_category_th', 'industry_category_th']
+      )
+
       const org = {
         id: item._id,
         status: item.is_public ? 'active' : 'inactive',
         name: item.name_en || item.name_th || 'Unknown',
-        category: item.organization_type || 'individual',
-        province: normalizedProvince,
-        country: normalizedCountry,
+        // Canonical fields used by table_container and all filters.
+        org_category: orgCategory,
+        org_school: orgSchool,
+        org_province: orgProvince,
+        org_country: orgCountry,
+        category: orgCategory,
+        province: orgProvince,
+        country: orgCountry,
         geography: normalizedGeography,
-        industryCategory: normalizedCategory,
-        industry: normalizedCategory,
+        industryCategory: orgIndustry,
+        industry: orgIndustry,
         createdDate: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : 'N/A',
         editedDate: item.updatedAt ? new Date(item.updatedAt).toISOString().split('T')[0] : 'N/A',
         hasMOU: hasMOU,
@@ -1729,9 +1777,9 @@ const editOrganization = async (id: string | number) => {
     formData.organizationType = orgData.organization_type || ''
     formData.industryCategory = orgData.industry_category_id || ''
     // Handle both ObjectId (old) and String (new) formats
-    formData.country = typeof orgData.country_id === 'string' ? orgData.country_id : (orgData.country_id?.name_en || orgData.country_id?.name_th || '')
+    formData.country = getOrganizationDisplayField(orgData, ['country_en', 'country'], ['country_th'], ['country_id'])
     formData.geography = typeof orgData.geography_id === 'string' ? orgData.geography_id : (orgData.geography_id?.name_en || orgData.geography_id?.name_th || '')
-    formData.province = typeof orgData.province_id === 'string' ? orgData.province_id : (orgData.province_id?.name_en || orgData.province_id?.name_th || '')
+    formData.province = getOrganizationDisplayField(orgData, ['province_en', 'province'], ['province_th'], ['province_id'])
     formData.email = orgData.email || ''
     formData.phoneNumber = orgData.phone_number || ''
     formData.details = orgData.details || ''
@@ -3940,8 +3988,8 @@ onBeforeUnmount(() => {
 
 .filter_section { width: 100%; height: auto; min-height: 146px; box-sizing: border-box; margin: 0 0 22px; padding: 12px 20px 11px; background: #ffffff; border-radius: 0; box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25); }
 .search_input { width: 100%; height: 30px; box-sizing: border-box; padding: 9px 12px; border: 0.4px solid #a8a8ac; border-radius: 8px; font: 400 10px/12px Inter, sans-serif; color: #1f2937; }
-.filter_labels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 14px; padding: 0 2px; font: 500 10px/12px Inter, sans-serif; color: #000000; }
-.dropdowns_grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.filter_labels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 14px; padding: 0 2px; font: 500 10px/12px Inter, sans-serif; color: #000000; }
+.dropdowns_grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; }
 .dropdown_container { margin: 0; min-width: 0; }
 .dropdown_header { height: 28px; box-sizing: border-box; padding: 7px; border: 0.4px solid #a8a8ac; border-radius: 8px; }
 .dropdown_text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 10px/12px Inter, sans-serif; color: #73737a; }
@@ -4066,7 +4114,7 @@ onBeforeUnmount(() => {
 
 .filter_labels,
 .dropdowns_grid {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 
