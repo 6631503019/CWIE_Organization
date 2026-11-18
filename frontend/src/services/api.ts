@@ -443,6 +443,13 @@ export const fetchRoadshowPosterBlob = async (roadshowId: unknown): Promise<stri
         `/roadshows/${encodeURIComponent(String(roadshowId))}/image/poster`,
         { responseType: 'blob' }
     )
+    if (!(response.data instanceof Blob) || (
+        response.data.type &&
+        response.data.type !== 'application/octet-stream' &&
+        !response.data.type.startsWith('image/')
+    )) {
+        throw new Error('Roadshow poster is not an image')
+    }
     return URL.createObjectURL(response.data)
 }
 
@@ -452,6 +459,13 @@ export const fetchRoadshowActivityBlob = async (roadshowId: unknown, index: numb
         `/roadshows/${encodeURIComponent(String(roadshowId))}/image/activity/${index}`,
         { responseType: 'blob' }
     )
+    if (!(response.data instanceof Blob) || (
+        response.data.type &&
+        response.data.type !== 'application/octet-stream' &&
+        !response.data.type.startsWith('image/')
+    )) {
+        throw new Error('Roadshow activity image is not an image')
+    }
     return URL.createObjectURL(response.data)
 }
 export const isTokenExpired = Bln_Is_Token_Expired

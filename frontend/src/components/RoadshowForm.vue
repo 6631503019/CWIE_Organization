@@ -101,7 +101,7 @@
 import { reactive, ref, watch, onBeforeUnmount } from 'vue'
 import { roadshowAPI } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
-import { formatRoadshowTime } from '../utils/roadshowTime'
+import { normalizeRoadshowTime, splitRoadshowTime } from '../utils/roadshowTime'
 
 type FormMode = 'create' | 'edit'
 
@@ -151,18 +151,20 @@ const form = reactive({
 })
 
 const dateOnly = (value: unknown) => String(value || '').split('T')[0]
-const splitTime = (value: unknown) => {
-  const parts = formatRoadshowTime(value).split('-').map(part => part.trim())
-  return { start: parts[0] || '', end: parts[1] || '' }
-}
 const revokeBlobUrls = () => {
-  if (posterPreview.value.startsWith('blob:')) URL.revokeObjectURL(posterPreview.value)
-  activityPreviewUrls.value.filter(url => url.startsWith('blob:')).forEach(url => URL.revokeObjectURL(url))
+  if (posterFile.value && posterPreview.value.startsWith('blob:')) {
+    URL.revokeObjectURL(posterPreview.value)
+  }
+  activityPreviewUrls.value.forEach((url, index) => {
+    if (url.startsWith('blob:') && activityOriginalIndexes.value[index] === null) {
+      URL.revokeObjectURL(url)
+    }
+  })
 }
 const loadInitialValues = () => {
   revokeBlobUrls()
   const item = props.roadshow || {}
-  const times = splitTime(item.time)
+  const times = splitRoadshowTime(item.time)
   const organizationId = typeof item.organization_id === 'object'
     ? item.organization_id?._id
     : item.organization_id
@@ -204,7 +206,9 @@ const selectPoster = (event: Event) => {
   if (!file) return
   try {
     validateImage(file)
-    if (posterPreview.value.startsWith('blob:')) URL.revokeObjectURL(posterPreview.value)
+    if (posterFile.value && posterPreview.value.startsWith('blob:')) {
+      URL.revokeObjectURL(posterPreview.value)
+    }
     posterFile.value = file
     posterPreview.value = URL.createObjectURL(file)
     errorMessage.value = ''
@@ -275,7 +279,13 @@ const save = async () => {
     payload.append('organization_th', form.organization_th)
     if (form.organization_id) payload.append('organization_id', form.organization_id)
     payload.append('location', form.location)
-    payload.append('time', `${form.start_time} - ${form.end_time}`)
+    const normalizedTime = normalizeRoadshowTime(`${form.start_time} - ${form.end_time}`)
+    if (!normalizedTime) {
+      errorMessage.value = text('Time must use HH:mm format.', 'เวลาต้องอยู่ในรูปแบบ HH:mm')
+      saving.value = false
+      return
+    }
+    payload.append('time', normalizedTime)
     payload.append('event_date', form.event_date)
     payload.append('posted_date', form.posted_date)
     payload.append('is_public', String(form.is_public))

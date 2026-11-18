@@ -25,7 +25,7 @@
               <h1 class="roadshow_title_detail">{{ Get_Roadshow_Title(obj_Roadshow_Data) }}</h1>
               <p class="organized_by">{{ Get_Organization_Name(obj_Roadshow_Data) }}</p>
             </div>
-            <img class="header_poster" :src="posterBlob || Str_Get_Image_URL(null)" :alt="Get_Roadshow_Title(obj_Roadshow_Data)" @click="posterBlob && openImage(posterBlob, Get_Roadshow_Title(obj_Roadshow_Data))" @error="(e) => (e.target as HTMLImageElement).src = Str_Get_Image_URL(null)" />
+            <img class="header_poster" :src="posterBlob || Str_Get_Image_URL(null)" :alt="Get_Roadshow_Title(obj_Roadshow_Data)" @click="posterBlob && openImage(posterBlob, Get_Roadshow_Title(obj_Roadshow_Data))" @error="Handle_Image_Error" />
           </section>
           <section class="detail_card">
             <h2>{{ text('Roadshow Information', 'ข้อมูลโรดโชว์') }}</h2>
@@ -45,7 +45,7 @@
           <section v-if="activityImageCount > 0" class="detail_card">
             <h2>{{ text('Activity images', 'รูปภาพกิจกรรม') }}</h2>
             <div class="activity_images_grid">
-              <img v-for="imageIndex in activityImageCount" :key="imageIndex" :src="activityBlobs[imageIndex - 1] || Str_Get_Image_URL(null)" :alt="`Activity photo ${imageIndex}`" @click="activityBlobs[imageIndex - 1] && openImage(activityBlobs[imageIndex - 1], `Activity photo ${imageIndex}`)" @error="(e) => (e.target as HTMLImageElement).src = Str_Get_Image_URL(null)" />
+              <img v-for="imageIndex in activityImageCount" :key="imageIndex" :src="activityBlobs[imageIndex - 1] || Str_Get_Image_URL(null)" :alt="`Activity photo ${imageIndex}`" @click="activityBlobs[imageIndex - 1] && openImage(activityBlobs[imageIndex - 1], `Activity photo ${imageIndex}`)" @error="Handle_Image_Error" />
             </div>
           </section>
         </template>
@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminNavbar from '../components/AdminNavbar.vue'
 import AdminTopBar from '../components/admin/AdminTopBar.vue'
@@ -99,6 +99,7 @@ const obj_UI_State = reactive({
 const obj_Roadshow_Data = ref<any>(null)  // Object: roadshow details from API
 const posterBlob = ref('')
 const activityBlobs = ref<string[]>([])
+let detailLoadRequest = 0
 const editOpen = ref(false)
 const lightboxUrl = ref('')
 const lightboxAlt = ref('')
@@ -152,6 +153,22 @@ function Get_Organization_Name(obj_Roadshow: any): string {
 // ============================================================================
 function Str_Get_Image_URL(str_Image_Path: string | null): string {
   return CONST_DEFAULT_NO_IMAGE_SVG
+}
+
+function Handle_Image_Error(event: Event): void {
+  const image = event.target as HTMLImageElement
+  if (image.src !== CONST_DEFAULT_NO_IMAGE_SVG) {
+    image.src = CONST_DEFAULT_NO_IMAGE_SVG
+  }
+}
+
+function revokeDetailBlobUrls(): void {
+  if (posterBlob.value.startsWith('blob:')) URL.revokeObjectURL(posterBlob.value)
+  activityBlobs.value.forEach(url => {
+    if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+  })
+  posterBlob.value = ''
+  activityBlobs.value = []
 }
 
 // ============================================================================
@@ -258,6 +275,7 @@ function Bln_Validate_Roadshow_ID(str_ID: any): boolean {
 // ============================================================================
 async function Load_Roadshow_Details(): Promise<void> {
   let str_Roadshow_ID = ''
+  const loadRequest = ++detailLoadRequest
   
   try {
     // Step 1: Validate input - Roadshow ID from URL
@@ -274,15 +292,29 @@ async function Load_Roadshow_Details(): Promise<void> {
     const obj_Response_Data = obj_Response.data?.data || obj_Response.data
     
     // Step 9: Update component data
-    obj_Roadshow_Data.value = obj_Response_Data
-    try { posterBlob.value = await fetchRoadshowPosterBlob(obj_Roadshow_Data.value._id) } catch {}
-    activityBlobs.value = await Promise.all(
-      (obj_Roadshow_Data.value.activity_gridfs_ids || obj_Roadshow_Data.value.activity_image_paths || []).map(
+    const roadshowId = obj_Response_Data._id || str_Roadshow_ID
+    let nextPosterBlob = ''
+    try { nextPosterBlob = await fetchRoadshowPosterBlob(roadshowId) } catch {}
+    const nextActivityBlobs = await Promise.all(
+      (obj_Response_Data.activity_gridfs_ids || obj_Response_Data.activity_image_paths || []).map(
         async (_: unknown, index: number) => {
-          try { return await fetchRoadshowActivityBlob(obj_Roadshow_Data.value._id, index) } catch { return '' }
+          try { return await fetchRoadshowActivityBlob(roadshowId, index) } catch { return '' }
         }
       )
     )
+
+    if (loadRequest !== detailLoadRequest) {
+      if (nextPosterBlob.startsWith('blob:')) URL.revokeObjectURL(nextPosterBlob)
+      nextActivityBlobs.forEach(url => {
+        if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+      })
+      return
+    }
+
+    revokeDetailBlobUrls()
+    obj_Roadshow_Data.value = obj_Response_Data
+    posterBlob.value = nextPosterBlob
+    activityBlobs.value = nextActivityBlobs
     console.log('Roadshow details loaded successfully:', obj_Roadshow_Data.value)
     
   } catch (error) {
@@ -318,6 +350,15 @@ const refreshAfterSave = async () => {
 // ============================================================================
 onMounted(async () => {
   await Load_Roadshow_Details()
+})
+
+watch(() => route.params.id, async (newId, oldId) => {
+  if (newId && newId !== oldId) await Load_Roadshow_Details()
+})
+
+onBeforeUnmount(() => {
+  detailLoadRequest++
+  revokeDetailBlobUrls()
 })
 </script>
 

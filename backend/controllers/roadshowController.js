@@ -6,6 +6,7 @@ const {
     ERROR_CODES
 } = require('../utils/customError');
 const fs = require('fs');
+const path = require('path');
 const { resolveStoredPath } = require('../utils/fileCleanup');
 const { normalizeRoadshowTime } = require('../utils/roadshowTime');
 
@@ -607,6 +608,19 @@ const deleteRoadshow = async (req, res, next) => {
 };
 
 // Stream GridFS or legacy image.
+const getImageContentType = filePath => {
+    const extension = path.extname(String(filePath || '')).toLowerCase();
+    const contentTypes = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.webp': 'image/webp',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml'
+    };
+    return contentTypes[extension] || 'application/octet-stream';
+};
+
 const streamRoadshowImage = async (
     req,
     res,
@@ -704,7 +718,7 @@ const streamRoadshowImage = async (
 
             res.setHeader(
                 'Content-Type',
-                'application/octet-stream'
+                getImageContentType(absolutePath)
             );
 
             res.setHeader(
