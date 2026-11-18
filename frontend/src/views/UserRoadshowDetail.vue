@@ -1,391 +1,204 @@
 <template>
   <div class="user_roadshow_detail">
     <UserNavbar />
-    <AdminTopBar />
-    
-    <!-- Back Button -->
-    <button class="btn_back" @click="$router.back()">
-      <span class="back_arrow">←</span>
-    </button>
-
-    <!-- Detail Card -->
-    <div class="detail_card">
-      <div v-if="state.loading" class="loading_message">
-        {{ text('Loading roadshow details...', 'กำลังโหลดรายละเอียดโรดโชว์...') }}
-      </div>
-      <div v-else-if="state.error" class="error_message">
-        {{ state.error }}
-      </div>
-      <div v-else-if="roadshow">
-        <!-- Title -->
-        <h1 class="roadshow_title_detail">{{ Get_Roadshow_Title(roadshow) }}</h1>
-        
-        <!-- Image -->
-        <div class="roadshow_image_detail">
-          <img 
-            :src="posterBlob || 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27493%27 height=%27495%27%3E%3Crect fill=%27%23ddd%27 width=%27493%27 height=%27495%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'"
-            :alt="Get_Roadshow_Title(roadshow)"
-            @click="openImage(posterBlob, Get_Roadshow_Title(roadshow))"
-            @error="(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27493%27 height=%27495%27%3E%3Crect fill=%27%23ddd%27 width=%27493%27 height=%27495%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'"
-          />
-        </div>
-        
-        <!-- Description -->
-        <div class="roadshow_description_detail">
-          {{ roadshow.details }}
+    <main class="detail_main">
+      <section class="detail_content">
+        <div class="detail_toolbar">
+          <button class="btn_back" type="button" @click="goBack">← {{ text('Back to List', 'กลับไปยังรายการ') }}</button>
         </div>
 
-        <div v-if="roadshow.time" class="roadshow_time_detail">
-          {{ text('Time', 'เวลา') }}: {{ formatRoadshowTime(roadshow.time) }}
-        </div>
-
-        <!-- Activity Images Grid -->
-        <div v-if="(roadshow.activity_gridfs_ids?.length || roadshow.activity_image_paths?.length) > 0" class="activity_images_grid">
-          <div v-for="(_, index) in (roadshow.activity_gridfs_ids?.length ? roadshow.activity_gridfs_ids : roadshow.activity_image_paths)" :key="index" class="activity_image_card">
-            <img 
-              :src="activityBlobs[index] || 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27493%27 height=%27495%27%3E%3Crect fill=%27%23ddd%27 width=%27493%27 height=%27495%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'"
-              :alt="`Activity photo ${Number(index) + 1}`"
-              @click="activityBlobs[index] && openImage(activityBlobs[index], `Activity photo ${Number(index) + 1}`)"
+        <div v-if="loading" class="message">{{ text('Loading roadshow details...', 'กำลังโหลดรายละเอียดโรดโชว์...') }}</div>
+        <div v-else-if="error" class="message error">{{ error }}</div>
+        <template v-else-if="roadshow">
+          <section class="detail_header">
+            <div>
+              <span class="status_pill" :class="statusClass">{{ statusText }}</span>
+              <h1>{{ localized(roadshow.title_en, roadshow.title_th) }}</h1>
+              <p>{{ organizationName }}</p>
+            </div>
+            <img
+              class="header_poster"
+              :src="posterBlob || defaultImage"
+              :alt="localized(roadshow.title_en, roadshow.title_th)"
+              @click="posterBlob && openImage(posterBlob)"
             />
-          </div>
-          <div v-if="lightboxUrl" class="image_lightbox" @click.self="closeImage">
-            <button type="button" class="lightbox_close" aria-label="Close image" @click="closeImage">×</button>
-            <img :src="lightboxUrl" :alt="lightboxAlt" />
-          </div>
-        </div>
-      </div>
+          </section>
+
+          <section class="detail_card">
+            <h2>{{ text('Roadshow Information', 'ข้อมูลโรดโชว์') }}</h2>
+            <div class="detail_grid">
+              <div class="detail_item"><span>{{ text('Organization', 'องค์กร') }}</span><strong>{{ organizationName }}</strong></div>
+              <div class="detail_item"><span>{{ text('Location', 'สถานที่') }}</span><strong>{{ roadshow.location || '—' }}</strong></div>
+              <div class="detail_item"><span>{{ text('Event date', 'วันที่จัดงาน') }}</span><strong>{{ formatDate(roadshow.event_date || roadshow.posted_date) }}</strong></div>
+              <div class="detail_item"><span>{{ text('Time', 'เวลา') }}</span><strong>{{ formatRoadshowTime(roadshow.time) || '—' }}</strong></div>
+              <div class="detail_item"><span>{{ text('Posted date', 'วันที่ประกาศ') }}</span><strong>{{ formatDate(roadshow.posted_date) }}</strong></div>
+              <div class="detail_item"><span>{{ text('Deleted date', 'วันที่สิ้นสุดการแสดง') }}</span><strong>{{ formatDate(roadshow.deleted_date) }}</strong></div>
+            </div>
+          </section>
+
+          <section class="detail_card">
+            <h2>{{ text('Description', 'รายละเอียด') }}</h2>
+            <p class="description_text">{{ roadshow.details || '—' }}</p>
+          </section>
+
+          <section v-if="activityBlobs.length > 0" class="detail_card">
+            <h2>{{ text('Activity images', 'รูปภาพกิจกรรม') }}</h2>
+            <div class="activity_images_grid">
+              <img
+                v-for="(image, index) in activityBlobs"
+                v-if="image"
+                :key="index"
+                :src="image"
+                :alt="`Activity photo ${index + 1}`"
+                @click="openImage(image)"
+              />
+            </div>
+          </section>
+        </template>
+      </section>
+    </main>
+
+    <div v-if="lightboxUrl" class="image_lightbox" @click.self="closeImage">
+      <button type="button" class="lightbox_close" aria-label="Close image" @click="closeImage">×</button>
+      <img :src="lightboxUrl" :alt="localized(roadshow?.title_en, roadshow?.title_th)" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
-import AdminTopBar from '../components/admin/AdminTopBar.vue'
-
 import { roadshowAPI, fetchRoadshowPosterBlob, fetchRoadshowActivityBlob } from '../services/api'
 import { formatRoadshowTime } from '../utils/roadshowTime'
 import { useLanguage } from '../composables/useLanguage'
 
 const route = useRoute()
+const router = useRouter()
 const { currentLanguage, text } = useLanguage()
-
-const state = reactive({
-  loading: false,
-  error: null as string | null
-})
-
 const roadshow = ref<any>(null)
 const posterBlob = ref('')
 const activityBlobs = ref<string[]>([])
+const loading = ref(false)
+const error = ref('')
 const lightboxUrl = ref('')
-const lightboxAlt = ref('')
-let loadRequest = 0
 
-const Get_Roadshow_Title = (item: any) => currentLanguage.value === 'TH'
-  ? item?.title_th || item?.title_en || item?.topic || '—'
-  : item?.title_en || item?.title_th || item?.topic || '—'
+const defaultImage = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='493' height='495'%3E%3Crect fill='%23ddd' width='493' height='495'/%3E%3Ctext fill='%23999' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='20'%3ENo Image%3C/text%3E%3C/svg%3E"
 
-const openImage = (url: string, alt: string) => {
-  if (!url) return
-  lightboxUrl.value = url
-  lightboxAlt.value = alt
+const localized = (english: unknown, thai: unknown) =>
+  String((currentLanguage.value === 'TH' ? thai : english) || (currentLanguage.value === 'TH' ? english : thai) || '—')
+
+const organizationName = computed(() => {
+  const manual = localized(roadshow.value?.organization_en, roadshow.value?.organization_th)
+  if (manual !== '—') return manual
+  const organization = roadshow.value?.organization_id
+  if (organization && typeof organization === 'object') {
+    return localized(organization.organization_name_en || organization.name_en, organization.organization_name_th || organization.name_th)
+  }
+  return roadshow.value?.organization || '—'
+})
+
+const statusText = computed(() => {
+  if (!roadshow.value) return 'Upcoming'
+  if (roadshow.value.deleted_date) {
+    const deleted = new Date(roadshow.value.deleted_date)
+    if (!Number.isNaN(deleted.getTime()) && deleted < new Date()) return text('Completed', 'จบแล้ว')
+  }
+  return roadshow.value.is_public ? text('Active', 'ใช้งาน') : text('Upcoming', 'กำลังจะมา')
+})
+const statusClass = computed(() => {
+  if (statusText.value === text('Completed', 'จบแล้ว')) return 'status_completed'
+  if (statusText.value === text('Active', 'ใช้งาน')) return 'status_active'
+  return 'status_upcoming'
+})
+
+const formatDate = (value: any) => {
+  if (!value) return '—'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
-const closeImage = () => {
-  lightboxUrl.value = ''
-  lightboxAlt.value = ''
-}
-const revokeImageUrls = () => {
+
+const revokeUrls = () => {
   if (posterBlob.value.startsWith('blob:')) URL.revokeObjectURL(posterBlob.value)
-  activityBlobs.value.forEach(url => {
+  activityBlobs.value.forEach((url) => {
     if (url.startsWith('blob:')) URL.revokeObjectURL(url)
   })
   posterBlob.value = ''
   activityBlobs.value = []
 }
 
-const loadRoadshow = async () => {
+const openImage = (url: string) => { lightboxUrl.value = url }
+const closeImage = () => { lightboxUrl.value = '' }
+
+let loadRequest = 0
+const loadRoadshow = async (id: string) => {
   const request = ++loadRequest
-  state.loading = true
-  state.error = null
-
+  loading.value = true
+  error.value = ''
   try {
-    const response = await roadshowAPI.getById(route.params.id as string)
+    const response = await roadshowAPI.getById(id)
     const nextRoadshow = response.data?.data || response.data
-    const roadshowId = nextRoadshow._id || route.params.id
-
     let nextPoster = ''
-    try { nextPoster = await fetchRoadshowPosterBlob(roadshowId) } catch {}
-    const nextActivities = await Promise.all(
-      (nextRoadshow.activity_gridfs_ids || nextRoadshow.activity_image_paths || []).map(
-        async (_: unknown, index: number) => {
-          try { return await fetchRoadshowActivityBlob(roadshowId, index) } catch { return '' }
-        }
-      )
-    )
-
+    try { nextPoster = await fetchRoadshowPosterBlob(id) } catch {}
+    const count = nextRoadshow.activity_gridfs_ids?.length || nextRoadshow.activity_image_paths?.length || 0
+    const nextActivities = await Promise.all(Array.from({ length: count }, async (_, index) => {
+      try { return await fetchRoadshowActivityBlob(id, index) } catch { return '' }
+    }))
     if (request !== loadRequest) {
       if (nextPoster.startsWith('blob:')) URL.revokeObjectURL(nextPoster)
-      nextActivities.forEach(url => {
+      nextActivities.forEach((url) => {
         if (url.startsWith('blob:')) URL.revokeObjectURL(url)
       })
       return
     }
-
-    revokeImageUrls()
+    revokeUrls()
     roadshow.value = nextRoadshow
     posterBlob.value = nextPoster
     activityBlobs.value = nextActivities
-  } catch (error: any) {
-    state.error = error.response?.data?.message || 'Failed to load roadshow details'
+  } catch (requestError: any) {
+    error.value = requestError.response?.data?.message || text('Unable to load roadshow details.', 'ไม่สามารถโหลดรายละเอียดโรดโชว์ได้')
   } finally {
-    if (request === loadRequest) state.loading = false
+    if (request === loadRequest) loading.value = false
   }
 }
 
-onMounted(loadRoadshow)
-watch(() => route.params.id, async (newId, oldId) => {
-  if (newId && newId !== oldId) await loadRoadshow()
+const goBack = () => router.push('/user/roadshow')
+
+onMounted(() => loadRoadshow(String(route.params.id || '')))
+watch(() => route.params.id, (id, previous) => {
+  if (id && id !== previous) loadRoadshow(String(id))
 })
 onBeforeUnmount(() => {
   loadRequest++
-  revokeImageUrls()
+  revokeUrls()
 })
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
-
-.user_roadshow_detail {
-  position: relative;
-  width: 100vw;
-  min-height: 100vh;
-  background: #F6F7F8;
-  overflow-x: auto;
-}
-
-/* Back Button */
-.btn_back {
-  position: absolute;
-  left: 290px;
-  top: 67px;
-  width: 40px;
-  height: 40px;
-  background: #FFFFFF;
-  border: 1px solid #000000;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  z-index: 10;
-}
-
-.btn_back:hover {
-  background: #f5f5f5;
-  transform: scale(1.05);
-}
-
-.back_arrow {
-  font-size: 24px;
-  color: #000000;
-}
-
-/* Detail Card */
-.detail_card {
-  box-sizing: border-box;
-  position: absolute;
-  width: 1073.05px;
-  height: auto;
-  min-height: 1315px;
-  left: 276px;
-  top: 36px;
-  padding: 40px;
-  
-  background: #FFFFFF;
-  border: 1px solid #000000;
-  border-radius: 15px;
-}
-
-/* Title */
-.roadshow_title_detail {
-  position: absolute;
-  width: 424px;
-  height: 35px;
-  left: 325px;
-  top: 31px;
-  margin: 0;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 28px;
-  line-height: 35px;
-  text-align: center;
-  
-  color: #000000;
-}
-
-/* Image */
-.roadshow_image_detail {
-  position: absolute;
-  width: 493.21px;
-  height: 495px;
-  left: 290px;
-  top: 90px;
-  overflow: hidden;
-  border-radius: 8px;
-  background: #f5f5f5;
-}
-
-.roadshow_image_detail img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Description */
-.roadshow_description_detail {
-  position: absolute;
-  width: 978px;
-  max-height: 424px;
-  left: 31px;
-  top: 640px;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 500;
-  font-size: 24px;
-  line-height: 30px;
-  
-  color: #000000;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.roadshow_time_detail {
-  position: absolute;
-  width: 978px;
-  left: 31px;
-  top: 1080px;
-  font-family: 'Outfit', sans-serif;
-  font-size: 24px;
-  line-height: 30px;
-  color: #000000;
-}
-
-.loading_message {
-  text-align: center;
-  padding: 40px;
-  color: #6B7280;
-  font-family: 'Inter', sans-serif;
-  font-size: 16px;
-}
-
-.error_message {
-  background: #FEE2E2;
-  border: 1px solid #FECACA;
-  border-radius: 8px;
-  padding: 16px;
-  margin: 20px;
-  color: #DC2626;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-}
-
-/* Activity Images Section */
-.activity_images_grid {
-  position: absolute;
-  width: 978px;
-  left: 31px;
-  top: 1100px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 16px;
-  padding: 0;
-}
-
-.activity_image_card {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  background: #F3F4F6;
-  border-radius: 8px;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #D1D5DB;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.activity_image_card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.activity_image_card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.image_lightbox {
-  position: fixed;
-  inset: 0;
-  z-index: 3000;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: rgba(0, 0, 0, .88);
-}
-.image_lightbox img {
-  max-width: 92vw;
-  max-height: 92vh;
-  object-fit: contain;
-  border-radius: 8px;
-}
-.lightbox_close {
-  position: fixed;
-  top: 20px;
-  right: 24px;
-  width: 40px;
-  height: 40px;
-  border: 0;
-  border-radius: 50%;
-  background: #fff;
-  color: #111;
-  font-size: 28px;
-  cursor: pointer;
-}
-
-@media (max-width: 1100px) {
-  .detail_card {
-    position: relative;
-    width: calc(100% - 32px);
-    min-height: 0;
-    left: auto;
-    top: auto;
-    margin: 96px 16px 32px 82px;
-  }
-  .roadshow_title_detail,
-  .roadshow_image_detail,
-  .roadshow_description_detail,
-  .roadshow_time_detail,
-  .activity_images_grid {
-    position: relative;
-    width: 100%;
-    left: auto;
-    top: auto;
-  }
-  .roadshow_title_detail { height: auto; text-align: left; margin-bottom: 20px; }
-  .roadshow_image_detail { height: min(495px, 60vw); margin-bottom: 20px; }
-  .roadshow_description_detail { max-height: none; margin-bottom: 20px; }
-  .roadshow_time_detail { margin-bottom: 20px; }
-  .btn_back { left: 82px; top: 75px; }
-}
+.user_roadshow_detail { min-height: 100vh; background: #f6f7f8; }
+.detail_main { margin-left: 66px; }
+.detail_content { max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; }
+.detail_toolbar { margin-bottom: 16px; }
+.btn_back { height: 40px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; padding: 0 14px; cursor: pointer; }
+.detail_header { display: flex; justify-content: space-between; gap: 24px; align-items: center; background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.detail_header h1 { margin: 10px 0 6px; }
+.detail_header p { margin: 0; color: #6b7280; }
+.header_poster { width: 180px; height: 180px; object-fit: cover; border-radius: 10px; cursor: zoom-in; }
+.detail_card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+.detail_grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.detail_item { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+.detail_item span { display: block; color: #6b7280; font-size: 12px; margin-bottom: 6px; }
+.description_text { white-space: pre-wrap; }
+.status_pill { border-radius: 999px; padding: 5px 10px; font-size: 12px; }
+.status_active { background: #dcfce7; color: #166534; }
+.status_completed { background: #e5e7eb; color: #374151; }
+.status_upcoming { background: #dbeafe; color: #1d4ed8; }
+.activity_images_grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+.activity_images_grid img { width: 100%; height: 180px; object-fit: cover; border-radius: 8px; cursor: zoom-in; }
+.image_lightbox { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.85); display: grid; place-items: center; }
+.image_lightbox img { max-width: 92vw; max-height: 92vh; object-fit: contain; }
+.lightbox_close { position: absolute; right: 24px; top: 24px; width: 42px; height: 42px; border: 0; border-radius: 50%; background: #fff; font-size: 28px; cursor: pointer; }
+.message { max-width: 1100px; margin: 0 auto; padding: 30px; background: #fff; border-radius: 12px; text-align: center; color: #6b7280; }
+.message.error { color: #dc2626; }
+@media (max-width: 800px) { .detail_grid { grid-template-columns: repeat(2, 1fr); } .detail_header { align-items: flex-start; } }
 </style>

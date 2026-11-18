@@ -1,483 +1,207 @@
 <template>
   <div class="user_mou">
     <UserNavbar />
-    
-    <!-- Main Content Area -->
-    <div class="main_content">
-      <!-- Page Title -->
-      <h1 class="page_title">{{ text('MOU', 'บันทึกความร่วมมือ') }}</h1>
-      
-      <!-- Search Section -->
+    <main class="main_content">
+      <div class="mou_page_actions">
+        <h1>{{ text('MOU', 'บันทึกความร่วมมือ') }}</h1>
+      </div>
+
       <div class="search_filter_section">
         <div class="search_controls">
-          <!-- Text Search -->
-          <div class="search_input_wrapper">
-            <input 
-              type="text" 
-              class="search_input" 
-              :placeholder="text('Text Search (Name)', 'ค้นหาตามชื่อ')"
-              v-model="searchText"
-            />
-          </div>
-          
-          <!-- Action Buttons -->
+          <input
+            v-model="searchText"
+            type="text"
+            class="search_input"
+            :placeholder="text('Search organization...', 'ค้นหาองค์กร...')"
+          />
+          <select v-model="selectedStatus" class="status_select">
+            <option value="">{{ text('All statuses', 'ทุกสถานะ') }}</option>
+            <option value="Active">{{ text('Active', 'ใช้งาน') }}</option>
+            <option value="Inactive">{{ text('Inactive', 'ไม่ใช้งาน') }}</option>
+          </select>
           <div class="action_buttons">
-            <button class="reset_btn" @click="resetSearch">{{ text('Reset', 'รีเซ็ต') }}</button>
-            <button class="search_btn" @click="applySearch">{{ text('Search', 'ค้นหา') }}</button>
+            <button class="reset_btn" type="button" @click="resetFilters">{{ text('Reset', 'รีเซ็ต') }}</button>
+            <button class="search_btn" type="button" @click="applyFilters">{{ text('Search', 'ค้นหา') }}</button>
           </div>
         </div>
       </div>
-      
-      <!-- MOU Cards Grid -->
-      <div class="mou_cards_grid">
-        <div 
-          v-for="mou in paginatedMous" 
-          :key="mou.id" 
-          class="mou_card"
-          @click="viewMouDetails(mou)"
-        >
-          <!-- Organization Logo -->
-          <div class="org_logo">
-            <img :src="mou.logo" :alt="mou.name" />
-          </div>
-          
-          <!-- Organization Info -->
-          <div class="org_name">{{ mou.name }}</div>
-          <div class="org_status active">{{ text('Active', 'ใช้งาน') }}</div>
-          <div class="org_duration">{{ mou.duration }}</div>
-          
-          <!-- Details Button -->
-          <div class="details_section">
-            <span class="details_text">{{ text('Details', 'รายละเอียด') }}</span>
-            <div class="details_arrow"></div>
-          </div>
-        </div>
+
+      <div v-if="loading" class="table_message">{{ text('Loading MOUs...', 'กำลังโหลด MOU...') }}</div>
+      <div v-else-if="error" class="table_message error">{{ error }}</div>
+      <div v-else class="mou_table_container">
+        <table class="mou_table">
+          <thead>
+            <tr>
+              <th>{{ text('Organization', 'องค์กร') }}</th>
+              <th>{{ text('Document Name', 'ชื่อเอกสาร') }}</th>
+              <th>{{ text('Uploaded', 'อัปโหลดเมื่อ') }}</th>
+              <th>{{ text('Status', 'สถานะ') }}</th>
+              <th>{{ text('Actions', 'การดำเนินการ') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="mou in paginatedMous" :key="mou.id" class="mou_table_row">
+              <td>{{ localized(mou.name_en, mou.name_th) }}</td>
+              <td>
+                <button v-if="mou.documentUrl" class="mou_document_link" type="button" @click="openDocument(mou)">
+                  {{ mou.documentName }}
+                </button>
+                <span v-else>{{ mou.documentName }}</span>
+              </td>
+              <td>{{ mou.uploaded }}</td>
+              <td><span class="mou_status_badge" :class="mou.status.toLowerCase()">{{ mou.status }}</span></td>
+              <td>
+                <button v-if="mou.documentUrl" class="mou_action_btn view_btn" type="button" @click="openDocument(mou)">
+                  {{ text('View', 'ดู') }}
+                </button>
+              </td>
+            </tr>
+            <tr v-if="paginatedMous.length === 0">
+              <td colspan="5" class="mou_table_empty">{{ text('No MOU found', 'ไม่พบ MOU') }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      
-      <!-- Pagination Component -->
+
       <div class="mou_pagination_container">
-        <Pagination 
-          :current-page="state.currentPage"
+        <Pagination
+          :current-page="currentPage"
           :total-pages="totalPages"
           :total-items="filteredMous.length"
-          :loading="state.loading"
+          :loading="loading"
           :show-info="false"
           @page-change="handlePageChange"
         />
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import UserNavbar from '../components/UserNavbar.vue'
 import Pagination from '../components/Pagination.vue'
-import { organizationAPI, mouAPI, BACKEND_URL, getOrganizationLogoUrl } from '../services/api'
+import { organizationAPI, mouAPI, getMouFileUrl, getOrganizationLogoUrl } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
 
-const router = useRouter()
-const { text } = useLanguage()
-
-// Reactive state management
-const state = reactive({
-  loading: false,
-  error: null as string | null,
-  currentPage: 1,
-  itemsPerPage: 8
-})
-
-// Reactive filter data
+const { currentLanguage, text } = useLanguage()
+const loading = ref(false)
+const error = ref('')
 const searchText = ref('')
-
-// Organization data (only published MOUs)
+const selectedStatus = ref('')
+const currentPage = ref(1)
+const itemsPerPage = 8
 const mous = ref<any[]>([])
 
-// Computed properties for reactive filtering
+const localized = (english: unknown, thai: unknown) => {
+  const preferred = currentLanguage.value === 'TH' ? thai : english
+  return String(preferred || (currentLanguage.value === 'TH' ? english : thai) || 'N/A')
+}
+
 const filteredMous = computed(() => {
-  let filtered = mous.value
-  
-  if (searchText.value.trim()) {
-    const search = searchText.value.toLowerCase()
-    filtered = filtered.filter(mou => 
-      mou.name.toLowerCase().includes(search)
-    )
-  }
-  
-  return filtered
+  const query = searchText.value.trim().toLowerCase()
+  return mous.value.filter((mou) => {
+    const matchesSearch = !query || localized(mou.name_en, mou.name_th).toLowerCase().includes(query)
+    const matchesStatus = !selectedStatus.value || mou.status === selectedStatus.value
+    return matchesSearch && matchesStatus
+  })
 })
 
-// Paginated MOUs
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredMous.value.length / itemsPerPage)))
 const paginatedMous = computed(() => {
-  const start = (state.currentPage - 1) * state.itemsPerPage
-  const end = start + state.itemsPerPage
-  return filteredMous.value.slice(start, end)
+  const start = (currentPage.value - 1) * itemsPerPage
+  return filteredMous.value.slice(start, start + itemsPerPage)
 })
 
-// Pagination info
-const totalPages = computed(() => 
-  Math.ceil(filteredMous.value.length / state.itemsPerPage)
-)
+watch(searchText, () => { currentPage.value = 1 })
+watch(selectedStatus, () => { currentPage.value = 1 })
 
-// Watchers for reactive updates
-watch(searchText, () => {
-  state.currentPage = 1 // Reset to first page when searching
-})
-
-// Methods
-const handlePageChange = async (page: number) => {
-  if (page >= 1 && page <= totalPages.value && !state.loading) {
-    state.loading = true
-    try {
-      state.currentPage = page
-      await new Promise(resolve => setTimeout(resolve, 150))
-    } finally {
-      state.loading = false
-    }
-  }
-}
-
-const resetSearch = () => {
+const resetFilters = () => {
   searchText.value = ''
+  selectedStatus.value = ''
+  currentPage.value = 1
+}
+const applyFilters = () => { currentPage.value = 1 }
+const handlePageChange = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) currentPage.value = page
 }
 
-const applySearch = () => {
-  state.currentPage = 1
+let documentUrl = ''
+const openDocument = (mou: any) => {
+  if (!mou.id) return
+  window.open(getMouFileUrl(mou.id), '_blank', 'noopener,noreferrer')
 }
 
-const viewMouDetails = (mou: any) => {
-  // Navigate to MOU detail page (read-only)
-  router.push(`/user/mou/${mou.id}`)
-}
+const isPublished = (value: any) => value === true || value === 'true' || value === 1 || value === '1'
 
-// Fetch organizations data (only published MOUs)
-const fetchPublishedMOUs = async () => {
+const loadMOUs = async () => {
+  loading.value = true
+  error.value = ''
   try {
-    const response = await organizationAPI.getAll({ limit: 100 })
-    
-    // Get only published MOUs
-    const mouResponse = await mouAPI.getAll({ limit: 100 })
-    console.log('All MOUs:', mouResponse.data.data)
-    
-    // Create map of published MOUs by organization_id
-    const mouMap = new Map()
-    mouResponse.data.data
-      .filter((mou: any) => mou.is_published === true || mou.is_published === 'true' || mou.is_published === 1)
-      .forEach((mou: any) => {
-        const orgId = mou.organization_id?._id || mou.organization_id
-        console.log(`Published MOU organization_id: ${orgId}`)
-        mouMap.set(String(orgId), mou)
-      })
-    
-    console.log('Published MOU Map keys:', Array.from(mouMap.keys()))
-    
-    // Filter and map organizations that have published MOUs
-    mous.value = response.data.data
-      .filter((item: any) => {
-        const hasPublishedMOU = mouMap.has(String(item._id))
-        console.log(`Org ${item.name_en} (${item._id}): has published MOU = ${hasPublishedMOU}`)
-        return hasPublishedMOU
-      })
-      .map((item: any) => {
-        const mou = mouMap.get(String(item._id))
-        let durationText = 'N/A'
-        
-        if (mou) {
-          // Format dates if available
-          if (mou.start_date && mou.end_date) {
-            const startDate = new Date(mou.start_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
-            const endDate = new Date(mou.end_date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
-            durationText = `Start: ${startDate} End: ${endDate}`
-          }
-        }
-        
-        // Normalize logo path
-        const logoUrl = getOrganizationLogoUrl(item) || '/api/placeholder/95/95'
-        
+    const [organizationsResponse, mouResponse] = await Promise.all([
+      organizationAPI.getAll({ limit: 100 }),
+      mouAPI.getAll({ limit: 100 })
+    ])
+    const organizations = organizationsResponse.data?.data || []
+    const organizationMap = new Map(organizations.map((organization: any) => [String(organization._id), organization]))
+    const records = mouResponse.data?.data || mouResponse.data || []
+
+    mous.value = records
+      .filter((record: any) => isPublished(record.is_published))
+      .map((record: any) => {
+        const reference = record.organization_id
+        const organizationId = typeof reference === 'object' ? reference?._id : reference
+        const organization = typeof reference === 'object'
+          ? reference
+          : organizationMap.get(String(organizationId)) || {}
+        const documentPath = record.mou_file_path || record.mou_path || ''
         return {
-          id: String(mou._id),
-          organizationId: item._id,
-          name: item.name_en || item.name_th || 'No Name',
-          duration: durationText,
-          logo: logoUrl
+          id: String(record._id),
+          name_en: organization.name_en || organization.organization_name_en || '',
+          name_th: organization.name_th || organization.organization_name_th || '',
+          documentName: String(documentPath).split('/').pop() || 'MOU Document',
+          documentUrl: getMouFileUrl(record._id),
+          uploaded: record.createdAt
+            ? new Date(record.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+            : 'N/A',
+          status: isPublished(record.is_published) ? 'Active' : 'Inactive',
+          logo: getOrganizationLogoUrl(organization)
         }
       })
-    console.log('Published MOUs loaded:', mous.value.length, 'items')
-  } catch (error: any) {
-    state.error = error.response?.data?.message || 'Failed to load MOUs'
-    console.error('Loading error:', error)
-    throw error
+  } catch (requestError: any) {
+    error.value = requestError.response?.data?.message || text('Unable to load MOUs.', 'ไม่สามารถโหลด MOU ได้')
+  } finally {
+    loading.value = false
   }
 }
 
-// Lifecycle hooks
-onMounted(async () => {
-  console.log('UserMOU mounted')
-  state.loading = true
-  
-  try {
-    await fetchPublishedMOUs()
-  } catch (error) {
-    // Error already handled
-  } finally {
-    state.loading = false
-  }
+onMounted(loadMOUs)
+onBeforeUnmount(() => {
+  if (documentUrl) URL.revokeObjectURL(documentUrl)
 })
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
-
-.user_mou {
-  position: relative;
-  width: 100vw;
-  min-height: 100vh;
-  background: #F6F7F8;
-}
-
-.main_content {
-  margin-left: 66px;
-  padding: 40px 20px 20px 20px;
-  min-height: 100vh;
-}
-
-.page_title {
-  margin: 0 0 30px 0;
-  font-family: 'Outfit', sans-serif;
-  font-weight: 600;
-  font-size: 40px;
-  line-height: 50px;
-  color: #000000;
-}
-
-/* Search Section */
-.search_filter_section {
-  margin-bottom: 40px;
-}
-
-.search_controls {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.search_input_wrapper {
-  flex: 1;
-  max-width: 800px;
-}
-
-.search_input {
-  box-sizing: border-box;
-  width: 100%;
-  height: 40px;
-  background: #FFFFFF;
-  border: 1px solid #B1B1B1;
-  border-radius: 8px;
-  padding: 10px 16px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 600;
-  font-size: 14px;
-  color: #000000;
-}
-
-.search_input::placeholder {
-  color: #B1B1B1;
-}
-
-.action_buttons {
-  display: flex;
-  gap: 10px;
-}
-
-.reset_btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 20px;
-  background: #FFFFFF;
-  border: 1px solid #B1B1B1;
-  border-radius: 20px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 400;
-  font-size: 14px;
-  color: #000000;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.reset_btn:hover {
-  background: #F5F5F5;
-}
-
-.search_btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 20px;
-  background: #AB1C03;
-  border: none;
-  border-radius: 20px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 400;
-  font-size: 14px;
-  color: #FFFFFF;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.search_btn:hover {
-  background: #8B1502;
-}
-
-/* MOU Cards Grid */
-.mou_cards_grid {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  padding: 0px;
-  gap: 42px;
-  flex-wrap: wrap;
-  margin-bottom: 30px;
-}
-
-.mou_card {
-  position: relative;
-  width: 250px;
-  height: 248px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.mou_card:hover {
-  transform: translateY(-2px);
-}
-
-.mou_card::before {
-  content: '';
-  position: absolute;
-  width: 250px;
-  height: 200px;
-  left: 0px;
-  top: 48px;
-  
-  background: #FFFFFF;
-  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
-  border-radius: 12px;
-  z-index: 1;
-}
-
-.org_logo {
-  position: absolute;
-  width: 95px;
-  height: 95px;
-  left: 77px;
-  top: 0px;
-  z-index: 2;
-}
-
-.org_logo img {
-  width: 100%;
-  height: 100%;
-  border-radius: 47.5px;
-  object-fit: cover;
-  background: #e0e0e0;
-}
-
-.org_name {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 107px;
-  z-index: 2;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 18px;
-  line-height: 23px;
-  letter-spacing: 0.12em;
-  color: #000000;
-  text-align: center;
-  max-width: 200px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.org_status {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  top: 132px;
-  z-index: 2;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 18px;
-  color: #767676;
-}
-
-.org_status.active {
-  color: #00FF5E;
-}
-
-.org_status.inactive {
-  color: #FF0000;
-}
-
-.org_duration {
-  position: absolute;
-  width: 100px;
-  left: 75px;
-  top: 156px;
-  z-index: 2;
-  
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 11px;
-  line-height: 15px;
-  text-align: center;
-  color: #767676;
-}
-
-.details_section {
-  position: absolute;
-  left: 94px;
-  top: 200px;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.details_text {
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 14px;
-  line-height: 18px;
-  color: #000000;
-}
-
-.details_arrow {
-  width: 10px;
-  height: 4.84px;
-  border: 1px solid #000000;
-  transform: rotate(90deg);
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
-}
-
-/* Pagination */
-.mou_pagination_container {
-  display: flex;
-  justify-content: center;
-  margin-top: 40px;
-  margin-bottom: 50px;
-}
+.user_mou { min-height: 100vh; background: #f6f7f8; }
+.main_content { margin-left: 66px; padding: 28px 24px 60px; }
+.mou_page_actions { max-width: 1100px; margin: 0 auto 18px; }
+.mou_page_actions h1 { margin: 0; font: 600 40px/50px Outfit, sans-serif; }
+.search_filter_section { max-width: 1100px; margin: 0 auto 20px; background: #fff; border-radius: 12px; padding: 16px; }
+.search_controls { display: grid; grid-template-columns: minmax(240px, 1fr) 180px auto; gap: 12px; align-items: center; }
+.search_input, .status_select { height: 42px; border: 1px solid #d1d5db; border-radius: 8px; padding: 0 12px; background: #fff; }
+.action_buttons { display: flex; gap: 8px; }
+.reset_btn, .search_btn, .mou_action_btn { border-radius: 8px; height: 40px; padding: 0 14px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; }
+.search_btn { background: #111827; color: #fff; border-color: #111827; }
+.mou_table_container { max-width: 1100px; margin: 0 auto; overflow-x: auto; background: #fff; border-radius: 12px; }
+.mou_table { width: 100%; border-collapse: collapse; }
+.mou_table th, .mou_table td { padding: 14px 12px; text-align: left; border-bottom: 1px solid #edf0f2; }
+.mou_document_link { border: 0; background: none; color: #2563eb; cursor: pointer; padding: 0; }
+.mou_status_badge { display: inline-block; border-radius: 999px; padding: 5px 10px; font-size: 12px; }
+.mou_status_badge.active { background: #dcfce7; color: #166534; }
+.mou_status_badge.inactive { background: #fee2e2; color: #991b1b; }
+.view_btn { color: #2563eb; }
+.mou_table_empty, .table_message { text-align: center; padding: 30px; color: #6b7280; }
+.table_message.error { max-width: 1100px; margin: 0 auto; background: #fff; color: #dc2626; border-radius: 12px; }
+.mou_pagination_container { max-width: 1100px; margin: 16px auto 0; }
+@media (max-width: 900px) { .main_content { margin-left: 66px; } .search_controls { grid-template-columns: 1fr; } }
 </style>
-
-

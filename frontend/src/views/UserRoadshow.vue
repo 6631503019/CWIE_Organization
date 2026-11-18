@@ -1,396 +1,164 @@
 <template>
   <div class="user_roadshow">
     <UserNavbar />
-    <AdminTopBar />
-    
-    <main class="roadshow_main">
+    <main class="main_content">
       <section class="roadshow_header_section">
-        <div>
-          <h1 class="roadshow_title">{{ text('Roadshow', 'โรดโชว์') }}</h1>
-          <p class="roadshow_subtitle">{{ text('View public roadshow events.', 'ดูข้อมูลกิจกรรมโรดโชว์ที่เผยแพร่') }}</p>
-        </div>
+        <h1>{{ text('Roadshow', 'โรดโชว์') }}</h1>
+        <p>{{ text('View public roadshow events.', 'ดูข้อมูลกิจกรรมโรดโชว์ที่เผยแพร่') }}</p>
       </section>
+
       <div class="roadshow_search_bar">
-        <input v-model="searchText" type="text" :placeholder="text('Search roadshow title or organization...', 'ค้นหาชื่อโรดโชว์หรือองค์กร...')" />
+        <input
+          v-model="searchText"
+          type="text"
+          :placeholder="text('Search roadshow title or organization...', 'ค้นหาชื่อโรดโชว์หรือองค์กร...')"
+        />
       </div>
 
-    <!-- Roadshow Cards Container -->
-    <div class="roadshow_cards_container">
-      <div v-if="state.error" class="error_message">
-        {{ state.error }}
-      </div>
-      <div v-if="state.loading && roadshows.length === 0" class="loading_message">
-        {{ text('Loading roadshows...', 'กำลังโหลดโรดโชว์...') }}
-      </div>
-      <div 
-        v-for="roadshow in paginatedRoadshows" 
-        :key="roadshow.id" 
-        class="roadshow_large_card"
-        @click="$router.push(`/user/roadshow/${roadshow.id}`)"
-      >
-        <!-- Roadshow Image -->
-        <div class="roadshow_image_large">
-          <img 
-            :src="roadshow.image" 
-            :alt="roadshow.title"
-            @error="(e) => (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27271%27 height=%27272%27%3E%3Crect fill=%27%23ddd%27 width=%27271%27 height=%27272%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'"
-          />
-        </div>
+      <div v-if="loading" class="message">{{ text('Loading roadshows...', 'กำลังโหลดโรดโชว์...') }}</div>
+      <div v-else-if="error" class="message error">{{ error }}</div>
+      <section v-else class="roadshow_table_wrapper">
+        <table class="roadshow_table">
+          <thead>
+            <tr>
+              <th>{{ text('Organization', 'องค์กร') }}</th>
+              <th>{{ text('Roadshow title', 'ชื่อโรดโชว์') }}</th>
+              <th>{{ text('Date', 'วันที่') }}</th>
+              <th>{{ text('Time', 'เวลา') }}</th>
+              <th>{{ text('Location', 'สถานที่') }}</th>
+              <th>{{ text('Status', 'สถานะ') }}</th>
+              <th>{{ text('Actions', 'การดำเนินการ') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="roadshow in paginatedRoadshows" :key="roadshow.id">
+              <td>{{ localized(roadshow.organization_en, roadshow.organization_th) }}</td>
+              <td>{{ localized(roadshow.title_en, roadshow.title_th) }}</td>
+              <td>{{ formatDate(roadshow.event_date || roadshow.posted_date) }}</td>
+              <td>{{ formatRoadshowTime(roadshow.time) || '—' }}</td>
+              <td>{{ roadshow.location || '—' }}</td>
+              <td><span class="status_pill" :class="statusClass(roadshow)">{{ statusText(roadshow) }}</span></td>
+              <td><button class="table_action" type="button" @click="viewRoadshow(roadshow.id)">{{ text('View', 'ดู') }}</button></td>
+            </tr>
+            <tr v-if="paginatedRoadshows.length === 0">
+              <td colspan="7" class="empty_table_cell">{{ text('No roadshows found.', 'ไม่พบโรดโชว์') }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
 
-        <!-- Roadshow Content -->
-        <div class="roadshow_content">
-          <h2 class="roadshow_title_large">{{ roadshow.title }}</h2>
-          <p class="roadshow_description">{{ roadshow.description }}</p>
-        </div>
+      <div class="roadshow_pagination_container">
+        <Pagination
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :total-items="filteredRoadshows.length"
+          :loading="loading"
+          :show-info="false"
+          @page-change="handlePageChange"
+        />
       </div>
-    </div>
-
-    <!-- Pagination -->
-    <div class="roadshow_pagination_container">
-      <Pagination 
-        :current-page="state.currentPage"
-        :total-pages="totalPages"
-        :total-items="roadshows.length"
-        :loading="state.loading"
-        :show-info="false"
-        @page-change="handlePageChange"
-      />
-    </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
-import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import Pagination from '../components/Pagination.vue'
-import { roadshowAPI, fetchRoadshowPosterBlob } from '../services/api'
+import { roadshowAPI } from '../services/api'
+import { formatRoadshowTime } from '../utils/roadshowTime'
 import { useLanguage } from '../composables/useLanguage'
 
 const router = useRouter()
-const { text } = useLanguage()
-
-const state = reactive({
-  loading: false,
-  error: null as string | null,
-  currentPage: 1,
-  itemsPerPage: 2
-})
-
+const { currentLanguage, text } = useLanguage()
 const roadshows = ref<any[]>([])
+const loading = ref(false)
+const error = ref('')
 const searchText = ref('')
+const currentPage = ref(1)
+const itemsPerPage = 8
+
+const localized = (english: unknown, thai: unknown) =>
+  String((currentLanguage.value === 'TH' ? thai : english) || (currentLanguage.value === 'TH' ? english : thai) || '—')
 
 const filteredRoadshows = computed(() => {
-  const search = searchText.value.trim().toLowerCase()
-  if (!search) return roadshows.value
-  return roadshows.value.filter((item: any) =>
-    String(item.title || '').toLowerCase().includes(search) ||
-    String(item.description || '').toLowerCase().includes(search)
+  const query = searchText.value.trim().toLowerCase()
+  if (!query) return roadshows.value
+  return roadshows.value.filter((roadshow) =>
+    String(localized(roadshow.title_en, roadshow.title_th)).toLowerCase().includes(query) ||
+    String(localized(roadshow.organization_en, roadshow.organization_th)).toLowerCase().includes(query) ||
+    String(roadshow.location || '').toLowerCase().includes(query)
   )
 })
 
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredRoadshows.value.length / itemsPerPage)))
 const paginatedRoadshows = computed(() => {
-  const start = (state.currentPage - 1) * state.itemsPerPage
-  const end = start + state.itemsPerPage
-  return filteredRoadshows.value.slice(start, end)
+  const start = (currentPage.value - 1) * itemsPerPage
+  return filteredRoadshows.value.slice(start, start + itemsPerPage)
 })
 
-const totalPages = computed(() => 
-  Math.ceil(filteredRoadshows.value.length / state.itemsPerPage)
-)
+watch(searchText, () => { currentPage.value = 1 })
+const handlePageChange = (page: number) => {
+  if (page >= 1 && page <= totalPages.value) currentPage.value = page
+}
+const viewRoadshow = (id: string) => router.push(`/user/roadshow/${id}`)
 
-const handlePageChange = async (page: number) => {
-  if (page >= 1 && page <= totalPages.value && !state.loading) {
-    state.loading = true
-    try {
-      state.currentPage = page
-      await new Promise(resolve => setTimeout(resolve, 150))
-    } finally {
-      state.loading = false
-    }
-  }
+const formatDate = (value: any) => {
+  if (!value) return '—'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-const fetchPublicRoadshows = async () => {
+const statusText = (roadshow: any) => {
+  if (roadshow.deleted_date) {
+    const deleted = new Date(roadshow.deleted_date)
+    if (!Number.isNaN(deleted.getTime()) && deleted < new Date()) return text('Completed', 'จบแล้ว')
+  }
+  return roadshow.is_public ? text('Active', 'ใช้งาน') : text('Upcoming', 'กำลังจะมา')
+}
+
+const statusClass = (roadshow: any) => {
+  const status = statusText(roadshow)
+  if (status === text('Completed', 'จบแล้ว')) return 'status_completed'
+  if (status === text('Active', 'ใช้งาน')) return 'status_active'
+  return 'status_upcoming'
+}
+
+const isPublic = (value: any) => value === true || value === 'true' || value === 1 || value === '1'
+
+const loadRoadshows = async () => {
+  loading.value = true
+  error.value = ''
   try {
     const response = await roadshowAPI.getAll({ limit: 100 })
-    console.log('All public roadshows:', response.data.data)
-    
-    roadshows.value = await Promise.all(response.data.data
-      .filter((item: any) => {
-        return item.is_public === true || item.is_public === 'true' || item.is_public === 1
-      }))
-      .map(async (item: any) => {
-        let imageUrl = 'data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27271%27 height=%27272%27%3E%3Crect fill=%27%23ddd%27 width=%27271%27 height=%27272%27/%3E%3Ctext fill=%27%23999%27 x=%2750%25%27 y=%2750%25%27 dominant-baseline=%27middle%27 text-anchor=%27middle%27 font-family=%27sans-serif%27 font-size=%2720%27%3ENo Image%3C/text%3E%3C/svg%3E'
-        try {
-          imageUrl = await fetchRoadshowPosterBlob(item._id)
-        } catch {}
-        
-        return {
-          id: item._id,
-          title: item.topic || 'No Title',
-          description: item.details || 'No description available',
-          image: imageUrl,
-          date: item.event_date,
-          deleted_date: item.deleted_date || null
-        }
-      })
-    
-    console.log('Public roadshows loaded:', roadshows.value.length, 'items')
-  } catch (error: any) {
-    state.error = error.response?.data?.message || 'Failed to load roadshows'
-    console.error('Loading error:', error)
-    throw error
+    roadshows.value = (response.data?.data || []).filter((roadshow: any) => isPublic(roadshow.is_public))
+  } catch (requestError: any) {
+    error.value = requestError.response?.data?.message || text('Unable to load roadshows.', 'ไม่สามารถโหลดโรดโชว์ได้')
+  } finally {
+    loading.value = false
   }
 }
 
-onMounted(async () => {
-  console.log('UserRoadshow mounted')
-  state.loading = true
-  
-  try {
-    await fetchPublicRoadshows()
-  } catch (error) {
-    // Error already handled
-  } finally {
-    state.loading = false
-  }
-})
+onMounted(loadRoadshows)
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap');
-
-.user_roadshow {
-  position: relative;
-  width: 100vw;
-  height: 918px;
-  background: #F6F7F8;
-  overflow-x: auto;
-}
-
-.roadshow_title {
-  position: absolute;
-  width: 188px;
-  height: 50px;
-  left: 251px;
-  top: 58px;
-  margin: 0;
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 40px;
-  line-height: 50px;
-  color: #000000;
-}
-
-.roadshow_cards_container {
-  position: absolute;
-  left: 273px;
-  top: 152px;
-  width: 1035px;
-}
-
-.error_message {
-  background: #FEE2E2;
-  border: 1px solid #FECACA;
-  border-radius: 8px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-  color: #DC2626;
-  font-family: 'Inter', sans-serif;
-  font-size: 14px;
-}
-
-.loading_message {
-  text-align: center;
-  padding: 20px;
-  color: #6B7280;
-  font-family: 'Inter', sans-serif;
-  font-size: 16px;
-}
-
-.roadshow_large_card {
-  position: relative;
-  width: 1035px;
-  height: 287px;
-  margin-bottom: 25px;
-  background: #FFFFFF;
-  border: 1px solid #000000;
-  border-radius: 15px;
-  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-  display: flex;
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.roadshow_large_card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.15);
-}
-
-.roadshow_image_large {
-  width: 270.72px;
-  height: 271.7px;
-  margin: 8px 0 0 37px;
-  overflow: hidden;
-  border-radius: 8px;
-  background: #f5f5f5;
-}
-
-.roadshow_image_large img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.roadshow_content {
-  flex: 1;
-  padding: 17px 20px 20px 40px;
-  display: flex;
-  flex-direction: column;
-}
-
-.roadshow_title_large {
-  margin: 0 0 15px 0;
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 600;
-  font-size: 32px;
-  line-height: 40px;
-  color: #000000;
-}
-
-.roadshow_description {
-  margin: 0;
-  font-family: 'Outfit', sans-serif;
-  font-style: normal;
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 25px;
-  color: #000000;
-  flex: 1;
-}
-
-.roadshow_pagination_container {
-  position: absolute;
-  left: 1090px;
-  top: 780px;
-  width: 218px;
-  height: 28px;
-}
-
-/* Countdown Timer Badge */
-.countdown_badge {
-  position: absolute;
-  bottom: 12px;
-  right: 12px;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 18px;
-  color: #FFFFFF;
-  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s ease;
-}
-
-.countdown_badge.status_safe {
-  background: #10B981;
-}
-
-.countdown_badge.status_warning {
-  background: #F59E0B;
-}
-
-.countdown_badge.status_critical {
-  background: #EF4444;
-}
-
-.countdown_badge.status_expired {
-  background: #6B7280;
-}
-
-.countdown_number {
-  display: block;
-  line-height: 1;
-}
-
-.roadshow_main {
-  margin-left: 66px;
-  padding: 92px 32px 32px;
-  min-height: 100vh;
-  box-sizing: border-box;
-}
-.roadshow_header_section {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-.roadshow_title {
-  position: static;
-  width: auto;
-  height: auto;
-  font-size: 32px;
-  line-height: 40px;
-}
-.roadshow_subtitle {
-  margin: 4px 0 0;
-  color: #777;
-  font-size: 14px;
-}
-.roadshow_search_bar {
-  position: relative;
-  left: auto;
-  top: auto;
-  width: min(720px, 100%);
-  height: 44px;
-  margin: 0 0 20px;
-}
-.roadshow_search_bar input {
-  box-sizing: border-box;
-  width: 100%;
-  height: 44px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  padding: 0 16px;
-  font: 600 14px Inter, sans-serif;
-}
-.roadshow_cards_container {
-  position: relative;
-  left: auto;
-  top: auto;
-  width: 100%;
-  max-width: 1100px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-.roadshow_large_card {
-  position: relative;
-  left: auto;
-  top: auto;
-  width: 100%;
-  height: auto;
-  min-height: 270px;
-}
-.roadshow_pagination_container {
-  position: relative;
-  left: auto;
-  top: auto;
-  width: 100%;
-  margin-top: 24px;
-}
-@media (max-width: 700px) {
-  .roadshow_main { margin-left: 66px; padding: 84px 12px 24px; }
-  .roadshow_cards_container { grid-template-columns: 1fr; }
-}
+.user_roadshow { min-height: 100vh; background: #f6f7f8; }
+.main_content { margin-left: 66px; padding: 28px 24px 60px; }
+.roadshow_header_section h1 { margin: 0; font: 600 40px/50px Outfit, sans-serif; }
+.roadshow_header_section p { margin: 6px 0 18px; color: #6b7280; }
+.roadshow_search_bar { max-width: 1100px; margin: 0 auto 16px; }
+.roadshow_search_bar input { width: 100%; height: 44px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 8px; padding: 0 12px; background: #fff; }
+.roadshow_table_wrapper { max-width: 1100px; margin: 0 auto; overflow-x: auto; background: #fff; border-radius: 12px; }
+.roadshow_table { width: 100%; border-collapse: collapse; min-width: 900px; }
+.roadshow_table th, .roadshow_table td { padding: 14px 12px; text-align: left; border-bottom: 1px solid #edf0f2; }
+.status_pill { border-radius: 999px; padding: 5px 10px; font-size: 12px; }
+.status_active { background: #dcfce7; color: #166534; }
+.status_completed { background: #e5e7eb; color: #374151; }
+.status_upcoming { background: #dbeafe; color: #1d4ed8; }
+.table_action { height: 34px; border: 1px solid #d1d5db; border-radius: 8px; background: #fff; color: #2563eb; cursor: pointer; }
+.empty_table_cell, .message { text-align: center; padding: 30px; color: #6b7280; }
+.message.error { max-width: 1100px; margin: 0 auto; background: #fff; color: #dc2626; border-radius: 12px; }
+.roadshow_pagination_container { max-width: 1100px; margin: 16px auto 0; }
 </style>
-
