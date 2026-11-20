@@ -88,7 +88,6 @@ const save = async () => {
     data.append('time', `${form.start_time}-${form.end_time}`)
     data.append('event_date', form.event_date)
     if (props.roadshow.posted_date) data.append('posted_date', String(props.roadshow.posted_date).slice(0, 10))
-    if (props.roadshow.organization_id && typeof props.roadshow.organization_id !== 'object') data.append('organization_id', props.roadshow.organization_id)
     if (poster.value) data.append('poster', poster.value)
     await roadshowAPI.update(String(props.roadshow._id), data)
     emit('update:modelValue', false)

@@ -24,9 +24,6 @@
           <label>{{ text('Organization (TH)', 'องค์กร (TH)') }}
             <input v-model.trim="form.organization_th" type="text" />
           </label>
-          <label>{{ text('Organization reference ID', 'รหัสอ้างอิงองค์กร') }}
-            <input v-model.trim="form.organization_id" type="text" placeholder="Optional" />
-          </label>
           <label class="wide">{{ text('Location', 'สถานที่') }}
             <input v-model.trim="form.location" type="text" />
           </label>
@@ -140,7 +137,6 @@ const form = reactive({
   details: '',
   organization_en: '',
   organization_th: '',
-  organization_id: '',
   location: '',
   event_date: '',
   posted_date: '',
@@ -165,9 +161,6 @@ const loadInitialValues = () => {
   revokeBlobUrls()
   const item = props.roadshow || {}
   const times = splitRoadshowTime(item.time)
-  const organizationId = typeof item.organization_id === 'object'
-    ? item.organization_id?._id
-    : item.organization_id
   Object.assign(form, {
     topic: item.topic || item.title_en || item.title_th || '',
     title_en: item.title_en || item.topic || '',
@@ -175,7 +168,6 @@ const loadInitialValues = () => {
     details: item.details || '',
     organization_en: item.organization_en || item.organization || '',
     organization_th: item.organization_th || '',
-    organization_id: organizationId ? String(organizationId) : '',
     location: item.location || '',
     event_date: dateOnly(item.event_date || item.posted_date),
     posted_date: dateOnly(item.posted_date) || dateOnly(new Date().toISOString()),
@@ -285,7 +277,6 @@ const save = async () => {
     payload.append('details', form.details)
     payload.append('organization_en', form.organization_en)
     payload.append('organization_th', form.organization_th)
-    if (form.organization_id) payload.append('organization_id', form.organization_id)
     payload.append('location', form.location)
     const normalizedTime = normalizeRoadshowTime(`${form.start_time} - ${form.end_time}`)
     if (!normalizedTime) {
