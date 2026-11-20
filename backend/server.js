@@ -46,12 +46,34 @@ app.use(helmet({
 }));
 
 // CORS configuration - must be before rate limiter
-app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+const configuredFrontendOrigins = String(process.env.FRONTEND_URL || '')
+    .split(',')
+    .map(origin => origin.trim())
+    .filter(Boolean);
+const allowedFrontendOrigins = new Set([
+    ...configuredFrontendOrigins,
+    'https://cwie-organization.onrender.com',
+    'http://localhost:5173'
+]);
+const corsOptions = {
+    origin: (requestOrigin, callback) => {
+        if (!requestOrigin || allowedFrontendOrigins.has(requestOrigin)) {
+            return callback(null, true);
+        }
+        return callback(null, false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Cache-Control',
+        'Accept',
+        'X-Requested-With'
+    ],
+    optionsSuccessStatus: 204
+};
+app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
