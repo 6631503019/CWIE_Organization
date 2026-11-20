@@ -113,6 +113,7 @@
       :mode="bln_Show_Create_Modal ? 'create' : 'edit'"
       :roadshow="obj_Editing_Roadshow"
       :poster-url="editingPosterUrl"
+      :activity-urls="obj_Editing_Roadshow ? (roadshowActivityBlobs[String(obj_Editing_Roadshow.id)] || []) : []"
       @saved="Handle_Roadshow_Form_Saved"
       @update:model-value="Handle_Roadshow_Form_Closed"
     />
@@ -394,6 +395,16 @@ const str_Editing_Roadshow_ID = ref<string | null>(null)
 const arr_Roadshows = ref<any[]>([])
 const roadshowPosterBlobs = ref<Record<string, string>>({})
 const roadshowActivityBlobs = ref<Record<string, string[]>>({})
+const Revoke_Roadshow_Image_Blobs = (): void => {
+  Object.values(roadshowPosterBlobs.value).forEach(url => {
+    if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+  })
+  Object.values(roadshowActivityBlobs.value).forEach(urls => {
+    urls.forEach(url => {
+      if (url.startsWith('blob:')) URL.revokeObjectURL(url)
+    })
+  })
+}
 const Get_Editing_Activity_Blob = (index: number): string => {
   const roadshowId = str_Editing_Roadshow_ID.value
   if (!roadshowId) return CONST_EMPTY_IMAGE_SVG
@@ -1167,6 +1178,7 @@ const Obj_Create_Roadshow_From_Response = (obj_Response_Data: any): any => {
   const str_Poster_Path = obj_Response_Data.poster_path || ''
   const obj_Result = {
     id: obj_Response_Data._id,
+    topic: obj_Response_Data.topic || '',
     title_en: obj_Response_Data.title_en || obj_Response_Data.topic || '',
     title_th: obj_Response_Data.title_th || '',
     title: currentLanguage.value === 'TH'
@@ -1176,6 +1188,8 @@ const Obj_Create_Roadshow_From_Response = (obj_Response_Data: any): any => {
     image: Str_Get_Image_URL(str_Poster_Path),
     imageName: str_Poster_Path ? String(str_Poster_Path).replace(/\\/g, '/').split('/').pop() || 'Poster' : '—',
     isPublic: obj_Response_Data.is_public,
+    is_public: obj_Response_Data.is_public,
+    organization_id: obj_Response_Data.organization_id || null,
     event_date: Extract_Date_Part(obj_Response_Data.event_date),
     posted_date: Extract_Date_Part(obj_Response_Data.posted_date),
     deleted_date: Extract_Date_Part(obj_Response_Data.deleted_date),
@@ -1412,6 +1426,7 @@ const Load_Roadshows_From_API = async (): Promise<void> => {
     arr_Roadshows.value = obj_Result.data.map((obj_Item: any) => 
       Obj_Create_Roadshow_From_Response(obj_Item)
     )
+    Revoke_Roadshow_Image_Blobs()
     roadshowPosterBlobs.value = {}
     roadshowActivityBlobs.value = {}
     await Promise.all(obj_Result.data.map(async (item: any) => {
@@ -1513,6 +1528,9 @@ onBeforeUnmount(() => {
     
     // Step 3: Reset form data
     Reset_Form()
+    Revoke_Roadshow_Image_Blobs()
+    roadshowPosterBlobs.value = {}
+    roadshowActivityBlobs.value = {}
   } catch (error) {
     console.error('Error in onBeforeUnmount:', error)
   }
