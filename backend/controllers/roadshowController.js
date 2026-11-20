@@ -45,6 +45,7 @@ const getRoadshows = async (req, res, next) => {
         const total = await Roadshow.countDocuments(filter);
         const pages = Math.ceil(total / limit);
 
+        res.setHeader('Cache-Control', 'no-store');
         res.status(200).json({
             success: true,
             message: 'Roadshows retrieved successfully',
@@ -85,6 +86,7 @@ const getRoadshow = async (req, res, next) => {
             );
         }
 
+        res.setHeader('Cache-Control', 'no-store');
         res.status(200).json({
             success: true,
             message: 'Roadshow retrieved successfully',
@@ -351,6 +353,16 @@ const updateRoadshow = async (req, res, next) => {
         // Do not allow clients to directly overwrite GridFS references.
         delete req.body.poster_gridfs_id;
         delete req.body.activity_gridfs_ids;
+        const existingActivityGridfsIds = Array.isArray(
+            roadshow.activity_gridfs_ids
+        )
+            ? roadshow.activity_gridfs_ids
+            : [];
+        const existingActivityLegacyPaths = Array.isArray(
+            roadshow.activity_image_paths
+        )
+            ? roadshow.activity_image_paths
+            : [];
 
         // Upload new poster.
         if (req.files?.poster?.length) {
@@ -363,8 +375,8 @@ const updateRoadshow = async (req, res, next) => {
             req.body.poster_path = null;
         }
 
-        // Upload replacement activity images.
-        // If no new images are uploaded, existing images remain unchanged.
+        // Append new activity images to the existing set. Existing images are
+        // removed only when their indexes are explicitly submitted below.
         if (req.files?.activity_image?.length) {
             const newActivityIds = [];
 
@@ -378,17 +390,37 @@ const updateRoadshow = async (req, res, next) => {
                 newlyUploadedActivityIds.push(id);
             }
 
-            req.body.activity_gridfs_ids = newActivityIds;
-            req.body.activity_image_paths = [];
+            if (existingActivityLegacyPaths.length > 0) {
+                const existingActivityCount = Math.max(
+                    existingActivityGridfsIds.length,
+                    existingActivityLegacyPaths.length
+                );
+                req.body.activity_gridfs_ids = [
+                    ...Array.from(
+                        { length: existingActivityCount },
+                        (_, index) => existingActivityGridfsIds[index] || null
+                    ),
+                    ...newActivityIds
+                ];
+                req.body.activity_image_paths = [
+                    ...Array.from(
+                        { length: existingActivityCount },
+                        (_, index) => existingActivityLegacyPaths[index] || null
+                    ),
+                    ...Array(newActivityIds.length).fill(null)
+                ];
+            } else {
+                req.body.activity_gridfs_ids = [
+                    ...existingActivityGridfsIds,
+                    ...newActivityIds
+                ];
+            }
         }
 
         // Handle deletion of selected activity images.
         const removedGridfsIds = [];
 
-        if (
-            !req.files?.activity_image?.length &&
-            req.body.delete_activity_image_indices !== undefined
-        ) {
+        if (req.body.delete_activity_image_indices !== undefined) {
             let deleteIndices;
 
             try {
@@ -417,28 +449,26 @@ const updateRoadshow = async (req, res, next) => {
                     )
             );
 
-            const existingGridfsIds = Array.isArray(
-                roadshow.activity_gridfs_ids
+            const currentGridfsIds = Array.isArray(
+                req.body.activity_gridfs_ids
             )
-                ? roadshow.activity_gridfs_ids
-                : [];
-
-            const existingLegacyPaths = Array.isArray(
-                roadshow.activity_image_paths
+                ? req.body.activity_gridfs_ids
+                : existingActivityGridfsIds;
+            const currentLegacyPaths = Array.isArray(
+                req.body.activity_image_paths
             )
-                ? roadshow.activity_image_paths
-                : [];
+                ? req.body.activity_image_paths
+                : existingActivityLegacyPaths;
 
-            req.body.activity_gridfs_ids = existingGridfsIds.filter(
+            req.body.activity_gridfs_ids = currentGridfsIds.filter(
+                (_, index) => !indexSet.has(index)
+            );
+            req.body.activity_image_paths = currentLegacyPaths.filter(
                 (_, index) => !indexSet.has(index)
             );
 
-            req.body.activity_image_paths = existingLegacyPaths.filter(
-                (_, index) => !indexSet.has(index)
-            );
-
-            existingGridfsIds.forEach((id, index) => {
-                if (indexSet.has(index)) {
+            existingActivityGridfsIds.forEach((id, index) => {
+                if (id && indexSet.has(index)) {
                     removedGridfsIds.push(id);
                 }
             });
@@ -476,27 +506,8 @@ const updateRoadshow = async (req, res, next) => {
             });
         }
 
-        // If new activity images replaced the old set, delete old GridFS images.
-        if (req.files?.activity_image?.length) {
-            const oldActivityIds = Array.isArray(
-                roadshow.activity_gridfs_ids
-            )
-                ? roadshow.activity_gridfs_ids
-                : [];
-
-            await Promise.all(
-                oldActivityIds.map(id =>
-                    deleteGridFSFile(id, 'roadshowFiles').catch(error => {
-                        console.error(
-                            '[Roadshow] Failed to delete old activity image:',
-                            id,
-                            error.message
-                        );
-                    })
-                )
-            );
-        } else if (removedGridfsIds.length > 0) {
-            // Delete only selected activity images.
+        // Delete only activity images explicitly removed by the admin.
+        if (removedGridfsIds.length > 0) {
             await Promise.all(
                 removedGridfsIds.map(id =>
                     deleteGridFSFile(id, 'roadshowFiles').catch(error => {
@@ -662,7 +673,7 @@ const streamRoadshowImage = async (
 
             res.setHeader(
                 'Cache-Control',
-                'private, max-age=300'
+                'no-store, no-cache, must-revalidate, proxy-revalidate'
             );
 
             res.setHeader(
@@ -728,7 +739,7 @@ const streamRoadshowImage = async (
 
             res.setHeader(
                 'Cache-Control',
-                'private, max-age=300'
+                'no-store, no-cache, must-revalidate, proxy-revalidate'
             );
 
             res.setHeader(

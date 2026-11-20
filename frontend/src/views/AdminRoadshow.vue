@@ -1184,7 +1184,8 @@ const Obj_Create_Roadshow_From_Response = (obj_Response_Data: any): any => {
     title: currentLanguage.value === 'TH'
       ? obj_Response_Data.title_th || obj_Response_Data.title_en || obj_Response_Data.topic
       : obj_Response_Data.title_en || obj_Response_Data.title_th || obj_Response_Data.topic,
-    description: obj_Response_Data.details,
+    details: obj_Response_Data.details || '',
+    description: obj_Response_Data.details || '',
     image: Str_Get_Image_URL(str_Poster_Path),
     imageName: str_Poster_Path ? String(str_Poster_Path).replace(/\\/g, '/').split('/').pop() || 'Poster' : '—',
     isPublic: obj_Response_Data.is_public,
@@ -1415,7 +1416,7 @@ const Load_Roadshows_From_API = async (): Promise<void> => {
   try {
     const str_Fetch_URL = `${CONST_API_BASE_URL}${CONST_API_ROADSHOWS_ENDPOINT}${CONST_API_LIMIT_QUERY}`
     
-    const obj_Response = await fetch(str_Fetch_URL)
+    const obj_Response = await fetch(str_Fetch_URL, { cache: 'no-store' })
     if (!obj_Response.ok) {
       throw new Error(`Failed to load roadshows: ${obj_Response.status}`)
     }
@@ -1460,6 +1461,7 @@ const Setup_Auto_Refresh = (): void => {
   try {
     obj_state.autoRefreshInterval = window.setInterval(async () => {
       try {
+        if (roadshowFormOpen.value) return
         console.log('Auto-refresh roadshows...')
         await Load_Roadshows_From_API()
       } catch (error) {

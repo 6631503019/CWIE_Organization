@@ -193,7 +193,15 @@ const loadInitialValues = () => {
   errorMessage.value = ''
 }
 
-watch(() => [props.modelValue, props.mode, props.roadshow, props.posterUrl, props.activityUrls], loadInitialValues, { immediate: true })
+watch(
+  () => [
+    props.modelValue,
+    props.mode,
+    props.roadshow?._id || props.roadshow?.id || ''
+  ],
+  loadInitialValues,
+  { immediate: true }
+)
 
 const validateImage = (file: File) => {
   const validTypes = ['image/jpeg', 'image/png', 'image/webp']
@@ -292,7 +300,7 @@ const save = async () => {
     if (form.deleted_date) payload.append('deleted_date', form.deleted_date)
     if (posterFile.value) payload.append('poster', posterFile.value)
     activityFiles.value.forEach(file => payload.append('activity_image', file))
-    if (removedActivityIndices.value.length && !activityFiles.value.length) {
+    if (removedActivityIndices.value.length) {
       payload.append('delete_activity_image_indices', JSON.stringify(removedActivityIndices.value))
     }
 

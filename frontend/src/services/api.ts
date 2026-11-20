@@ -364,9 +364,14 @@ export const obj_Review_API = {
  */
 export const obj_Roadshow_API = {
     getAll: (obj_Params?: any) =>
-        obj_API_Client.get('/roadshows', { params: obj_Params }),
+        obj_API_Client.get('/roadshows', {
+            params: obj_Params,
+            headers: { 'Cache-Control': 'no-cache' }
+        }),
     getById: (str_ID: string) =>
-        obj_API_Client.get(`/roadshows/${str_ID}`),
+        obj_API_Client.get(`/roadshows/${str_ID}`, {
+            headers: { 'Cache-Control': 'no-cache' }
+        }),
     create: (obj_Form_Data: FormData) =>
         obj_API_Client.post('/roadshows', obj_Form_Data, {
             headers: { 'Content-Type': 'multipart/form-data' }
@@ -450,7 +455,10 @@ export const fetchRoadshowPosterBlob = async (roadshowId: unknown): Promise<stri
     if (!roadshowId) return ''
     const response = await obj_API_Client.get(
         `/roadshows/${encodeURIComponent(String(roadshowId))}/image/poster`,
-        { responseType: 'blob' }
+        {
+            responseType: 'blob',
+            headers: { 'Cache-Control': 'no-cache' }
+        }
     )
     if (!(response.data instanceof Blob) || (
         response.data.type &&
@@ -466,7 +474,10 @@ export const fetchRoadshowActivityBlob = async (roadshowId: unknown, index: numb
     if (!roadshowId) return ''
     const response = await obj_API_Client.get(
         `/roadshows/${encodeURIComponent(String(roadshowId))}/image/activity/${index}`,
-        { responseType: 'blob' }
+        {
+            responseType: 'blob',
+            headers: { 'Cache-Control': 'no-cache' }
+        }
     )
     if (!(response.data instanceof Blob) || (
         response.data.type &&
