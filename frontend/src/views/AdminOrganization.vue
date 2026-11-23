@@ -1058,13 +1058,13 @@ const getFilterOptionLabel = (
     }
   }[field]
 
-  const matched = allOrganizations.value.find(org =>
-    String(org[fieldConfig.key] || '').trim().toLowerCase() === option.trim().toLowerCase()
+  const matched = masterOrganizationRecords.value.find(record =>
+    getOrganizationDisplayField(record, fieldConfig.en, fieldConfig.th, fieldConfig.refs, 'EN').trim().toLowerCase() === option.trim().toLowerCase()
   )
 
-  if (matched?.rawData) {
+  if (matched) {
     return getOrganizationDisplayField(
-      matched.rawData,
+      matched,
       fieldConfig.en,
       fieldConfig.th,
       fieldConfig.refs
@@ -1089,9 +1089,12 @@ const getSelectedFilterLabel = (
 
 // Filtered options based on search
 // Build School filter options from the actual organization records.
+const masterOrganizationRecords = ref<any[]>([])
+
 const schoolOptions = computed(() => {
-  const schools = allOrganizations.value
-    .map(org => String(org.org_school || '').trim())
+  const schools = masterOrganizationRecords.value
+    .map(record => getOrganizationDisplayField(record, ['school_en', 'school', 'school_name_en'], ['school_th', 'school_name_th'], ['school_id'], 'EN'))
+    .map(value => String(value || '').trim())
     .filter(value => value && value !== 'N/A')
   return ['All', ...Array.from(new Set(schools)).sort((a, b) => a.localeCompare(b))]
 })
@@ -1104,8 +1107,8 @@ const filteredIndustryCat = computed(() => {
 })
 
 const countryOptions = computed(() => {
-  const countries = allOrganizations.value
-    .map(org => normalizeLocationValue(String(org.org_country || '').trim()))
+  const countries = masterOrganizationRecords.value
+    .map(record => normalizeLocationValue(getOrganizationDisplayField(record, ['country_en', 'country'], ['country_th'], ['country_id'], 'EN').trim()))
     .filter(value => value && value !== 'N/A')
 
   return [
@@ -1125,8 +1128,8 @@ const filteredCountry = computed(() => {
 
 // Build Type filter options from the actual organization type values shown in the table.
 const typeFilterOptions = computed(() => {
-  const values = allOrganizations.value
-    .map(org => String(org.org_category || '').trim())
+  const values = masterOrganizationRecords.value
+    .map(record => getOrganizationDisplayField(record, ['organization_type', 'business_type_en', 'business_type'], ['business_type_th', 'organization_type_th'], ['organization_type_id'], 'EN').trim())
     .filter(value => value && value !== 'N/A')
   return ['All', ...Array.from(new Set(values)).sort((a, b) => a.localeCompare(b))]
 })
@@ -1139,9 +1142,9 @@ const filteredType = computed(() => {
 })
 
 const businessCategoryOptions = computed(() => {
-  const values = allOrganizations.value
-    .map(org => getOrganizationDisplayField(
-      org.rawData,
+  const values = masterOrganizationRecords.value
+    .map(record => getOrganizationDisplayField(
+      record,
       ['business_category_en', 'industry_category_en', 'industry_category_id'],
       ['business_category_th', 'industry_category_th']
     ))
@@ -1167,15 +1170,14 @@ const getProvinceKey = (raw: any): string => {
 
 const getProvinceLabel = (key: string): string => {
   if (!key) return text('--Province--', '--เลือกจังหวัด--')
-  const organization = allOrganizations.value.find(org => {
-    const raw = org.rawData || {}
+  const organization = masterOrganizationRecords.value.find(raw => {
     return getProvinceKey(raw) === key ||
       raw.province_en === key ||
       raw.province_th === key ||
       raw.province_id === key
   })
   if (!organization) return key
-  const raw = organization.rawData || {}
+  const raw = organization || {}
   return String(
     currentLanguage.value === 'TH'
       ? raw.province_th || raw.province_en || getProvinceKey(raw)
@@ -1184,8 +1186,8 @@ const getProvinceLabel = (key: string): string => {
 }
 
 const provinceOptions = computed(() => {
-  const provinces = allOrganizations.value
-    .map(org => getProvinceKey(org.rawData || {}))
+  const provinces = masterOrganizationRecords.value
+    .map(raw => getProvinceKey(raw || {}))
     .filter(value => value && value !== 'N/A')
   return [
     'All',
@@ -1764,6 +1766,19 @@ const saveOrganization = async () => {
 }
 
 // Fetch organizations from backend
+const fetchMasterOrganizationRecords = async () => {
+  const records: any[] = []
+  let page = 1
+  let hasNext = true
+  while (hasNext) {
+    const response = await organizationAPI.getAll({ page, limit: 100, public: 'false' })
+    records.push(...(response.data?.data || []))
+    hasNext = Boolean(response.data?.pagination?.hasNext)
+    page += 1
+  }
+  masterOrganizationRecords.value = records
+}
+
 const fetchOrganizations = async () => {  
   if (bln_Is_Fetching_Organizations) {
     return
@@ -1784,9 +1799,13 @@ const fetchOrganizations = async () => {
     if (selectedFilters.industryCat !== 'All') organizationParams.school = selectedFilters.industryCat
     if (selectedFilters.businessCategory !== 'All') organizationParams.businessCategory = selectedFilters.businessCategory
 
+    const masterPromise = masterOrganizationRecords.value.length
+      ? Promise.resolve()
+      : fetchMasterOrganizationRecords()
     const [response, mouResponse] = await Promise.all([
       organizationAPI.getAll(organizationParams),
-      mouAPI.getAll({ limit: 100 })
+      mouAPI.getAll({ limit: 100 }),
+      masterPromise
     ])
     const allMOUs = mouResponse.data.data || []
     

@@ -26,13 +26,22 @@ const getOrganizations = async (req, res, next) => {
         const filter = { ...ORGANIZATION_FILTER };
         const arr_And_Conditions = [];
         if (req.query.public !== 'false') filter.is_public = true;
-        if (req.query.type) filter.organization_type = req.query.type;
+        if (req.query.type) {
+            const type = new RegExp(escapeRegex(String(req.query.type)), 'i');
+            arr_And_Conditions.push({
+                $or: [
+                    { organization_type: type },
+                    { business_type_en: type },
+                    { business_type_th: type }
+                ]
+            });
+        }
         if (req.query.country) {
             arr_And_Conditions.push({
                 $or: [
-                    { country_id: new RegExp(req.query.country, 'i') },
-                    { country_en: new RegExp(req.query.country, 'i') },
-                    { country_th: new RegExp(req.query.country, 'i') }
+                    { country_id: new RegExp(escapeRegex(String(req.query.country)), 'i') },
+                    { country_en: new RegExp(escapeRegex(String(req.query.country)), 'i') },
+                    { country_th: new RegExp(escapeRegex(String(req.query.country)), 'i') }
                 ]
             });
         }
@@ -97,9 +106,27 @@ const getOrganizations = async (req, res, next) => {
             };
             organizationFilter.record_type = 'organization';
             if (req.query.public !== 'false') organizationFilter.is_public = true;
-            if (req.query.type) organizationFilter.organization_type = req.query.type;
+            if (req.query.type) {
+                const type = new RegExp(escapeRegex(String(req.query.type)), 'i');
+                organizationFilter.$and = [
+                    ...(organizationFilter.$and || []),
+                    { $or: [
+                        { organization_type: type },
+                        { business_type_en: type },
+                        { business_type_th: type }
+                    ] }
+                ];
+            }
             if (req.query.country) {
-                organizationFilter.country_id = new RegExp(escapeRegex(String(req.query.country)), 'i');
+                const country = new RegExp(escapeRegex(String(req.query.country)), 'i');
+                organizationFilter.$and = [
+                    ...(organizationFilter.$and || []),
+                    { $or: [
+                        { country_id: country },
+                        { country_en: country },
+                        { country_th: country }
+                    ] }
+                ];
             }
             if (req.query.province) {
                 const province = new RegExp(escapeRegex(String(req.query.province)), 'i');

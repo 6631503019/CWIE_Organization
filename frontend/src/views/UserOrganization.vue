@@ -161,7 +161,8 @@ const getOrganizationDisplayField = (organization: any, englishFields: string[],
   }
   return 'N/A'
 }
-const optionsFor = (englishField: string, thaiField: string) => Array.from(new Set(organizations.value.map(item => localized(item.rawData[englishField], item.rawData[thaiField])).filter(value => value && value !== 'N/A'))).sort()
+const masterOrganizations = ref<any[]>([])
+const optionsFor = (englishField: string, thaiField: string) => Array.from(new Set(masterOrganizations.value.map(record => localized(record[englishField], record[thaiField])).filter(value => value && value !== 'N/A'))).sort()
 const filteredIndustryCat = computed(() => optionsFor('school_en', 'school_th').filter(value => !dropdownSearch.industryCat || value.toLowerCase().includes(dropdownSearch.industryCat.toLowerCase())))
 const filteredCountry = computed(() => optionsFor('country_en', 'country_th').filter(value => !dropdownSearch.country || value.toLowerCase().includes(dropdownSearch.country.toLowerCase())))
 const getProvinceKey = (raw: any): string => {
@@ -173,15 +174,14 @@ const getProvinceKey = (raw: any): string => {
 }
 const getProvinceLabel = (key: string): string => {
   if (!key) return text('Province', 'จังหวัด')
-  const organization = organizations.value.find(item => {
-    const raw = item.rawData || {}
+  const organization = masterOrganizations.value.find(raw => {
     return getProvinceKey(raw) === key ||
       raw.province_en === key ||
       raw.province_th === key ||
       raw.province_id === key
   })
   if (!organization) return key
-  const raw = organization.rawData || {}
+  const raw = organization || {}
   return String(
     currentLanguage.value === 'TH'
       ? raw.province_th || raw.province_en || getProvinceKey(raw)
@@ -189,8 +189,8 @@ const getProvinceLabel = (key: string): string => {
   )
 }
 const provinceOptions = computed(() => {
-  const values = organizations.value
-    .map(item => getProvinceKey(item.rawData || {}))
+  const values = masterOrganizations.value
+    .map(raw => getProvinceKey(raw || {}))
     .filter(value => value && value !== 'N/A')
   return ['', ...Array.from(new Set(values)).sort((a, b) =>
     getProvinceLabel(a).localeCompare(getProvinceLabel(b))
@@ -201,10 +201,10 @@ const filteredProvince = computed(() => provinceOptions.value.filter(option => {
   const label = getProvinceLabel(option)
   return !dropdownSearch.province || label.toLowerCase().includes(dropdownSearch.province.trim().toLowerCase())
 }))
-const filteredType = computed(() => Array.from(new Set(organizations.value.map(item => getOrganizationDisplayField(item.rawData, ['organization_type', 'business_type_en', 'business_type'], ['business_type_th', 'organization_type_th'])).filter(value => value !== 'N/A'))).sort())
+const filteredType = computed(() => Array.from(new Set(masterOrganizations.value.map(record => getOrganizationDisplayField(record, ['organization_type', 'business_type_en', 'business_type'], ['business_type_th', 'organization_type_th'])).filter(value => value !== 'N/A'))).sort())
 const filteredBusinessCategory = computed(() => {
-  const values = Array.from(new Set(organizations.value.map(item =>
-    getOrganizationDisplayField(item.rawData, ['business_category_en', 'industry_category_en', 'industry_category_id'], ['business_category_th', 'industry_category_th'])
+  const values = Array.from(new Set(masterOrganizations.value.map(record =>
+    getOrganizationDisplayField(record, ['business_category_en', 'industry_category_en', 'industry_category_id'], ['business_category_th', 'industry_category_th'])
   ).filter(value => value !== 'N/A'))).sort()
   const options = ['', ...values]
   const query = dropdownSearch.businessCategory.trim().toLowerCase()
@@ -256,6 +256,19 @@ const viewDocument = (organizationId: string) => {
   const mou = mouRecords.value.find(record => { const reference = record.organization_id; return String(typeof reference === 'object' ? reference?._id : reference) === organizationId })
   if (mou?._id) window.open(getMouFileUrl(mou._id), '_blank', 'noopener,noreferrer')
 }
+const fetchMasterOrganizations = async () => {
+  const records: any[] = []
+  let page = 1
+  let hasNext = true
+  while (hasNext) {
+    const response = await organizationAPI.getAll({ page, limit: 100, public: 'true' })
+    records.push(...(response.data?.data || []))
+    hasNext = Boolean(response.data?.pagination?.hasNext)
+    page += 1
+  }
+  masterOrganizations.value = records
+}
+
 const loadOrganizations = async () => {
   state.loading = true
   state.error = null
@@ -267,7 +280,14 @@ const loadOrganizations = async () => {
     if (selectedFilters.type) params.type = selectedFilters.type
     if (selectedFilters.province) params.province = selectedFilters.province
     if (selectedFilters.businessCategory) params.businessCategory = selectedFilters.businessCategory
-    const [organizationResponse, mouResponse] = await Promise.all([organizationAPI.getAll(params), mouAPI.getAll({ limit: 100 })])
+    const masterPromise = masterOrganizations.value.length
+      ? Promise.resolve()
+      : fetchMasterOrganizations()
+    const [organizationResponse, mouResponse] = await Promise.all([
+      organizationAPI.getAll(params),
+      mouAPI.getAll({ limit: 100 }),
+      masterPromise
+    ])
     const records = organizationResponse.data?.data || []
     const pagination = organizationResponse.data?.pagination
     state.totalPages = pagination?.pages || Math.max(1, Math.ceil(records.length / state.itemsPerPage))
