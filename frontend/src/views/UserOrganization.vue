@@ -154,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 import AdminTopBar from '../components/admin/AdminTopBar.vue'
@@ -201,6 +201,14 @@ const toggleDropdown = (key: 'industryCat' | 'country' | 'type' | 'province' | '
 const getSelectedFilterLabel = (key: keyof typeof selectedFilters, value: string) => value || ({ industryCat: text('School', 'สำนักวิชา'), country: text('Country', 'ประเทศ'), type: text('Type', 'ประเภท'), province: text('Province', 'จังหวัด'), businessCategory: text('Business Category', 'หมวดธุรกิจ') } as any)[key]
 const getFilterOptionLabel = (_key: string, value: string) => value
 const selectOption = (key: keyof typeof selectedFilters, value: string) => { selectedFilters[key] = value; dropdowns[key] = false }
+const Handle_Dropdown_Outside = (event: PointerEvent) => {
+  const target = event.target as Element | null
+  if (!target?.closest('.filter_field')) {
+    Object.keys(dropdowns).forEach(key => {
+      dropdowns[key as keyof typeof dropdowns] = false
+    })
+  }
+}
 
 const paginatedOrganizations = computed(() => {
   return organizations.value
@@ -247,7 +255,13 @@ const loadOrganizations = async () => {
     state.error = error.response?.data?.message || text('Unable to load organizations.', '??????????????????????')
   } finally { state.loading = false }
 }
-onMounted(loadOrganizations)
+onMounted(() => {
+  document.addEventListener('pointerdown', Handle_Dropdown_Outside)
+  void loadOrganizations()
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', Handle_Dropdown_Outside)
+})
 </script>
 
 <style scoped>
@@ -2078,7 +2092,13 @@ onMounted(loadOrganizations)
 .page_actions .upload_icon { width: 12px; height: 12px; background: #000000; }
 .page_actions .plus_icon { width: 12px; height: 12px; }
 
-.filter_section { width: 100%; height: auto; min-height: 146px; box-sizing: border-box; margin: 0 0 22px; padding: 12px 20px 11px; background: #ffffff; border-radius: 0; box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25); }
+.filter_section { width: 100%; height: auto; min-height: 146px; box-sizing: border-box; margin: 0 0 22px; padding: 12px 20px 11px; background: #ffffff; border-radius: 0; box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25); overflow: visible; }
+.dropdown_options {
+  z-index: 2000;
+  max-height: 250px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
 .search_input { width: 100%; height: 30px; box-sizing: border-box; padding: 9px 12px; border: 0.4px solid #a8a8ac; border-radius: 8px; font: 400 10px/12px Inter, sans-serif; color: #1f2937; }
 .filter_labels { display: none; }
 .dropdowns_grid {
@@ -2093,6 +2113,12 @@ onMounted(loadOrganizations)
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+.filter_field {
+  position: relative;
+}
+.filter_field.active {
+  z-index: 1000;
 }
 .filter_field.province {
   grid-column: 1;
