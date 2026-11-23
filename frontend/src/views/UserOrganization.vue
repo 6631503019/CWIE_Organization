@@ -148,7 +148,7 @@ const mouRecords = ref<any[]>([])
 const searchText = ref('')
 const dropdowns = reactive({ industryCat: false, country: false, type: false, province: false, businessCategory: false })
 const dropdownSearch = reactive({ industryCat: '', country: '', type: '', province: '', businessCategory: '' })
-const selectedFilters = reactive({ industryCat: '', country: '', type: '', province: '', businessCategory: '' })
+const selectedFilters = reactive({ industryCat: 'All', country: 'All', type: 'All', province: 'All', businessCategory: 'All' })
 
 const localized = (english: unknown, thai: unknown, fallback = '') => String((currentLanguage.value === 'TH' ? thai : english) || (currentLanguage.value === 'TH' ? english : thai) || fallback || 'N/A')
 const getLocalizedOrganizationName = (organization: any) => localized(organization?.name_en, organization?.name_th)
@@ -162,9 +162,15 @@ const getOrganizationDisplayField = (organization: any, englishFields: string[],
   return 'N/A'
 }
 const masterOrganizations = ref<any[]>([])
-const optionsFor = (englishField: string, thaiField: string) => Array.from(new Set(masterOrganizations.value.map(record => localized(record[englishField], record[thaiField])).filter(value => value && value !== 'N/A'))).sort()
-const filteredIndustryCat = computed(() => optionsFor('school_en', 'school_th').filter(value => !dropdownSearch.industryCat || value.toLowerCase().includes(dropdownSearch.industryCat.toLowerCase())))
-const filteredCountry = computed(() => optionsFor('country_en', 'country_th').filter(value => !dropdownSearch.country || value.toLowerCase().includes(dropdownSearch.country.toLowerCase())))
+const normalizeOption = (value: unknown): string => String(value ?? '').trim()
+const optionsFor = (englishField: string, thaiField: string) => {
+  const values = masterOrganizations.value
+    .map(record => normalizeOption(localized(record[englishField], record[thaiField])))
+    .filter(value => value && value !== 'N/A')
+  return ['All', ...Array.from(new Set(values)).sort()]
+}
+const filteredIndustryCat = computed(() => optionsFor('school_en', 'school_th').filter(option => option === 'All' || !dropdownSearch.industryCat || option.toLowerCase().includes(dropdownSearch.industryCat.toLowerCase())))
+const filteredCountry = computed(() => optionsFor('country_en', 'country_th').filter(option => option === 'All' || !dropdownSearch.country || option.toLowerCase().includes(dropdownSearch.country.toLowerCase())))
 const getProvinceKey = (raw: any): string => {
   const provinceRef = raw?.province_id
   const refValue = typeof provinceRef === 'object' && provinceRef !== null
@@ -192,30 +198,37 @@ const provinceOptions = computed(() => {
   const values = masterOrganizations.value
     .map(raw => getProvinceKey(raw || {}))
     .filter(value => value && value !== 'N/A')
-  return ['', ...Array.from(new Set(values)).sort((a, b) =>
+  return ['All', ...Array.from(new Set(values)).sort((a, b) =>
     getProvinceLabel(a).localeCompare(getProvinceLabel(b))
   )]
 })
 const filteredProvince = computed(() => provinceOptions.value.filter(option => {
-  if (!option) return true
+  if (option === 'All') return true
   const label = getProvinceLabel(option)
   return !dropdownSearch.province || label.toLowerCase().includes(dropdownSearch.province.trim().toLowerCase())
 }))
-const filteredType = computed(() => Array.from(new Set(masterOrganizations.value.map(record => getOrganizationDisplayField(record, ['organization_type', 'business_type_en', 'business_type'], ['business_type_th', 'organization_type_th'])).filter(value => value !== 'N/A'))).sort())
+const filteredType = computed(() => {
+  const values = masterOrganizations.value
+    .map(record => normalizeOption(getOrganizationDisplayField(record, ['organization_type', 'business_type_en', 'business_type'], ['business_type_th', 'organization_type_th'])))
+    .filter(value => value && value !== 'N/A')
+  return ['All', ...Array.from(new Set(values)).sort()]
+})
 const filteredBusinessCategory = computed(() => {
   const values = Array.from(new Set(masterOrganizations.value.map(record =>
-    getOrganizationDisplayField(record, ['business_category_en', 'industry_category_en', 'industry_category_id'], ['business_category_th', 'industry_category_th'])
-  ).filter(value => value !== 'N/A'))).sort()
-  const options = ['', ...values]
+    normalizeOption(getOrganizationDisplayField(record, ['business_category_en', 'industry_category_en', 'industry_category_id'], ['business_category_th', 'industry_category_th']))
+  ).filter(value => value && value !== 'N/A'))).sort()
+  const options = ['All', ...values]
   const query = dropdownSearch.businessCategory.trim().toLowerCase()
   return options.filter(option => !query || getSelectedFilterLabel('businessCategory', option).toLowerCase().includes(query))
 })
 
 const toggleDropdown = (key: 'industryCat' | 'country' | 'type' | 'province' | 'businessCategory') => { dropdowns[key] = !dropdowns[key] }
 const getSelectedFilterLabel = (key: keyof typeof selectedFilters, value: string) =>
-  key === 'province' && value
-    ? getProvinceLabel(value)
-    : (value || ({
+  value === 'All'
+    ? text('All', 'ทั้งหมด')
+    : key === 'province' && value
+      ? getProvinceLabel(value)
+      : (value || ({
         industryCat: text('School', 'สำนักวิชา'),
         country: text('Country', 'ประเทศ'),
         type: text('Type', 'ประเภท'),
@@ -223,7 +236,9 @@ const getSelectedFilterLabel = (key: keyof typeof selectedFilters, value: string
         businessCategory: text('Business Category', 'หมวดธุรกิจ')
       } as any)[key])
 const getFilterOptionLabel = (key: string, value: string) =>
-  key === 'province' ? (value ? getProvinceLabel(value) : text('All', 'ทั้งหมด')) : value
+  value === 'All'
+    ? text('All', 'ทั้งหมด')
+    : key === 'province' ? getProvinceLabel(value) : value
 const selectOption = (key: keyof typeof selectedFilters, value: string) => { selectedFilters[key] = value; dropdowns[key] = false }
 const Handle_Dropdown_Outside = (event: PointerEvent) => {
   const target = event.target as Element | null
@@ -247,7 +262,7 @@ watch([searchText, () => selectedFilters.industryCat, () => selectedFilters.coun
   if (userSearchTimeout) window.clearTimeout(userSearchTimeout)
   userSearchTimeout = window.setTimeout(() => { void loadOrganizations() }, 300)
 })
-const resetFilters = () => { searchText.value = ''; selectedFilters.industryCat = ''; selectedFilters.country = ''; selectedFilters.type = ''; selectedFilters.province = ''; selectedFilters.businessCategory = ''; state.currentPage = 1 }
+const resetFilters = () => { searchText.value = ''; selectedFilters.industryCat = 'All'; selectedFilters.country = 'All'; selectedFilters.type = 'All'; selectedFilters.province = 'All'; selectedFilters.businessCategory = 'All'; state.currentPage = 1 }
 const searchOrganizations = () => { state.currentPage = 1 }
 const handlePageChange = (page: number) => { if (page >= 1 && page <= paginationInfo.value.totalPages) state.currentPage = page }
 const viewOrganizationDetail = (id: string) => router.push(`/user/organization/${id}`)
@@ -275,11 +290,11 @@ const loadOrganizations = async () => {
   try {
     const params: any = { page: state.currentPage, limit: state.itemsPerPage, public: 'true' }
     if (searchText.value.trim()) params.search = searchText.value.trim()
-    if (selectedFilters.industryCat) params.school = selectedFilters.industryCat
-    if (selectedFilters.country) params.country = selectedFilters.country
-    if (selectedFilters.type) params.type = selectedFilters.type
-    if (selectedFilters.province) params.province = selectedFilters.province
-    if (selectedFilters.businessCategory) params.businessCategory = selectedFilters.businessCategory
+    if (selectedFilters.industryCat !== 'All') params.school = selectedFilters.industryCat
+    if (selectedFilters.country !== 'All') params.country = selectedFilters.country
+    if (selectedFilters.type !== 'All') params.type = selectedFilters.type
+    if (selectedFilters.province !== 'All') params.province = selectedFilters.province
+    if (selectedFilters.businessCategory !== 'All') params.businessCategory = selectedFilters.businessCategory
     const masterPromise = masterOrganizations.value.length
       ? Promise.resolve()
       : fetchMasterOrganizations()

@@ -25,7 +25,7 @@
             <!-- Status Filter -->
             <div class="status_filter">
               <div class="status_dropdown" @click="Toggle_Status_Dropdown">
-                <span class="status_label">{{ str_Selected_Status || text('Status', 'สถานะ') }}</span>
+                <span class="status_label">{{ str_Selected_Status === 'All' ? text('All', 'ทั้งหมด') : (str_Selected_Status || text('Status', 'สถานะ')) }}</span>
                 <div class="dropdown_arrow"></div>
               </div>
               <div v-if="bln_Show_Status_Dropdown" class="status_options">
@@ -168,7 +168,7 @@ const router = useRouter()
 const { currentLanguage, text } = useLanguage()
 const obj_state = reactive({ loading: false, error: null as string | null, currentPage: 1, itemsPerPage: 8 })
 const str_Search_Text = ref('')
-const str_Selected_Status = ref('')
+const str_Selected_Status = ref('All')
 const bln_Show_Status_Dropdown = ref(false)
 const str_Status_Dropdown_Search = ref('')
 const arr_MOUs = ref<any[]>([])
@@ -190,7 +190,7 @@ const Arr_Get_Paginated_MOUs = computed(() => {
 watch([str_Search_Text, str_Selected_Status], () => { obj_state.currentPage = 1 })
 const Toggle_Status_Dropdown = () => { bln_Show_Status_Dropdown.value = !bln_Show_Status_Dropdown.value }
 const Select_Status = (status: string) => { str_Selected_Status.value = status; bln_Show_Status_Dropdown.value = false }
-const Reset_Filters = () => { str_Search_Text.value = ''; str_Selected_Status.value = ''; str_Status_Dropdown_Search.value = ''; obj_state.currentPage = 1 }
+const Reset_Filters = () => { str_Search_Text.value = ''; str_Selected_Status.value = 'All'; str_Status_Dropdown_Search.value = ''; obj_state.currentPage = 1 }
 const Apply_Filters = () => { obj_state.currentPage = 1 }
 const Handle_Page_Change = (page: number) => { if (page >= 1 && page <= i_Get_Total_Pages.value) obj_state.currentPage = page }
 const View_MOU_Details = (mou: any) => {
