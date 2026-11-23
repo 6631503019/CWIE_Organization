@@ -1,5 +1,4 @@
 const InternshipRecord = require('../models/InternshipRecord');
-const Organization = require('../models/Organization');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 const { deleteStoredFile } = require('../utils/fileCleanup');
 const { getPublicUploadPath } = require('../config/uploads');
@@ -88,20 +87,29 @@ const getOrganizations = async (req, res, next) => {
             const search = new RegExp(escapeRegex(organizationSearch), 'i');
             const organizationFilter = {
                 $or: [
-                    { name_th: search },
-                    { name_en: search },
+                    { organization_name_th: search },
+                    { organization_name_en: search },
                     { organization_type: search },
+                    { business_type_th: search },
+                    { business_type_en: search },
+                    { business_category_th: search },
+                    { business_category_en: search },
                     { industry_category_id: search },
                     { country_id: search },
+                    { country_th: search },
+                    { country_en: search },
                     { geography_id: search },
                     { province_id: search },
-                    { email: search },
-                    { phone_number: search },
+                    { province_th: search },
+                    { province_en: search },
+                    { organization_email: search },
+                    { telephone: search },
                     { address_th: search },
                     { address_en: search },
                     { details: search }
                 ]
             };
+            organizationFilter.record_type = 'organization';
             if (req.query.public !== 'false') organizationFilter.is_public = true;
             if (req.query.type) organizationFilter.organization_type = req.query.type;
             if (req.query.country) {
@@ -117,12 +125,13 @@ const getOrganizations = async (req, res, next) => {
                 organizationFilter.industry_category_id = new RegExp(escapeRegex(String(req.query.industry)), 'i');
             }
             [records, total] = await Promise.all([
-                Organization.find(organizationFilter)
+                InternshipRecord.find(organizationFilter)
+                    .select('record_type organization_key organization_name_th organization_name_en address_th address_en organization_email telephone province_id province_th province_en country_id country_th country_en geography_id organization_type business_type_th business_type_en business_category_th business_category_en school_th school_en industry_category_id is_public logo_path logo_gridfs_id details admin_id createdAt updatedAt')
                     .sort({ createdAt: -1 })
                     .skip((page - 1) * limit)
                     .limit(limit)
                     .lean(),
-                Organization.countDocuments(organizationFilter)
+                InternshipRecord.countDocuments(organizationFilter)
             ]);
         } else {
             [records, total] = await Promise.all([
