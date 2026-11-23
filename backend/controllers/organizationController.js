@@ -14,10 +14,11 @@ const ORGANIZATION_FILTER = { record_type: 'organization' };
 const VALID_TYPES = ['MFU', 'private company', 'Government', 'Oversea'];
 
 const getOrganizations = async (req, res, next) => {
+    const startedAt = process.hrtime.bigint();
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
-        if (page < 1 || limit < 1 || limit > 10000) {
+        if (page < 1 || limit < 1 || limit > 100) {
             throw new CustomError(ERROR_CODES.VALIDATION_INVALID_RANGE, 'Invalid pagination parameters');
         }
 
@@ -53,6 +54,14 @@ const getOrganizations = async (req, res, next) => {
                 ]
             });
         }
+        if (req.query.school) {
+            arr_And_Conditions.push({
+                $or: [
+                    { school_en: new RegExp(req.query.school, 'i') },
+                    { school_th: new RegExp(req.query.school, 'i') }
+                ]
+            });
+        }
         if (req.query.search) {
             const search = new RegExp(req.query.search, 'i');
             const searchConditions = [
@@ -60,20 +69,33 @@ const getOrganizations = async (req, res, next) => {
                 { organization_name_en: search },
                 { organization_email: search },
                 { country_id: search },
+                { country_th: search },
+                { country_en: search },
                 { province_id: search },
-                { industry_category_id: search }
+                { province_th: search },
+                { province_en: search },
+                { industry_category_id: search },
+                { business_category_th: search },
+                { business_category_en: search },
+                { organization_type: search },
+                { school_th: search },
+                { school_en: search }
             ];
             arr_And_Conditions.push({ $or: searchConditions });
         }
         if (arr_And_Conditions.length) filter.$and = arr_And_Conditions;
 
+        const dbStartedAt = process.hrtime.bigint();
         const [records, total] = await Promise.all([
             InternshipRecord.find(filter)
+                .select('record_type organization_key organization_name_th organization_name_en address_th address_en organization_email telephone province_id province_th province_en country_id country_th country_en geography_id organization_type business_type_th business_type_en business_category_th business_category_en school_th school_en industry_category_id is_public logo_path logo_gridfs_id details admin_id createdAt updatedAt')
                 .sort({ createdAt: -1 })
                 .skip((page - 1) * limit)
-                .limit(limit),
+                .limit(limit)
+                .lean(),
             InternshipRecord.countDocuments(filter)
         ]);
+        const dbMs = Number(process.hrtime.bigint() - dbStartedAt) / 1e6;
 
         res.status(200).json({
             success: true,
@@ -86,6 +108,16 @@ const getOrganizations = async (req, res, next) => {
                 hasNext: page < Math.ceil(total / limit),
                 hasPrev: page > 1
             }
+        });
+        const totalMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
+        console.info('[organizations] GET', {
+            page,
+            limit,
+            total,
+            dbMs: Math.round(dbMs),
+            responseMs: Math.round(totalMs),
+            hasSearch: Boolean(req.query.search),
+            hasFilters: Object.keys(req.query).some(key => ['type', 'country', 'geography', 'province', 'industry', 'school'].includes(key))
         });
     } catch (error) {
         next(error);

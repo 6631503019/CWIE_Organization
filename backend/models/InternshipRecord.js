@@ -67,6 +67,11 @@ const internshipRecordSchema = new mongoose.Schema({
 internshipRecordSchema.index({ student_id: 1, academic_year: 1, semester: 1 });
 internshipRecordSchema.index({ organization_id: 1 });
 internshipRecordSchema.index({ organization_key: 1 }, { unique: true, sparse: true });
+internshipRecordSchema.index({ record_type: 1, is_public: 1, createdAt: -1 });
+internshipRecordSchema.index({ record_type: 1, organization_type: 1, createdAt: -1 });
+internshipRecordSchema.index({ record_type: 1, country_id: 1, createdAt: -1 });
+internshipRecordSchema.index({ record_type: 1, province_id: 1, createdAt: -1 });
+internshipRecordSchema.index({ record_type: 1, geography_id: 1, createdAt: -1 });
 
 internshipRecordSchema.virtual('name_th').get(function () { return this.organization_name_th; });
 internshipRecordSchema.virtual('name_en').get(function () { return this.organization_name_en; });

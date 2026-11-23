@@ -652,7 +652,9 @@ const state = reactive({
   loading: false,
   error: null as string | null,
   currentPage: 1,
-  itemsPerPage: 5,
+  itemsPerPage: 50,
+  totalPages: 0,
+  totalItems: 0,
   showAddModal: false,
   activeTab: 'organization' as 'organization' | 'review' | 'mou',
   editingOrgId: null as string | null
@@ -1170,64 +1172,21 @@ const organizationTypeCounts = computed(() => {
 
 // Computed properties for reactive filtering
 const filteredOrganizations = computed(() => {
-  let filtered = allOrganizations.value
-  
-  // กรองเอาเฉพาะข้อมูลที่มีครบ (มี province และไม่เป็น 'N/A')
-  filtered = filtered.filter(org => {
-    const hasProvince = org.province && org.province !== 'N/A'
-    const hasName = org.name && 
-                    org.name !== 'Unknown' && 
-                    org.name !== 'หน่วยงานราชการ' &&
-                    org.name !== 'บริษัท' &&
-                    org.name.trim() !== ''
-    return hasProvince && hasName
-  })
-  
-  // Search filter
-  if (searchText.value.trim()) {
-    const search = searchText.value.toLowerCase()
-    filtered = filtered.filter(org =>
-      [org.name, org.org_category, org.org_school, org.org_province, org.org_country, org.industry]
-        .some(value => String(value || '').toLowerCase().includes(search))
-    )
-  }
-  
-  // Dropdown filters
-  if (selectedFilters.province !== 'All') {
-    filtered = filtered.filter(org => String(org.org_province || '').trim().toLowerCase() === String(selectedFilters.province).trim().toLowerCase())
-  }
-
-  if (selectedFilters.industryCat !== 'All') {
-    filtered = filtered.filter(org => String(org.org_school || '').trim().toLowerCase() === String(selectedFilters.industryCat).trim().toLowerCase())
-  }
-
-  if (selectedFilters.country !== 'All') {
-    filtered = filtered.filter(org => String(org.org_country || '').trim().toLowerCase() === String(selectedFilters.country).trim().toLowerCase())
-  }
-
-  if (selectedFilters.type !== 'All') {
-    filtered = filtered.filter(org => String(org.org_category || '').trim().toLowerCase() === String(selectedFilters.type).trim().toLowerCase())
-  }
-  
-  return filtered
+  return allOrganizations.value
 })
 
 // Paginated organizations
 const paginatedOrganizations = computed(() => {
-  const start = (state.currentPage - 1) * state.itemsPerPage
-  const end = start + state.itemsPerPage
-  return filteredOrganizations.value.slice(start, end)
+  return filteredOrganizations.value
 })
 
 // Pagination info
-const totalPages = computed(() => 
-  Math.ceil(filteredOrganizations.value.length / state.itemsPerPage)
-)
+const totalPages = computed(() => state.totalPages)
 
 const paginationInfo = computed(() => ({
   currentPage: state.currentPage,
   totalPages: totalPages.value,
-  totalItems: filteredOrganizations.value.length,
+  totalItems: state.totalItems,
   hasNext: state.currentPage < totalPages.value,
   hasPrev: state.currentPage > 1
 }))
@@ -1266,8 +1225,7 @@ const handlePageChange = async (page: number) => {
     state.loading = true
     try {
       state.currentPage = page
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 100))
+      await fetchOrganizations()
     } finally {
       state.loading = false
     }
@@ -1275,12 +1233,19 @@ const handlePageChange = async (page: number) => {
 }
 
 // Watchers for reactive updates
+let searchFetchTimeoutId: number | null = null
+
 watch(searchText, () => {
-  state.currentPage = 1 // Reset to first page when searching
+  state.currentPage = 1
+  if (searchFetchTimeoutId) window.clearTimeout(searchFetchTimeoutId)
+  searchFetchTimeoutId = window.setTimeout(() => {
+    void fetchOrganizations()
+  }, 300)
 })
 
 watch(selectedFilters, () => {
-  state.currentPage = 1 // Reset to first page when filtering
+  state.currentPage = 1
+  void fetchOrganizations()
 }, { deep: true })
 
 // Methods
@@ -1315,6 +1280,7 @@ const resetFilters = () => {
     selectedFilters[key as keyof typeof selectedFilters] = 'All'
   })
   state.currentPage = 1
+  void fetchOrganizations()
 }
 
 const searchOrganizations = () => {
@@ -1738,11 +1704,23 @@ const fetchOrganizations = async () => {
   }
 
   bln_Is_Fetching_Organizations = true
+  const requestStartedAt = performance.now()
   try {
-    const response = await organizationAPI.getAll({ limit: 10000, public: 'false', _timeoutMs: 30000 })
-    
-    // Fetch all MOUs
-    const mouResponse = await mouAPI.getAll({ limit: 100, _timeoutMs: 30000 })
+    const organizationParams: any = {
+      page: state.currentPage,
+      limit: state.itemsPerPage,
+      public: 'false'
+    }
+    if (searchText.value.trim()) organizationParams.search = searchText.value.trim()
+    if (selectedFilters.province !== 'All') organizationParams.province = selectedFilters.province
+    if (selectedFilters.country !== 'All') organizationParams.country = selectedFilters.country
+    if (selectedFilters.type !== 'All') organizationParams.type = selectedFilters.type
+    if (selectedFilters.industryCat !== 'All') organizationParams.school = selectedFilters.industryCat
+
+    const [response, mouResponse] = await Promise.all([
+      organizationAPI.getAll(organizationParams),
+      mouAPI.getAll({ limit: 100 })
+    ])
     const allMOUs = mouResponse.data.data || []
     
     // Create MOU map for quick lookup
@@ -1826,7 +1804,17 @@ const fetchOrganizations = async () => {
       console.log(`Org ${org.name}: is_public=${item.is_public}, status=${org.status}, hasMOU=${hasMOU}`)
       return org
     })
+    const pagination = response.data.pagination
+    state.totalPages = pagination?.pages || Math.ceil((pagination?.total || allOrganizations.value.length) / state.itemsPerPage)
+    state.totalItems = pagination?.total || allOrganizations.value.length
     console.log('Organizations loaded:', allOrganizations.value.length, 'items')
+    console.info('[AdminOrganization] load timing', {
+      page: state.currentPage,
+      limit: state.itemsPerPage,
+      requestMs: Math.round(performance.now() - requestStartedAt),
+      organizations: allOrganizations.value.length,
+      mous: allMOUs.length
+    })
   } catch (error: any) {
     state.error = error.response?.data?.message || 'Failed to load organizations'
     console.error('Loading error:', error)
@@ -2330,6 +2318,9 @@ onBeforeUnmount(() => {
   console.log('AdminOrganization unmounting - cleaning up')
   if (intervalId) {
     clearInterval(intervalId)
+  }
+  if (searchFetchTimeoutId) {
+    clearTimeout(searchFetchTimeoutId)
   }
   // Close any open dropdowns
   Object.keys(dropdowns.value).forEach(key => {
