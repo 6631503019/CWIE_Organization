@@ -19,9 +19,24 @@
         <section class="filter_section">
           <input type="text" :placeholder="text('Search organization...', 'ค้นหาองค์กร...')" class="search_input" v-model="searchText" />
           <div class="filter_labels">
-            <span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('Province', 'จังหวัด') }}</span>
+            <span>{{ text('Business Category', 'หมวดธุรกิจ') }}</span><span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('Province', 'จังหวัด') }}</span>
           </div>
           <div class="dropdowns_grid">
+          <!-- Business Category dropdown -->
+          <div class="dropdown_container business_category" :class="{ active: dropdowns.businessCategory }">
+            <div class="dropdown_header" @click="toggleDropdown('businessCategory')">
+              <span class="dropdown_text">{{ getSelectedFilterLabel('businessCategory', selectedFilters.businessCategory) }}</span>
+              <div class="dropdown_arrow"></div>
+            </div>
+            <div v-if="dropdowns.businessCategory" class="dropdown_options">
+              <div class="dropdown_search">
+                <input type="text" v-model="dropdownSearch.businessCategory" placeholder="Search..." @click.stop class="dropdown_search_input" />
+              </div>
+              <div class="dropdown_option" v-for="option in filteredBusinessCategory" :key="option" @click="selectOption('businessCategory', option)">
+                {{ getFilterOptionLabel('businessCategory', option) }}
+              </div>
+            </div>
+          </div>
           <!-- School dropdown -->
           <div class="dropdown_container industry_cat" :class="{ active: dropdowns.industryCat }">
             <div class="dropdown_header" @click="toggleDropdown('industryCat')">
@@ -115,10 +130,11 @@
         </section>
 
         <div class="table_container">
-          <div class="table_header"><span>{{ text('Organization', 'องค์กร') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Province', 'จังหวัด') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Status', 'สถานะ') }}</span><span>{{ text('Actions', 'การดำเนินการ') }}</span></div>
+          <div class="table_header"><span>{{ text('Organization', 'องค์กร') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('Business Category', 'หมวดธุรกิจ') }}</span><span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Province', 'จังหวัด') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Status', 'สถานะ') }}</span><span>{{ text('Actions', 'การดำเนินการ') }}</span></div>
           <div v-for="org in paginatedOrganizations" :key="org.id" class="table_row">
             <div class="org_name" @click="viewOrganizationDetail(org.id)">{{ getLocalizedOrganizationName(org.rawData) }}</div>
             <div class="org_category">{{ getOrganizationDisplayField(org.rawData, ['organization_type', 'business_type_en', 'business_type'], ['business_type_th', 'organization_type_th']) }}</div>
+            <div class="org_business_category">{{ getOrganizationDisplayField(org.rawData, ['business_category_en', 'industry_category_en', 'industry_category_id'], ['business_category_th', 'industry_category_th']) === 'N/A' ? '-' : getOrganizationDisplayField(org.rawData, ['business_category_en', 'industry_category_en', 'industry_category_id'], ['business_category_th', 'industry_category_th']) }}</div>
             <div class="org_school">{{ getOrganizationDisplayField(org.rawData, ['school_en', 'school', 'school_name_en'], ['school_th', 'school_name_th'], ['school_id']) }}</div>
             <div class="org_province">{{ getOrganizationDisplayField(org.rawData, ['province_en', 'province'], ['province_th'], ['province_id']) }}</div>
             <div class="org_country">{{ getOrganizationDisplayField(org.rawData, ['country_en', 'country'], ['country_th'], ['country_id']) }}</div>
@@ -144,13 +160,13 @@ import { useLanguage } from '../composables/useLanguage'
 
 const router = useRouter()
 const { currentLanguage, text } = useLanguage()
-const state = reactive({ loading: false, error: null as string | null, currentPage: 1, itemsPerPage: 8 })
+const state = reactive({ loading: false, error: null as string | null, currentPage: 1, itemsPerPage: 8, totalPages: 1, totalItems: 0 })
 const organizations = ref<any[]>([])
 const mouRecords = ref<any[]>([])
 const searchText = ref('')
-const dropdowns = reactive({ industryCat: false, country: false, type: false, province: false })
-const dropdownSearch = reactive({ industryCat: '', country: '', type: '', province: '' })
-const selectedFilters = reactive({ industryCat: '', country: '', type: '', province: '' })
+const dropdowns = reactive({ industryCat: false, country: false, type: false, province: false, businessCategory: false })
+const dropdownSearch = reactive({ industryCat: '', country: '', type: '', province: '', businessCategory: '' })
+const selectedFilters = reactive({ industryCat: '', country: '', type: '', province: '', businessCategory: '' })
 
 const localized = (english: unknown, thai: unknown, fallback = '') => String((currentLanguage.value === 'TH' ? thai : english) || (currentLanguage.value === 'TH' ? english : thai) || fallback || 'N/A')
 const getLocalizedOrganizationName = (organization: any) => localized(organization?.name_en, organization?.name_th)
@@ -168,32 +184,34 @@ const filteredIndustryCat = computed(() => optionsFor('school_en', 'school_th').
 const filteredCountry = computed(() => optionsFor('country_en', 'country_th').filter(value => !dropdownSearch.country || value.toLowerCase().includes(dropdownSearch.country.toLowerCase())))
 const filteredProvince = computed(() => optionsFor('province_en', 'province_th').filter(value => !dropdownSearch.province || value.toLowerCase().includes(dropdownSearch.province.toLowerCase())))
 const filteredType = computed(() => Array.from(new Set(organizations.value.map(item => getOrganizationDisplayField(item.rawData, ['organization_type', 'business_type_en', 'business_type'], ['business_type_th', 'organization_type_th'])).filter(value => value !== 'N/A'))).sort())
+const filteredBusinessCategory = computed(() => {
+  const values = Array.from(new Set(organizations.value.map(item =>
+    getOrganizationDisplayField(item.rawData, ['business_category_en', 'industry_category_en', 'industry_category_id'], ['business_category_th', 'industry_category_th'])
+  ).filter(value => value !== 'N/A'))).sort()
+  const options = ['', ...values]
+  const query = dropdownSearch.businessCategory.trim().toLowerCase()
+  return options.filter(option => !query || getSelectedFilterLabel('businessCategory', option).toLowerCase().includes(query))
+})
 
-const toggleDropdown = (key: 'industryCat' | 'country' | 'type' | 'province') => { dropdowns[key] = !dropdowns[key] }
-const getSelectedFilterLabel = (key: keyof typeof selectedFilters, value: string) => value || ({ industryCat: text('School', '?????????'), country: text('Country', '??????'), type: text('Type', '??????'), province: text('Province', '???????') } as any)[key]
+const toggleDropdown = (key: 'industryCat' | 'country' | 'type' | 'province' | 'businessCategory') => { dropdowns[key] = !dropdowns[key] }
+const getSelectedFilterLabel = (key: keyof typeof selectedFilters, value: string) => value || ({ industryCat: text('School', 'สำนักวิชา'), country: text('Country', 'ประเทศ'), type: text('Type', 'ประเภท'), province: text('Province', 'จังหวัด'), businessCategory: text('Business Category', 'หมวดธุรกิจ') } as any)[key]
 const getFilterOptionLabel = (_key: string, value: string) => value
-const selectOption = (key: keyof typeof selectedFilters, value: string) => { selectedFilters[key] = value; dropdowns[key as 'industryCat' | 'country' | 'type' | 'province'] = false }
+const selectOption = (key: keyof typeof selectedFilters, value: string) => { selectedFilters[key] = value; dropdowns[key] = false }
 
 const paginatedOrganizations = computed(() => {
-  const query = searchText.value.trim().toLowerCase()
-  const filtered = organizations.value.filter(item => {
-    const raw = item.rawData
-    const matchesSearch = !query || [raw.name_en, raw.name_th, raw.organization_name_en, raw.organization_name_th, raw.email, raw.address_en, raw.address_th].some(value => String(value || '').toLowerCase().includes(query))
-    const matchesSchool = !selectedFilters.industryCat || localized(raw.school_en, raw.school_th) === selectedFilters.industryCat
-    const matchesCountry = !selectedFilters.country || localized(raw.country_en, raw.country_th) === selectedFilters.country
-    const matchesProvince = !selectedFilters.province || localized(raw.province_en, raw.province_th) === selectedFilters.province
-    const matchesType = !selectedFilters.type || getOrganizationDisplayField(raw, ['organization_type', 'business_type_en', 'business_type'], ['business_type_th', 'organization_type_th']) === selectedFilters.type
-    return matchesSearch && matchesSchool && matchesCountry && matchesProvince && matchesType
-  })
-  const start = (state.currentPage - 1) * state.itemsPerPage
-  return filtered.slice(start, start + state.itemsPerPage)
+  return organizations.value
 })
 const paginationInfo = computed(() => ({
-  totalItems: organizations.value.length,
-  totalPages: Math.max(1, Math.ceil(organizations.value.length / state.itemsPerPage))
+  totalItems: state.totalItems,
+  totalPages: Math.max(1, state.totalPages)
 }))
-watch([searchText, () => selectedFilters.industryCat, () => selectedFilters.country, () => selectedFilters.type, () => selectedFilters.province], () => { state.currentPage = 1 })
-const resetFilters = () => { searchText.value = ''; selectedFilters.industryCat = ''; selectedFilters.country = ''; selectedFilters.type = ''; selectedFilters.province = ''; state.currentPage = 1 }
+let userSearchTimeout: number | null = null
+watch([searchText, () => selectedFilters.industryCat, () => selectedFilters.country, () => selectedFilters.type, () => selectedFilters.province, () => selectedFilters.businessCategory], () => {
+  state.currentPage = 1
+  if (userSearchTimeout) window.clearTimeout(userSearchTimeout)
+  userSearchTimeout = window.setTimeout(() => { void loadOrganizations() }, 300)
+})
+const resetFilters = () => { searchText.value = ''; selectedFilters.industryCat = ''; selectedFilters.country = ''; selectedFilters.type = ''; selectedFilters.province = ''; selectedFilters.businessCategory = ''; state.currentPage = 1 }
 const searchOrganizations = () => { state.currentPage = 1 }
 const handlePageChange = (page: number) => { if (page >= 1 && page <= paginationInfo.value.totalPages) state.currentPage = page }
 const viewOrganizationDetail = (id: string) => router.push(`/user/organization/${id}`)
@@ -206,8 +224,18 @@ const loadOrganizations = async () => {
   state.loading = true
   state.error = null
   try {
-    const [organizationResponse, mouResponse] = await Promise.all([organizationAPI.getAll({ limit: 100 }), mouAPI.getAll({ limit: 100 })])
+    const params: any = { page: state.currentPage, limit: state.itemsPerPage, public: 'true' }
+    if (searchText.value.trim()) params.search = searchText.value.trim()
+    if (selectedFilters.industryCat) params.school = selectedFilters.industryCat
+    if (selectedFilters.country) params.country = selectedFilters.country
+    if (selectedFilters.type) params.type = selectedFilters.type
+    if (selectedFilters.province) params.province = selectedFilters.province
+    if (selectedFilters.businessCategory) params.businessCategory = selectedFilters.businessCategory
+    const [organizationResponse, mouResponse] = await Promise.all([organizationAPI.getAll(params), mouAPI.getAll({ limit: 100 })])
     const records = organizationResponse.data?.data || []
+    const pagination = organizationResponse.data?.pagination
+    state.totalPages = pagination?.pages || Math.max(1, Math.ceil(records.length / state.itemsPerPage))
+    state.totalItems = pagination?.total || records.length
     mouRecords.value = (mouResponse.data?.data || []).filter((record: any) => isPublished(record.is_published))
     const mouIds = new Set(mouRecords.value.map(record => { const reference = record.organization_id; return String(typeof reference === 'object' ? reference?._id : reference) }))
     organizations.value = records.map((record: any) => ({ id: String(record._id), rawData: record, status: isPublished(record.is_public) ? 'active' : 'inactive', hasMOU: mouIds.has(String(record._id)) }))
@@ -2048,8 +2076,8 @@ onMounted(loadOrganizations)
 
 .filter_section { width: 100%; height: auto; min-height: 146px; box-sizing: border-box; margin: 0 0 22px; padding: 12px 20px 11px; background: #ffffff; border-radius: 0; box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25); }
 .search_input { width: 100%; height: 30px; box-sizing: border-box; padding: 9px 12px; border: 0.4px solid #a8a8ac; border-radius: 8px; font: 400 10px/12px Inter, sans-serif; color: #1f2937; }
-.filter_labels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 14px; padding: 0 2px; font: 500 10px/12px Inter, sans-serif; color: #000000; }
-.dropdowns_grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.filter_labels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 14px; padding: 0 2px; font: 500 10px/12px Inter, sans-serif; color: #000000; }
+.dropdowns_grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 0; }
 .dropdown_container { margin: 0; min-width: 0; }
 .dropdown_header { height: 28px; box-sizing: border-box; padding: 7px; border: 0.4px solid #a8a8ac; border-radius: 8px; }
 .dropdown_text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 10px/12px Inter, sans-serif; color: #73737a; }
@@ -2060,7 +2088,7 @@ onMounted(loadOrganizations)
 .search_btn { background: #ab1c03; border: 0; color: #ffffff; }
 
 .table_container { width: 100%; max-width: none; min-height: 208px; margin: 0 auto; box-sizing: border-box; overflow: hidden; background: #ffffff; border: 1px solid #d1d1d2; border-radius: 12px; }
-.table_header, .table_row { display: grid; grid-template-columns: minmax(0, 2.35fr) minmax(82px, 1fr) minmax(100px, 1.2fr) minmax(82px, 1fr) minmax(82px, 1fr) minmax(76px, .9fr) minmax(132px, 1.4fr); align-items: center; }
+.table_header, .table_row { display: grid; grid-template-columns: minmax(0, 2.35fr) minmax(82px, 1fr) minmax(100px, 1.2fr) minmax(100px, 1.2fr) minmax(82px, 1fr) minmax(82px, 1fr) minmax(76px, .9fr) minmax(132px, 1.4fr); align-items: center; }
 .table_header { height: 36px; padding: 0 16px; box-sizing: border-box; background: #8b0000; color: #ffffff; font: 600 10px/12px Inter, sans-serif; }
 .table_row { min-height: 52px; padding: 0 16px; box-sizing: border-box; border-top: 1px solid #e6e6e8; color: #1f2937; font: 400 13px/16px Outfit, sans-serif; }
 .table_header > span + span,
@@ -2174,7 +2202,7 @@ onMounted(loadOrganizations)
 
 .filter_labels,
 .dropdowns_grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -2187,7 +2215,7 @@ onMounted(loadOrganizations)
 
 .table_header,
 .table_row {
-  grid-template-columns: minmax(0, 2.35fr) minmax(82px, 1fr) minmax(100px, 1.2fr) minmax(82px, 1fr) minmax(82px, 1fr) minmax(76px, .9fr) minmax(132px, 1.4fr);
+  grid-template-columns: minmax(0, 2.35fr) minmax(82px, 1fr) minmax(100px, 1.2fr) minmax(100px, 1.2fr) minmax(82px, 1fr) minmax(82px, 1fr) minmax(76px, .9fr) minmax(132px, 1.4fr);
 }
 
 .content_area :deep(.pagination_wrapper) {

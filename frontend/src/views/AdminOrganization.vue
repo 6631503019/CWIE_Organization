@@ -23,9 +23,24 @@
         <section class="filter_section">
           <input type="text" :placeholder="text('Search organization...', 'ค้นหาองค์กร...')" class="search_input" v-model="searchText" />
           <div class="filter_labels">
-            <span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('Province', 'จังหวัด') }}</span>
+            <span>{{ text('Business Category', 'หมวดธุรกิจ') }}</span><span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('Province', 'จังหวัด') }}</span>
           </div>
           <div class="dropdowns_grid">
+          <!-- Business Category dropdown -->
+          <div class="dropdown_container business_category" :class="{ active: dropdowns.businessCategory }">
+            <div class="dropdown_header" @click="toggleDropdown('businessCategory')">
+              <span class="dropdown_text">{{ getSelectedFilterLabel('businessCategory', selectedFilters.businessCategory) }}</span>
+              <div class="dropdown_arrow"></div>
+            </div>
+            <div v-if="dropdowns.businessCategory" class="dropdown_options">
+              <div class="dropdown_search">
+                <input type="text" v-model="dropdownSearch.businessCategory" placeholder="Search..." @click.stop class="dropdown_search_input" />
+              </div>
+              <div class="dropdown_option" v-for="option in filteredBusinessCategory" :key="option" @click="selectOption('businessCategory', option)">
+                {{ getFilterOptionLabel('businessCategory', option) }}
+              </div>
+            </div>
+          </div>
           <!-- School dropdown -->
           <div class="dropdown_container industry_cat" :class="{ active: dropdowns.industryCat }">
             <div class="dropdown_header" @click="toggleDropdown('industryCat')">
@@ -119,10 +134,11 @@
         </section>
 
         <div class="table_container">
-          <div class="table_header"><span>{{ text('Organization', 'องค์กร') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Province', 'จังหวัด') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Status', 'สถานะ') }}</span><span>{{ text('Actions', 'การดำเนินการ') }}</span></div>
+          <div class="table_header"><span>{{ text('Organization', 'องค์กร') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('Business Category', 'หมวดธุรกิจ') }}</span><span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Province', 'จังหวัด') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Status', 'สถานะ') }}</span><span>{{ text('Actions', 'การดำเนินการ') }}</span></div>
           <div v-for="org in paginatedOrganizations" :key="org.id" class="table_row">
             <div class="org_name" @click="viewOrganizationDetail(org.id)">{{ getLocalizedOrganizationName(org.rawData) }}</div>
             <div class="org_category">{{ getOrganizationDisplayField(org.rawData, ['organization_type', 'business_type_en', 'business_type'], ['business_type_th', 'organization_type_th']) }}</div>
+            <div class="org_business_category">{{ getOrganizationDisplayField(org.rawData, ['business_category_en', 'industry_category_en', 'industry_category_id'], ['business_category_th', 'industry_category_th']) === 'N/A' ? '-' : getOrganizationDisplayField(org.rawData, ['business_category_en', 'industry_category_en', 'industry_category_id'], ['business_category_th', 'industry_category_th']) }}</div>
             <div class="org_school">{{ getOrganizationDisplayField(org.rawData, ['school_en', 'school', 'school_name_en'], ['school_th', 'school_name_th'], ['school_id']) }}</div>
             <div class="org_province">{{ getOrganizationDisplayField(org.rawData, ['province_en', 'province'], ['province_th'], ['province_id']) }}</div>
             <div class="org_country">{{ getOrganizationDisplayField(org.rawData, ['country_en', 'country'], ['country_th'], ['country_id']) }}</div>
@@ -765,7 +781,8 @@ const dropdowns = ref({
   industryCat: false,
   country: false,
   type: false,
-  province: false
+  province: false,
+  businessCategory: false
 })
 
 // Search text for each dropdown
@@ -773,7 +790,8 @@ const dropdownSearch = ref({
   industryCat: '',
   country: '',
   type: '',
-  province: ''
+  province: '',
+  businessCategory: ''
 })
 
 // Filter selections
@@ -781,7 +799,8 @@ const selectedFilters = reactive({
   industryCat: 'All',
   country: 'All',
   type: 'All',
-  province: 'All'
+  province: 'All',
+  businessCategory: 'All'
 })
 
 // Organization Type choices are retained for the Add/Edit Organization form and Type table column.
@@ -996,7 +1015,7 @@ const displayLocationValue = (value: string, placeholder: string): string => {
 // Filter options keep English canonical values for filtering, but labels are
 // resolved from the original bilingual API record whenever the language changes.
 const getFilterOptionLabel = (
-  field: 'industryCat' | 'type' | 'country' | 'province',
+  field: 'industryCat' | 'type' | 'country' | 'province' | 'businessCategory',
   option: string
 ): string => {
   if (option === 'All') return text('All', 'ทั้งหมด')
@@ -1025,6 +1044,12 @@ const getFilterOptionLabel = (
       en: ['province_en', 'province'],
       th: ['province_th'],
       refs: ['province_id']
+    },
+    businessCategory: {
+      key: 'org_business_category',
+      en: ['business_category_en', 'industry_category_en', 'industry_category_id'],
+      th: ['business_category_th', 'industry_category_th'],
+      refs: []
     }
   }[field]
 
@@ -1045,7 +1070,7 @@ const getFilterOptionLabel = (
 }
 
 const getSelectedFilterLabel = (
-  field: 'industryCat' | 'type' | 'country' | 'province',
+  field: 'industryCat' | 'type' | 'country' | 'province' | 'businessCategory',
   value: string
 ): string => value === 'All'
   ? ({
@@ -1053,6 +1078,7 @@ const getSelectedFilterLabel = (
       country: text('---Country---', '---เลือกประเทศ---'),
       type: text('--Type--', '--เลือกประเภท--'),
       province: text('--Province--', '--เลือกจังหวัด--')
+        ,businessCategory: text('--Business Category--', '--เลือกหมวดธุรกิจ--')
     }[field])
   : getFilterOptionLabel(field, value)
 
@@ -1104,6 +1130,25 @@ const filteredType = computed(() => {
   if (!dropdownSearch.value.type) return typeFilterOptions.value
   return typeFilterOptions.value.filter(option =>
     option.toLowerCase().includes(dropdownSearch.value.type.toLowerCase())
+  )
+})
+
+const businessCategoryOptions = computed(() => {
+  const values = allOrganizations.value
+    .map(org => getOrganizationDisplayField(
+      org.rawData,
+      ['business_category_en', 'industry_category_en', 'industry_category_id'],
+      ['business_category_th', 'industry_category_th']
+    ))
+    .filter(value => value && value !== 'N/A')
+  return ['All', ...Array.from(new Set(values)).sort((a, b) => a.localeCompare(b))]
+})
+
+const filteredBusinessCategory = computed(() => {
+  const search = dropdownSearch.value.businessCategory.trim().toLowerCase()
+  if (!search) return businessCategoryOptions.value
+  return businessCategoryOptions.value.filter(option =>
+    getFilterOptionLabel('businessCategory', option).toLowerCase().includes(search)
   )
 })
 
@@ -1716,6 +1761,7 @@ const fetchOrganizations = async () => {
     if (selectedFilters.country !== 'All') organizationParams.country = selectedFilters.country
     if (selectedFilters.type !== 'All') organizationParams.type = selectedFilters.type
     if (selectedFilters.industryCat !== 'All') organizationParams.school = selectedFilters.industryCat
+    if (selectedFilters.businessCategory !== 'All') organizationParams.businessCategory = selectedFilters.businessCategory
 
     const [response, mouResponse] = await Promise.all([
       organizationAPI.getAll(organizationParams),
@@ -1796,6 +1842,7 @@ const fetchOrganizations = async () => {
         geography: normalizedGeography,
         industryCategory: orgIndustry,
         industry: orgIndustry,
+        org_business_category: orgIndustry,
         createdDate: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : 'N/A',
         editedDate: item.updatedAt ? new Date(item.updatedAt).toISOString().split('T')[0] : 'N/A',
         hasMOU: hasMOU,
@@ -4159,8 +4206,8 @@ onBeforeUnmount(() => {
 
 .filter_section { width: 100%; height: auto; min-height: 146px; box-sizing: border-box; margin: 0 0 22px; padding: 12px 20px 11px; background: #ffffff; border-radius: 0; box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25); }
 .search_input { width: 100%; height: 30px; box-sizing: border-box; padding: 9px 12px; border: 0.4px solid #a8a8ac; border-radius: 8px; font: 400 10px/12px Inter, sans-serif; color: #1f2937; }
-.filter_labels { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 14px; padding: 0 2px; font: 500 10px/12px Inter, sans-serif; color: #000000; }
-.dropdowns_grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 0; }
+.filter_labels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 14px; padding: 0 2px; font: 500 10px/12px Inter, sans-serif; color: #000000; }
+.dropdowns_grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 0; }
 .dropdown_container { margin: 0; min-width: 0; }
 .dropdown_header { height: 28px; box-sizing: border-box; padding: 7px; border: 0.4px solid #a8a8ac; border-radius: 8px; }
 .dropdown_text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 10px/12px Inter, sans-serif; color: #73737a; }
@@ -4171,7 +4218,7 @@ onBeforeUnmount(() => {
 .search_btn { background: #ab1c03; border: 0; color: #ffffff; }
 
 .table_container { width: 100%; max-width: none; min-height: 208px; margin: 0 auto; box-sizing: border-box; overflow: hidden; background: #ffffff; border: 1px solid #d1d1d2; border-radius: 12px; }
-.table_header, .table_row { display: grid; grid-template-columns: minmax(0, 2.35fr) minmax(82px, 1fr) minmax(100px, 1.2fr) minmax(82px, 1fr) minmax(82px, 1fr) minmax(76px, .9fr) minmax(132px, 1.4fr); align-items: center; }
+.table_header, .table_row { display: grid; grid-template-columns: minmax(0, 2.35fr) minmax(82px, 1fr) minmax(100px, 1.2fr) minmax(100px, 1.2fr) minmax(82px, 1fr) minmax(82px, 1fr) minmax(76px, .9fr) minmax(132px, 1.4fr); align-items: center; }
 .table_header { height: 36px; padding: 0 16px; box-sizing: border-box; background: #8b0000; color: #ffffff; font: 600 10px/12px Inter, sans-serif; }
 .table_row { min-height: 52px; padding: 0 16px; box-sizing: border-box; border-top: 1px solid #e6e6e8; color: #1f2937; font: 400 13px/16px Outfit, sans-serif; }
 .table_header > span + span,
@@ -4298,7 +4345,7 @@ onBeforeUnmount(() => {
 
 .table_header,
 .table_row {
-  grid-template-columns: minmax(0, 2.35fr) minmax(82px, 1fr) minmax(100px, 1.2fr) minmax(82px, 1fr) minmax(82px, 1fr) minmax(76px, .9fr) minmax(132px, 1.4fr);
+  grid-template-columns: minmax(0, 2.35fr) minmax(82px, 1fr) minmax(100px, 1.2fr) minmax(100px, 1.2fr) minmax(82px, 1fr) minmax(82px, 1fr) minmax(76px, .9fr) minmax(132px, 1.4fr);
 }
 
 .content_area :deep(.pagination_wrapper) {

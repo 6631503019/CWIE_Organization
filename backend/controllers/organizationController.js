@@ -63,17 +63,21 @@ const getOrganizations = async (req, res, next) => {
                 ]
             });
         }
+        if (req.query.businessCategory) {
+            const category = new RegExp(escapeRegex(String(req.query.businessCategory)), 'i');
+            arr_And_Conditions.push({
+                $or: [
+                    { business_category_th: category },
+                    { business_category_en: category }
+                ]
+            });
+        }
         if (req.query.search) {
             const searchText = String(req.query.search).trim();
             const search = new RegExp(escapeRegex(searchText), 'i');
             const searchConditions = [
                 { organization_name_th: search },
-                { organization_name_en: search },
-                { organization_email: search },
-                { country_id: search },
-                { province_id: search },
-                { industry_category_id: search },
-                { organization_type: search }
+                { organization_name_en: search }
             ];
             arr_And_Conditions.push({ $or: searchConditions });
         }
@@ -88,25 +92,7 @@ const getOrganizations = async (req, res, next) => {
             const organizationFilter = {
                 $or: [
                     { organization_name_th: search },
-                    { organization_name_en: search },
-                    { organization_type: search },
-                    { business_type_th: search },
-                    { business_type_en: search },
-                    { business_category_th: search },
-                    { business_category_en: search },
-                    { industry_category_id: search },
-                    { country_id: search },
-                    { country_th: search },
-                    { country_en: search },
-                    { geography_id: search },
-                    { province_id: search },
-                    { province_th: search },
-                    { province_en: search },
-                    { organization_email: search },
-                    { telephone: search },
-                    { address_th: search },
-                    { address_en: search },
-                    { details: search }
+                    { organization_name_en: search }
                 ]
             };
             organizationFilter.record_type = 'organization';
@@ -123,6 +109,24 @@ const getOrganizations = async (req, res, next) => {
             }
             if (req.query.industry) {
                 organizationFilter.industry_category_id = new RegExp(escapeRegex(String(req.query.industry)), 'i');
+            }
+            if (req.query.school) {
+                organizationFilter.$and = [
+                    ...(organizationFilter.$and || []),
+                    { $or: [
+                        { school_th: new RegExp(escapeRegex(String(req.query.school)), 'i') },
+                        { school_en: new RegExp(escapeRegex(String(req.query.school)), 'i') }
+                    ] }
+                ];
+            }
+            if (req.query.businessCategory) {
+                organizationFilter.$and = [
+                    ...(organizationFilter.$and || []),
+                    { $or: [
+                        { business_category_th: new RegExp(escapeRegex(String(req.query.businessCategory)), 'i') },
+                        { business_category_en: new RegExp(escapeRegex(String(req.query.businessCategory)), 'i') }
+                    ] }
+                ];
             }
             [records, total] = await Promise.all([
                 InternshipRecord.find(organizationFilter)
