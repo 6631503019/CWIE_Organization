@@ -12,9 +12,8 @@
         <div v-else-if="loadingOrganization && !organization" class="state">{{ text('Loading organization...', 'กำลังโหลดข้อมูลองค์กร...') }}</div>
         <article v-else-if="organization" class="profile-card">
           <div class="profile-header">
-            <div class="logo-wrap">
-              <img v-if="logoUrl" :src="logoUrl" :alt="localized(organization.name_en, organization.name_th)" @error="logoUrl = ''" />
-              <span v-else class="logo-fallback">◎</span>
+            <div v-if="logoUrl" class="logo-wrap">
+              <img :src="logoUrl" :alt="localized(organization.name_en, organization.name_th)" @error="clearLogo" />
             </div>
             <div>
               <h1>{{ localized(organization.name_en, organization.name_th) }}</h1>
@@ -39,37 +38,26 @@
           </button>
         </article>
 
-        <section v-if="organization" class="reviews-panel">
-          <div class="reviews-heading">
-            <h2>{{ text('Senior Reviews', 'รีวิวจากรุ่นพี่') }}</h2>
-          </div>
-          <div v-if="reviewsLoading" class="state">{{ text('Loading reviews...', 'กำลังโหลดรีวิว...') }}</div>
-          <div v-else-if="reviewsError" class="state error">{{ reviewsError }}</div>
-          <div v-else-if="reviews.length === 0" class="state">{{ text('No reviews available.', 'ยังไม่มีรีวิว') }}</div>
-          <div v-else class="review-list">
-            <article v-for="review in reviews" :key="review._id" class="review-card">
-              <div class="review-content">
-                <div class="review-meta">
-                  <strong>{{ review.job_position || text('Senior review', 'รีวิวจากรุ่นพี่') }}</strong>
-                  <span>{{ review.academic_year || '—' }} · {{ review.semester || '—' }}</span>
-                </div>
-                <p>{{ review.review_text || '—' }}</p>
-              </div>
-            </article>
-          </div>
-        </section>
+        <OrganizationReviewCarousel
+          v-if="organization"
+          :reviews="reviews"
+          :loading="reviewsLoading"
+          :error="reviewsError"
+          :admin="false"
+        />
       </section>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import UserNavbar from '../components/UserNavbar.vue'
 import AdminTopBar from '../components/admin/AdminTopBar.vue'
 import { organizationAPI, reviewAPI, mouAPI, getOrganizationLogoUrl, getMouFileUrl } from '../services/api'
 import { useLanguage } from '../composables/useLanguage'
+import OrganizationReviewCarousel from '../components/OrganizationReviewCarousel.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -83,9 +71,35 @@ const reviewsError = ref('')
 const logoUrl = ref('')
 const mouId = ref('')
 const mouLoading = ref(false)
+let logoObjectUrl = ''
 const organizationId = computed(() => String(route.params.id || ''))
 const localized = (english: any, thai: any, fallback = '') => String((currentLanguage.value === 'TH' ? thai : english) || (currentLanguage.value === 'TH' ? english : thai) || fallback || 'N/A')
 const isPublished = (value: any) => value === true || value === 'true' || value === 1 || value === '1'
+
+const clearLogo = () => {
+  if (logoObjectUrl) URL.revokeObjectURL(logoObjectUrl)
+  logoObjectUrl = ''
+  logoUrl.value = ''
+}
+
+const loadVerifiedLogo = async (organizationData: any) => {
+  clearLogo()
+  const candidate = getOrganizationLogoUrl(organizationData)
+  if (!candidate || !organizationData) return
+  const separator = candidate.includes('?') ? '&' : '?'
+  const cacheVersion = String(organizationData.logo_gridfs_id || organizationData.updatedAt || '')
+  const url = `${candidate}${cacheVersion ? `${separator}v=${encodeURIComponent(cacheVersion)}` : ''}`
+  try {
+    const response = await fetch(url, { cache: 'no-store' })
+    if (!response.ok) return
+    const blob = await response.blob()
+    if (!blob.type.startsWith('image/') || blob.size === 0) return
+    logoObjectUrl = URL.createObjectURL(blob)
+    logoUrl.value = logoObjectUrl
+  } catch {
+    clearLogo()
+  }
+}
 
 const loadOrganization = async (id: string) => {
   loadingOrganization.value = true
@@ -93,7 +107,7 @@ const loadOrganization = async (id: string) => {
   try {
     const response = await organizationAPI.getById(id)
     organization.value = response.data?.data || null
-    logoUrl.value = getOrganizationLogoUrl(organization.value)
+    await loadVerifiedLogo(organization.value)
     const mouResponse = await mouAPI.getAll({ limit: 100 })
     const records = mouResponse.data?.data || mouResponse.data || []
     const match = records.find((record: any) => {
@@ -122,6 +136,7 @@ const loadPage = (id: string) => { if (id) { loadOrganization(id); loadReviews(i
 
 onMounted(() => loadPage(organizationId.value))
 watch(organizationId, (id, previous) => { if (id && id !== previous) loadPage(id) })
+onBeforeUnmount(clearLogo)
 </script>
 
 <style scoped>
