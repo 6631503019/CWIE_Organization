@@ -412,6 +412,12 @@ const Get_Editing_Activity_Blob = (index: number): string => {
 }
 const str_Search_Query = ref('')
 const { currentLanguage, text } = useLanguage()
+let searchFetchTimeoutId: number | null = null
+const Normalize_Search_Text = (value: unknown): string =>
+  String(value ?? '')
+    .normalize('NFKC')
+    .trim()
+    .toLocaleLowerCase()
 
 const Get_Roadshow_Organization = (obj_Roadshow: any): string => {
   const str_Organization = currentLanguage.value === 'TH'
@@ -461,17 +467,25 @@ const i_Get_Total_Pages = computed(() => Math.max(1, Math.ceil(Arr_Get_Filtered_
  * Side effects: None
  */
 const Arr_Get_Filtered_Roadshows = computed(() => {
-  const str_Query = str_Search_Query.value.trim().toLowerCase()
+  const str_Query = Normalize_Search_Text(str_Search_Query.value)
   if (!str_Query) return arr_Roadshows.value
 
   return arr_Roadshows.value.filter((roadshow) => {
-    const str_Title = String(roadshow.title || '').toLowerCase()
-    const str_Organization = String(
-      currentLanguage.value === 'TH'
-        ? roadshow.organization_th || roadshow.organization_en
-        : roadshow.organization_en || roadshow.organization_th
-    ).toLowerCase()
-    return str_Title.includes(str_Query) || str_Organization.includes(str_Query)
+    const searchFields = [
+      roadshow.title,
+      roadshow.title_en,
+      roadshow.title_th,
+      roadshow.topic,
+      roadshow.organization,
+      roadshow.organization_en,
+      roadshow.organization_th,
+      roadshow.organization_id?.organization_name_en,
+      roadshow.organization_id?.organization_name_th,
+      roadshow.details,
+      roadshow.description,
+      roadshow.location
+    ]
+    return searchFields.some(value => Normalize_Search_Text(value).includes(str_Query))
   })
 })
 
@@ -481,7 +495,13 @@ const Arr_Get_Paginated_Roadshows = computed(() => {
   return Arr_Get_Filtered_Roadshows.value.slice(i_Start, i_End)
 })
 
-watch(str_Search_Query, () => { obj_state.currentPage = 1 })
+watch(str_Search_Query, () => {
+  obj_state.currentPage = 1
+  if (searchFetchTimeoutId) window.clearTimeout(searchFetchTimeoutId)
+  searchFetchTimeoutId = window.setTimeout(() => {
+    void Load_Roadshows_From_API()
+  }, 300)
+})
 
 
 // ===========================
@@ -1414,7 +1434,9 @@ const Bln_Submit_Update_Roadshow = async (obj_FormData_To_Send: FormData): Promi
  */
 const Load_Roadshows_From_API = async (): Promise<void> => {
   try {
-    const str_Fetch_URL = `${CONST_API_BASE_URL}${CONST_API_ROADSHOWS_ENDPOINT}${CONST_API_LIMIT_QUERY}`
+    const search = Normalize_Search_Text(str_Search_Query.value)
+    const str_Search_Param = search ? `&search=${encodeURIComponent(str_Search_Query.value.trim())}` : ''
+    const str_Fetch_URL = `${CONST_API_BASE_URL}${CONST_API_ROADSHOWS_ENDPOINT}${CONST_API_LIMIT_QUERY}${str_Search_Param}`
     
     const obj_Response = await fetch(str_Fetch_URL, { cache: 'no-store' })
     if (!obj_Response.ok) {
@@ -1516,6 +1538,11 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   try {
     console.log('AdminRoadshow component unmounting - cleaning up resources')
+
+    if (searchFetchTimeoutId) {
+      clearTimeout(searchFetchTimeoutId)
+      searchFetchTimeoutId = null
+    }
     
     // Step 1: Clear auto-refresh interval
     if (obj_state.autoRefreshInterval) {

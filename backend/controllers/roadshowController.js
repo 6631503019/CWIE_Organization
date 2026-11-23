@@ -24,6 +24,7 @@ const getRoadshows = async (req, res, next) => {
         const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
         const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
         const skip = (page - 1) * limit;
+        const searchText = String(req.query.search || '').trim();
 
         const filter = req.query.public !== 'false'
             ? { is_public: true }
@@ -31,6 +32,35 @@ const getRoadshows = async (req, res, next) => {
 
         if (req.query.upcoming === 'true') {
             filter.event_date = { $gte: new Date() };
+        }
+
+        if (searchText) {
+            const escapedSearch = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const searchRegex = new RegExp(escapedSearch, 'i');
+            const matchingOrganizations = await InternshipRecord.find({
+                record_type: 'organization',
+                $or: [
+                    { organization_name_th: searchRegex },
+                    { organization_name_en: searchRegex }
+                ]
+            }).select('_id').lean();
+            const organizationIds = matchingOrganizations.map(item => item._id);
+            filter.$and = [
+                ...(filter.$and || []),
+                {
+                    $or: [
+                        { topic: searchRegex },
+                        { title_en: searchRegex },
+                        { title_th: searchRegex },
+                        { details: searchRegex },
+                        { organization: searchRegex },
+                        { organization_en: searchRegex },
+                        { organization_th: searchRegex },
+                        { location: searchRegex },
+                        { organization_id: { $in: organizationIds } }
+                    ]
+                }
+            ];
         }
 
         const roadshows = await Roadshow.find(filter)

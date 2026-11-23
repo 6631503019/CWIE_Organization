@@ -64,6 +64,7 @@ const getMOUs = async (req, res, next) => {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
+        const searchText = String(req.query.search || '').trim();
 
         const isStudentRequest = !req.user || req.user.role !== 'admin';
         let filter = {};
@@ -79,6 +80,34 @@ const getMOUs = async (req, res, next) => {
             filter.is_published = false;
         }
         // If published not specified or 'all', show all MOUs
+        if (searchText) {
+            const escapedSearch = searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const searchRegex = new RegExp(escapedSearch, 'i');
+            const matchingOrganizations = await InternshipRecord.find({
+                record_type: 'organization',
+                $or: [
+                    { organization_name_th: searchRegex },
+                    { organization_name_en: searchRegex },
+                    { organization_email: searchRegex },
+                    { organization_type: searchRegex },
+                    { province_th: searchRegex },
+                    { province_en: searchRegex },
+                    { country_th: searchRegex },
+                    { country_en: searchRegex }
+                ]
+            }).select('_id').lean();
+            const organizationIds = matchingOrganizations.map(item => item._id);
+            const searchConditions = [{ organization_id: { $in: organizationIds } }];
+            if (req.query.search) {
+                searchConditions.push({
+                    $or: [
+                        { mou_original_name: searchRegex },
+                        { mou_file_path: searchRegex }
+                    ]
+                });
+            }
+            filter.$and = [...(filter.$and || []), { $or: searchConditions }];
+        }
 
         const mous = await MOU.find(filter)
             .populate('organization_id', 'organization_name_en organization_name_th logo_path logo_gridfs_id organization_type business_type_en business_type_th school_en school_th province_en province_th country_en country_th organization_email telephone details')

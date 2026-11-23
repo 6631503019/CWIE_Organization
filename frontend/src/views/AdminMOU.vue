@@ -242,6 +242,12 @@
   const str_Selected_Status = ref('')
   const bln_Show_Status_Dropdown = ref(false)
   const str_Status_Dropdown_Search = ref('')
+  let searchFetchTimeoutId: number | null = null
+  const Normalize_Search_Text = (value: unknown): string =>
+    String(value ?? '')
+      .normalize('NFKC')
+      .trim()
+      .toLocaleLowerCase()
 
   // ===========================
   // MODAL STATES
@@ -284,12 +290,21 @@
     let arr_Filtered = arr_MOUs.value
     
     // Step 1: Apply text search filter
-    if (str_Search_Text.value.trim()) {
-      const str_Search = str_Search_Text.value.toLowerCase()
-      arr_Filtered = arr_Filtered.filter(obj_MOU => 
-        getLocalizedOrganizationName(obj_MOU).toLowerCase().includes(str_Search) ||
-        obj_MOU.status.toLowerCase().includes(str_Search)
-      )
+    const str_Search = Normalize_Search_Text(str_Search_Text.value)
+    if (str_Search) {
+      arr_Filtered = arr_Filtered.filter(obj_MOU => {
+        const searchFields = [
+          obj_MOU.name_en,
+          obj_MOU.name_th,
+          obj_MOU.documentName,
+          obj_MOU.status,
+          obj_MOU.organizationId,
+          obj_MOU.mou?.mou_original_name,
+          obj_MOU.mou?.organization_id?.organization_name_en,
+          obj_MOU.mou?.organization_id?.organization_name_th
+        ]
+        return searchFields.some(value => Normalize_Search_Text(value).includes(str_Search))
+      })
     }
     
     // Step 2: Apply status filter
@@ -333,7 +348,11 @@
   // WATCHERS FOR REACTIVE UPDATES
   // ===========================
   watch(str_Search_Text, () => {
-    obj_state.currentPage = 1 // Reset to first page when searching
+    obj_state.currentPage = 1
+    if (searchFetchTimeoutId) window.clearTimeout(searchFetchTimeoutId)
+    searchFetchTimeoutId = window.setTimeout(() => {
+      void Load_Organizations_From_API()
+    }, 300)
   })
 
   watch(str_Selected_Status, () => {
@@ -686,7 +705,9 @@ const str_MOU_URL = obj_MOU_Data?._id
       const arr_Organizations = obj_Org_Response.data.data || []
       
       // Step 2: Get all MOUs (both published and not published)
-      const obj_MOU_Response = await mouAPI.getAll({ limit: 100 })
+      const mouParams: any = { limit: 100 }
+      if (Normalize_Search_Text(str_Search_Text.value)) mouParams.search = str_Search_Text.value.trim()
+      const obj_MOU_Response = await mouAPI.getAll(mouParams)
       const arr_All_MOUs = obj_MOU_Response.data.data || []
       
       // Build an organization lookup, but use every MOU as the table row source.
@@ -762,6 +783,10 @@ const str_MOU_URL = obj_MOU_Data?._id
   onBeforeUnmount(() => {
     try {
       console.log('AdminMOU component unmounting - cleaning up resources')
+      if (searchFetchTimeoutId) {
+        clearTimeout(searchFetchTimeoutId)
+        searchFetchTimeoutId = null
+      }
       if (obj_state.autoRefreshInterval) {
         clearInterval(obj_state.autoRefreshInterval)
         obj_state.autoRefreshInterval = null

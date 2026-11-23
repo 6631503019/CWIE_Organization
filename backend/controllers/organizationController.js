@@ -12,6 +12,7 @@ const {
 
 const ORGANIZATION_FILTER = { record_type: 'organization' };
 const VALID_TYPES = ['MFU', 'private company', 'Government', 'Oversea'];
+const escapeRegex = value => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const getOrganizations = async (req, res, next) => {
     const startedAt = process.hrtime.bigint();
@@ -63,7 +64,8 @@ const getOrganizations = async (req, res, next) => {
             });
         }
         if (req.query.search) {
-            const search = new RegExp(req.query.search, 'i');
+            const searchText = String(req.query.search).trim();
+            const search = new RegExp(escapeRegex(searchText), 'i');
             const searchConditions = [
                 { organization_name_th: search },
                 { organization_name_en: search },
