@@ -94,6 +94,17 @@ const getCellValueContaining = (row, aliases, excluded = []) => {
     return entry ? text(entry[1]) : '';
 };
 const getPositionalValue = (row, index) => text(Object.values(row)[index]);
+const findReviewColumnIndex = (headerRows, aliases) => {
+    for (const row of headerRows) {
+        const values = Array.isArray(row) ? row : Object.values(row);
+        const index = values.findIndex(value => {
+            const header = normalizeHeader(value);
+            return aliases.some(alias => header === alias || header.includes(alias));
+        });
+        if (index >= 0) return index;
+    }
+    return -1;
+};
 const splitBilingualValue = value => {
     const parts = text(value).split(/\r?\n/).map(part => part.trim()).filter(Boolean);
     return { th: parts[0] || '', en: parts[1] || '' };
@@ -195,14 +206,18 @@ const buildReviewOperations = async (workbook, organizationMap, results) => {
     const operations = [];
     for (const sheetName of workbook.SheetNames.filter(name => /^review\b/i.test(name))) {
         const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1, defval: '', blankrows: true });
+        const academicYearColumn = findReviewColumnIndex(rows.slice(0, 3), ['academic year', 'ปีการศึกษา']);
+        const semesterColumn = findReviewColumnIndex(rows.slice(0, 3), ['semester', 'ภาคการศึกษา']);
         for (let index = 3; index < rows.length; index += 1) {
             const row = rows[index]; const studentId = text(row[1]); const names = splitBilingualValue(row[3]); const position = splitBilingualValue(row[20]); const jobPosition = position.en || position.th;
-            const academicYear = /^\d{4}$/.test(text(row[0])) ? text(row[0]) : undefined;
+            const academicYearValue = text(row[academicYearColumn >= 0 ? academicYearColumn : 0]);
+            const academicYear = /^\d{4}$/.test(academicYearValue) ? academicYearValue : '';
+            const semester = semesterColumn >= 0 ? text(row[semesterColumn]) : '';
             const reviewData = { strength: text(row[8]), improvement: text(row[13]), assignment: text(row[8]), accommodation: text(row[9]), supervisor: text(row[10]), welfare: text(row[11]), other: text(row[12]), recommendations: text(row[19]), recommended_skills: text(row[21]), employment_status: text(row[22]) };
             const reviewText = [reviewData.strength && `Strength: ${reviewData.strength}`, reviewData.improvement && `Area of Improvement: ${reviewData.improvement}`, reviewData.recommendations && `Recommendations: ${reviewData.recommendations}`].filter(Boolean).join('\n').substring(0, 2000);
             const organization = organizationMap.get(normalizeOrganizationName(names.th)) || organizationMap.get(normalizeOrganizationName(names.en));
             if (!studentId || (!names.th && !names.en) || !jobPosition || !reviewText || !organization) { results.reviewFailed += 1; continue; }
-            operations.push({ updateOne: { filter: { source_sheet: sheetName, source_row: index + 1 }, update: { $set: { organization_id: organization._id, job_position: jobPosition, review_text: reviewText, student_id: studentId, student_name: text(row[2]), organization_name: names.en || names.th, source_sheet: sheetName, source_row: index + 1, review_data: reviewData, ...(academicYear ? { academic_year: academicYear } : {}) } }, upsert: true } });
+            operations.push({ updateOne: { filter: { source_sheet: sheetName, source_row: index + 1 }, update: { $set: { organization_id: organization._id, job_position: jobPosition, review_text: reviewText, student_id: studentId, student_name: text(row[2]), organization_name: names.en || names.th, source_sheet: sheetName, source_row: index + 1, review_data: reviewData, ...(academicYear ? { academic_year: academicYear } : {}), ...(semester ? { semester } : {}) } }, upsert: true } });
         }
     }
     return operations;

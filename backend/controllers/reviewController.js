@@ -2,6 +2,73 @@ const Review = require('../models/Review');
 const InternshipRecord = require('../models/InternshipRecord');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 
+const normalizeReviewValue = value => String(value ?? '').trim();
+const getReviewOrganizationId = review => {
+    const organization = review?.organization_id;
+    if (!organization) return '';
+    if (typeof organization === 'object' && organization._id) return String(organization._id);
+    return String(organization);
+};
+
+const enrichReviewsWithInternshipPeriod = async reviews => {
+    const reviewPairs = reviews
+        .map(review => ({
+            studentId: normalizeReviewValue(review.student_id),
+            organizationId: getReviewOrganizationId(review)
+        }))
+        .filter(pair => pair.studentId && pair.organizationId);
+
+    if (!reviewPairs.length) return reviews;
+
+    const uniquePairs = Array.from(new Map(
+        reviewPairs.map(pair => [`${pair.studentId}\u0000${pair.organizationId}`, pair])
+    ).values());
+    const internshipRecords = await InternshipRecord.find({
+        record_type: 'internship',
+        $or: uniquePairs.map(pair => ({
+            student_id: pair.studentId,
+            organization_id: pair.organizationId
+        }))
+    }).select('student_id organization_id academic_year semester source_sheet source_row').lean();
+
+    const recordsByPair = new Map();
+    internshipRecords.forEach(record => {
+        const key = `${normalizeReviewValue(record.student_id)}\u0000${String(record.organization_id || '')}`;
+        const records = recordsByPair.get(key) || [];
+        records.push(record);
+        recordsByPair.set(key, records);
+    });
+
+    return reviews.map(review => {
+        const key = `${normalizeReviewValue(review.student_id)}\u0000${getReviewOrganizationId(review)}`;
+        const candidates = recordsByPair.get(key) || [];
+        const sourceMatchedCandidates = review.source_sheet && review.source_row
+            ? candidates.filter(record =>
+                record.source_sheet === review.source_sheet &&
+                Number(record.source_row) === Number(review.source_row)
+            )
+            : [];
+        const verifiedCandidates = sourceMatchedCandidates.length === 1
+            ? sourceMatchedCandidates
+            : candidates;
+        const resolveUnambiguousValue = field => {
+            const values = Array.from(new Set(
+                verifiedCandidates.map(record => normalizeReviewValue(record[field])).filter(Boolean)
+            ));
+            return values.length === 1 ? values[0] : '';
+        };
+
+        const enriched = { ...review };
+        if (!normalizeReviewValue(enriched.academic_year)) {
+            enriched.academic_year = resolveUnambiguousValue('academic_year');
+        }
+        if (!normalizeReviewValue(enriched.semester)) {
+            enriched.semester = resolveUnambiguousValue('semester');
+        }
+        return enriched;
+    });
+};
+
 // @desc    Get all reviews
 // @route   GET /api/reviews
 // @access  Public
@@ -15,14 +82,16 @@ const getAllReviews = async (req, res, next) => {
             .populate('organization_id', 'organization_name_en organization_name_th')
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
+        const enrichedReviews = await enrichReviewsWithInternshipPeriod(reviews);
 
         const total = await Review.countDocuments();
 
         res.status(200).json({
             success: true,
             message: 'All reviews retrieved successfully',
-            data: reviews,
+            data: enrichedReviews,
             pagination: {
                 page,
                 pages: Math.ceil(total / limit),
@@ -56,14 +125,16 @@ const getReviews = async (req, res, next) => {
             .populate('organization_id', 'organization_name_en organization_name_th')
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(limit);
+            .limit(limit)
+            .lean();
+        const enrichedReviews = await enrichReviewsWithInternshipPeriod(reviews);
 
         const total = await Review.countDocuments({ organization_id: organizationId });
 
         res.status(200).json({
             success: true,
             message: 'Reviews retrieved successfully',
-            data: reviews,
+            data: enrichedReviews,
             pagination: {
                 page,
                 pages: Math.ceil(total / limit),
