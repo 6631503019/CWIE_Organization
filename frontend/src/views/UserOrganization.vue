@@ -118,7 +118,7 @@
                 <input 
                   type="text" 
                   v-model="dropdownSearch.province" 
-                  placeholder="Search..."
+                 :placeholder="text('Search province...', 'ค้นหาจังหวัด...')"
                   @click.stop
                   class="dropdown_search_input"
                 />
@@ -186,7 +186,43 @@ const getOrganizationDisplayField = (organization: any, englishFields: string[],
 const optionsFor = (englishField: string, thaiField: string) => Array.from(new Set(organizations.value.map(item => localized(item.rawData[englishField], item.rawData[thaiField])).filter(value => value && value !== 'N/A'))).sort()
 const filteredIndustryCat = computed(() => optionsFor('school_en', 'school_th').filter(value => !dropdownSearch.industryCat || value.toLowerCase().includes(dropdownSearch.industryCat.toLowerCase())))
 const filteredCountry = computed(() => optionsFor('country_en', 'country_th').filter(value => !dropdownSearch.country || value.toLowerCase().includes(dropdownSearch.country.toLowerCase())))
-const filteredProvince = computed(() => optionsFor('province_en', 'province_th').filter(value => !dropdownSearch.province || value.toLowerCase().includes(dropdownSearch.province.toLowerCase())))
+const getProvinceKey = (raw: any): string => {
+  const provinceRef = raw?.province_id
+  const refValue = typeof provinceRef === 'object' && provinceRef !== null
+    ? provinceRef.name_en || provinceRef.province_en || provinceRef.name || provinceRef.name_th || provinceRef.province_th || provinceRef._id
+    : provinceRef
+  return String(raw?.province_en || refValue || raw?.province_th || '').trim()
+}
+const getProvinceLabel = (key: string): string => {
+  if (!key) return text('Province', 'จังหวัด')
+  const organization = organizations.value.find(item => {
+    const raw = item.rawData || {}
+    return getProvinceKey(raw) === key ||
+      raw.province_en === key ||
+      raw.province_th === key ||
+      raw.province_id === key
+  })
+  if (!organization) return key
+  const raw = organization.rawData || {}
+  return String(
+    currentLanguage.value === 'TH'
+      ? raw.province_th || raw.province_en || getProvinceKey(raw)
+      : raw.province_en || raw.province_th || getProvinceKey(raw)
+  )
+}
+const provinceOptions = computed(() => {
+  const values = organizations.value
+    .map(item => getProvinceKey(item.rawData || {}))
+    .filter(value => value && value !== 'N/A')
+  return ['', ...Array.from(new Set(values)).sort((a, b) =>
+    getProvinceLabel(a).localeCompare(getProvinceLabel(b))
+  )]
+})
+const filteredProvince = computed(() => provinceOptions.value.filter(option => {
+  if (!option) return true
+  const label = getProvinceLabel(option)
+  return !dropdownSearch.province || label.toLowerCase().includes(dropdownSearch.province.trim().toLowerCase())
+}))
 const filteredType = computed(() => Array.from(new Set(organizations.value.map(item => getOrganizationDisplayField(item.rawData, ['organization_type', 'business_type_en', 'business_type'], ['business_type_th', 'organization_type_th'])).filter(value => value !== 'N/A'))).sort())
 const filteredBusinessCategory = computed(() => {
   const values = Array.from(new Set(organizations.value.map(item =>
@@ -198,8 +234,18 @@ const filteredBusinessCategory = computed(() => {
 })
 
 const toggleDropdown = (key: 'industryCat' | 'country' | 'type' | 'province' | 'businessCategory') => { dropdowns[key] = !dropdowns[key] }
-const getSelectedFilterLabel = (key: keyof typeof selectedFilters, value: string) => value || ({ industryCat: text('School', 'สำนักวิชา'), country: text('Country', 'ประเทศ'), type: text('Type', 'ประเภท'), province: text('Province', 'จังหวัด'), businessCategory: text('Business Category', 'หมวดธุรกิจ') } as any)[key]
-const getFilterOptionLabel = (_key: string, value: string) => value
+const getSelectedFilterLabel = (key: keyof typeof selectedFilters, value: string) =>
+  key === 'province' && value
+    ? getProvinceLabel(value)
+    : (value || ({
+        industryCat: text('School', 'สำนักวิชา'),
+        country: text('Country', 'ประเทศ'),
+        type: text('Type', 'ประเภท'),
+        province: text('Province', 'จังหวัด'),
+        businessCategory: text('Business Category', 'หมวดธุรกิจ')
+      } as any)[key])
+const getFilterOptionLabel = (key: string, value: string) =>
+  key === 'province' ? (value ? getProvinceLabel(value) : text('All', 'ทั้งหมด')) : value
 const selectOption = (key: keyof typeof selectedFilters, value: string) => { selectedFilters[key] = value; dropdowns[key] = false }
 const Handle_Dropdown_Outside = (event: PointerEvent) => {
   const target = event.target as Element | null

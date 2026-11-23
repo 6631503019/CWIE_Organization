@@ -121,7 +121,7 @@
                 <input 
                   type="text" 
                   v-model="dropdownSearch.province" 
-                  placeholder="Search..."
+                 :placeholder="text('Search province...', 'ค้นหาจังหวัด...')"
                   @click.stop
                   class="dropdown_search_input"
                 />
@@ -1023,6 +1023,7 @@ const getFilterOptionLabel = (
   option: string
 ): string => {
   if (option === 'All') return text('All', 'ทั้งหมด')
+  if (field === 'province') return getProvinceLabel(option)
 
   const fieldConfig = {
     industryCat: {
@@ -1156,34 +1157,41 @@ const filteredBusinessCategory = computed(() => {
   )
 })
 
-// Province options are generated from the actual organization data returned by the API.
-// No province names are hard-coded here: new province values appear automatically
-// as soon as an organization containing that province is loaded.
-const provinceOptions = computed(() => {
-  const provinces = allOrganizations.value.flatMap(org => {
+const getProvinceKey = (raw: any): string => {
+  const provinceRef = raw?.province_id
+  const refValue = typeof provinceRef === 'object' && provinceRef !== null
+    ? provinceRef.name_en || provinceRef.province_en || provinceRef.name || provinceRef.name_th || provinceRef.province_th || provinceRef._id
+    : provinceRef
+  return String(raw?.province_en || refValue || raw?.province_th || '').trim()
+}
+
+const getProvinceLabel = (key: string): string => {
+  if (!key) return text('--Province--', '--เลือกจังหวัด--')
+  const organization = allOrganizations.value.find(org => {
     const raw = org.rawData || {}
-    const provinceRef = raw.province_id
-    const candidates = [
-      org.org_province,
-      raw.province_en,
-      raw.province_th,
-      raw.province,
-      typeof provinceRef === 'object' && provinceRef !== null
-        ? provinceRef.name_en || provinceRef.province_en || provinceRef.name || provinceRef.name_th || provinceRef.province_th
-        : '',
-      // Keep a selected legacy value available even when the API returns an unpopulated reference.
-      org.province
-    ]
-
-    return candidates
-      .map(value => typeof value === 'string' ? value.trim() : '')
-      .filter(value => value && value !== 'N/A')
-      .map(value => normalizeLocationValue(value))
+    return getProvinceKey(raw) === key ||
+      raw.province_en === key ||
+      raw.province_th === key ||
+      raw.province_id === key
   })
+  if (!organization) return key
+  const raw = organization.rawData || {}
+  return String(
+    currentLanguage.value === 'TH'
+      ? raw.province_th || raw.province_en || getProvinceKey(raw)
+      : raw.province_en || raw.province_th || getProvinceKey(raw)
+  )
+}
 
+const provinceOptions = computed(() => {
+  const provinces = allOrganizations.value
+    .map(org => getProvinceKey(org.rawData || {}))
+    .filter(value => value && value !== 'N/A')
   return [
     'All',
-    ...Array.from(new Set(provinces)).sort((a, b) => a.localeCompare(b))
+    ...Array.from(new Set(provinces)).sort((a, b) =>
+      getProvinceLabel(a).localeCompare(getProvinceLabel(b))
+    )
   ]
 })
 

@@ -102,7 +102,15 @@ const getOrganizations = async (req, res, next) => {
                 organizationFilter.country_id = new RegExp(escapeRegex(String(req.query.country)), 'i');
             }
             if (req.query.province) {
-                organizationFilter.province_id = new RegExp(escapeRegex(String(req.query.province)), 'i');
+                const province = new RegExp(escapeRegex(String(req.query.province)), 'i');
+                organizationFilter.$and = [
+                    ...(organizationFilter.$and || []),
+                    { $or: [
+                        { province_id: province },
+                        { province_en: province },
+                        { province_th: province }
+                    ] }
+                ];
             }
             if (req.query.geography) {
                 organizationFilter.geography_id = new RegExp(escapeRegex(String(req.query.geography)), 'i');
