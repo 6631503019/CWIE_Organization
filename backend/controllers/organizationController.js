@@ -1,4 +1,5 @@
 const InternshipRecord = require('../models/InternshipRecord');
+const Organization = require('../models/Organization');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 const { deleteStoredFile } = require('../utils/fileCleanup');
 const { getPublicUploadPath } = require('../config/uploads');
@@ -50,8 +51,8 @@ const getOrganizations = async (req, res, next) => {
             arr_And_Conditions.push({
                 $or: [
                     { industry_category_id: new RegExp(req.query.industry, 'i') },
-                    { business_category_en: new RegExp(req.query.industry, 'i') },
-                    { business_category_th: new RegExp(req.query.industry, 'i') }
+                    { organization_name_en: new RegExp(req.query.industry, 'i') },
+                    { organization_name_th: new RegExp(req.query.industry, 'i') }
                 ]
             });
         }
@@ -71,32 +72,69 @@ const getOrganizations = async (req, res, next) => {
                 { organization_name_en: search },
                 { organization_email: search },
                 { country_id: search },
-                { country_th: search },
-                { country_en: search },
                 { province_id: search },
-                { province_th: search },
-                { province_en: search },
                 { industry_category_id: search },
-                { business_category_th: search },
-                { business_category_en: search },
-                { organization_type: search },
-                { school_th: search },
-                { school_en: search }
+                { organization_type: search }
             ];
             arr_And_Conditions.push({ $or: searchConditions });
         }
         if (arr_And_Conditions.length) filter.$and = arr_And_Conditions;
 
         const dbStartedAt = process.hrtime.bigint();
-        const [records, total] = await Promise.all([
-            InternshipRecord.find(filter)
-                .select('record_type organization_key organization_name_th organization_name_en address_th address_en organization_email telephone province_id province_th province_en country_id country_th country_en geography_id organization_type business_type_th business_type_en business_category_th business_category_en school_th school_en industry_category_id is_public logo_path logo_gridfs_id details admin_id createdAt updatedAt')
-                .sort({ createdAt: -1 })
-                .skip((page - 1) * limit)
-                .limit(limit)
-                .lean(),
-            InternshipRecord.countDocuments(filter)
-        ]);
+        let records;
+        let total;
+        if (req.query.search) {
+            const organizationSearch = String(req.query.search).trim();
+            const search = new RegExp(escapeRegex(organizationSearch), 'i');
+            const organizationFilter = {
+                $or: [
+                    { name_th: search },
+                    { name_en: search },
+                    { organization_type: search },
+                    { industry_category_id: search },
+                    { country_id: search },
+                    { geography_id: search },
+                    { province_id: search },
+                    { email: search },
+                    { phone_number: search },
+                    { address_th: search },
+                    { address_en: search },
+                    { details: search }
+                ]
+            };
+            if (req.query.public !== 'false') organizationFilter.is_public = true;
+            if (req.query.type) organizationFilter.organization_type = req.query.type;
+            if (req.query.country) {
+                organizationFilter.country_id = new RegExp(escapeRegex(String(req.query.country)), 'i');
+            }
+            if (req.query.province) {
+                organizationFilter.province_id = new RegExp(escapeRegex(String(req.query.province)), 'i');
+            }
+            if (req.query.geography) {
+                organizationFilter.geography_id = new RegExp(escapeRegex(String(req.query.geography)), 'i');
+            }
+            if (req.query.industry) {
+                organizationFilter.industry_category_id = new RegExp(escapeRegex(String(req.query.industry)), 'i');
+            }
+            [records, total] = await Promise.all([
+                Organization.find(organizationFilter)
+                    .sort({ createdAt: -1 })
+                    .skip((page - 1) * limit)
+                    .limit(limit)
+                    .lean(),
+                Organization.countDocuments(organizationFilter)
+            ]);
+        } else {
+            [records, total] = await Promise.all([
+                InternshipRecord.find(filter)
+                    .select('record_type organization_key organization_name_th organization_name_en address_th address_en organization_email telephone province_id province_th province_en country_id country_th country_en geography_id organization_type business_type_th business_type_en business_category_th business_category_en school_th school_en industry_category_id is_public logo_path logo_gridfs_id details admin_id createdAt updatedAt')
+                    .sort({ createdAt: -1 })
+                    .skip((page - 1) * limit)
+                    .limit(limit)
+                    .lean(),
+                InternshipRecord.countDocuments(filter)
+            ]);
+        }
         const dbMs = Number(process.hrtime.bigint() - dbStartedAt) / 1e6;
 
         res.status(200).json({

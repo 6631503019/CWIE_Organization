@@ -129,7 +129,7 @@
             <div><span class="status_pill" :class="org.status">{{ org.status === 'active' ? text('Active', 'ใช้งาน') : text('Inactive', 'ไม่ใช้งาน') }}</span></div>
             <div class="action_buttons"><button class="text_action" @click="!state.loading && editOrganization(org.id)" :disabled="state.loading">{{ text('Edit', 'แก้ไข') }}</button><button class="text_action danger" @click="!state.loading && deleteOrganization(org.id)" :disabled="state.loading">{{ text('Delete', 'ลบ') }}</button><button v-if="org.hasMOU" class="text_action" @click="!state.loading && viewDocument(org.id)">{{ text('View', 'ดู') }}</button></div>
           </div>
-          <div v-if="!state.loading && paginatedOrganizations.length === 0" class="empty_state">No organizations found.</div>
+          <div v-if="!state.loading && paginatedOrganizations.length === 0" class="empty_state">No Organization Found</div>
         </div>
         <Pagination :current-page="state.currentPage" :total-pages="paginationInfo.totalPages" :total-items="paginationInfo.totalItems" :loading="state.loading" :show-info="false" @page-change="handlePageChange" />
       </section>
