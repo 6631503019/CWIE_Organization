@@ -29,23 +29,10 @@
 
       <article :key="activeReviewKey" class="review-card">
         <div class="review-content">
-          <div class="review-meta">
-            <strong>{{ reviewerName(activeReview) }}</strong>
-            <span v-if="reviewDate(activeReview)" class="review-date">{{ reviewDate(activeReview) }}</span>
-          </div>
-
-          <div v-if="Number(activeReview.rating) >= 1" class="review-rating" :aria-label="`Rating ${activeReview.rating} / 5`">
-            <span v-for="star in 5" :key="star" :class="{ filled: star <= Number(activeReview.rating) }">★</span>
-          </div>
-
-          <p class="review-text">{{ activeReview.review_text || activeReview.review_data?.reviewText || '—' }}</p>
-          <img
-            v-if="reviewImageUrl"
-            class="review-image"
-            :src="reviewImageUrl"
-            :alt="text('Review image', 'รูปภาพรีวิว')"
-            @error="clearReviewImage"
-          />
+          <div class="review-meta"><strong>{{ text('Job Position', 'ตำแหน่งงาน') }}</strong> {{ displayReviewValue(activeReview.job_position) }}</div>
+          <div class="review-meta"><strong>{{ text('Academic Year', 'ปีการศึกษา') }}</strong> {{ displayReviewValue(activeReview.academic_year) }}</div>
+          <div class="review-meta"><strong>{{ text('Semester', 'ภาคการศึกษา') }}</strong> {{ displayReviewValue(activeReview.semester) }}</div>
+          <p class="review-text"><strong>{{ text('Review', 'รีวิว') }}</strong> {{ displayReviewValue(activeReview.review_text) }}</p>
         </div>
 
         <div v-if="admin" class="review-actions">
@@ -95,6 +82,10 @@ let touchStartX = 0
 
 const activeReview = computed(() => props.reviews[currentIndex.value] || {})
 const activeReviewKey = computed(() => String(activeReview.value._id || activeReview.value.source_row || currentIndex.value))
+const displayReviewValue = (value: unknown): string => {
+  const normalized = String(value ?? '').trim()
+  return normalized || 'N/A'
+}
 
 const reviewerName = (review: any): string => {
   const organizationName = typeof review.organization_id === 'object'

@@ -307,7 +307,7 @@
               <!-- Current Review Card -->
               <div class="review_carousel_card" v-if="currentReview">
                 <div class="review_card_header">
-                  <div class="review_position">{{ currentReview.job_position || 'N/A' }}</div>
+                  <div class="review_position">{{ getReviewField(currentReview.job_position) }}</div>
                   <button class="delete_review_btn" @click="startEditingReview(currentReview)" title="Edit review">
                     <span aria-hidden="true">Edit</span>
                   </button>
@@ -315,7 +315,11 @@
                     <div class="delete_icon"></div>
                   </button>
                 </div>
-                <p class="review_card_text">{{ currentReview.review_text }}</p>
+                <div class="review_card_text">
+                  <div>Academic Year: {{ getReviewField(currentReview.academic_year) }}</div>
+                  <div>Semester: {{ getReviewField(currentReview.semester) }}</div>
+                  <div>Review: {{ getReviewField(currentReview.review_text) }}</div>
+                </div>
                 <div class="review_counter">{{ currentReviewIndex + 1 }} / {{ existingReviews.length }}</div>
               </div>
               
@@ -589,6 +593,11 @@ const startEditingReview = (review: any) => {
   reviewData.semester = review.semester || ''
 }
 
+const getReviewField = (value: unknown): string => {
+  const normalized = String(value ?? '').trim()
+  return normalized || 'N/A'
+}
+
 // Delete a review
 const deleteExistingReview = async (reviewId: string) => {
   const confirmed = confirm('Are you sure you want to delete this review?')
@@ -706,12 +715,16 @@ const saveAllData = async () => {
         errors.push('Review (No organization ID)')
       } else {
         try {
-          const reviewPayload = {
+          const reviewPayload: Record<string, string> = {
             organization_id: savedOrgId,
-            job_position: reviewData.jobPosition,
-            review_text: reviewData.review,
-            academic_year: reviewData.academicYear,
-            semester: reviewData.semester
+            job_position: reviewData.jobPosition.trim(),
+            review_text: reviewData.review.trim()
+          }
+          if (!reviewData.editingId || reviewData.academicYear.trim()) {
+            reviewPayload.academic_year = reviewData.academicYear.trim()
+          }
+          if (!reviewData.editingId || reviewData.semester.trim()) {
+            reviewPayload.semester = reviewData.semester.trim()
           }
           if (reviewData.editingId) {
             await reviewAPI.update(reviewData.editingId, reviewPayload)

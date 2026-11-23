@@ -432,12 +432,16 @@
                 <!-- Current Review Card -->
                 <div class="review_carousel_card" v-if="currentReview">
                   <div class="review_card_header">
-                    <div class="review_position">{{ currentReview.job_position || 'N/A' }}</div>
+                    <div class="review_position">{{ getReviewField(currentReview.job_position) }}</div>
                     <button class="delete_review_btn" @click="deleteExistingReview(currentReview._id)" title="Delete review">
                       <div class="delete_icon"></div>
                     </button>
                   </div>
-                  <p class="review_card_text">{{ currentReview.review_text }}</p>
+                  <div class="review_card_text">
+                    <div>Academic Year: {{ getReviewField(currentReview.academic_year) }}</div>
+                    <div>Semester: {{ getReviewField(currentReview.semester) }}</div>
+                    <div>Review: {{ getReviewField(currentReview.review_text) }}</div>
+                  </div>
                   <div class="review_counter">{{ currentReviewIndex + 1 }} / {{ existingReviews.length }}</div>
                 </div>
                 
@@ -461,6 +465,24 @@
                 type="text" 
                 v-model="reviewData.jobPosition" 
                 placeholder="Enter job position"
+              />
+            </div>
+
+            <div class="form_group">
+              <label>Academic Year</label>
+              <input
+                type="text"
+                v-model="reviewData.academicYear"
+                placeholder="Enter academic year"
+              />
+            </div>
+
+            <div class="form_group">
+              <label>Semester</label>
+              <input
+                type="text"
+                v-model="reviewData.semester"
+                placeholder="Enter semester"
               />
             </div>
             
@@ -1493,9 +1515,15 @@ const modalFilteredIndustryCategory = computed(() => {
 // Review form data
 const reviewData = reactive({
   jobPosition: '',
-  review: ''
+  review: '',
+  academicYear: '',
+  semester: ''
 })
 const currentReviewIndex = ref(0)
+const getReviewField = (value: unknown): string => {
+  const normalized = String(value ?? '').trim()
+  return normalized || 'N/A'
+}
 
 // MOU form data
 const mouData = reactive({
@@ -1559,6 +1587,8 @@ const resetForm = () => {
   // Reset review data
   reviewData.jobPosition = ''
   reviewData.review = ''
+  reviewData.academicYear = ''
+  reviewData.semester = ''
   
   // Reset MOU data
   mouData.mouFile = null
@@ -1695,12 +1725,14 @@ const saveAllData = async () => {
     const orgId = state.editingOrgId || result.data.data._id
 
     // Step 2: Save Review Data (if provided)
-    if (reviewData.jobPosition && reviewData.review) {
+    if (reviewData.jobPosition.trim() && reviewData.review.trim()) {
       try {
         const reviewFormData = new FormData()
         reviewFormData.append('organization_id', orgId)
-        reviewFormData.append('job_position', reviewData.jobPosition)
-        reviewFormData.append('review_text', reviewData.review)
+        reviewFormData.append('job_position', reviewData.jobPosition.trim())
+        reviewFormData.append('academic_year', reviewData.academicYear.trim())
+        reviewFormData.append('semester', reviewData.semester.trim())
+        reviewFormData.append('review_text', reviewData.review.trim())
         
         await reviewAPI.create(reviewFormData)
         savedItems.push('Review')

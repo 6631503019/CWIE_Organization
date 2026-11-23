@@ -59,7 +59,17 @@ const save = async () => {
   saving.value = true
   error.value = ''
   try {
-    const payload = { organization_id: props.organizationId, ...form }
+    const payload: Record<string, string> = {
+      organization_id: props.organizationId,
+      job_position: form.job_position.trim(),
+      review_text: form.review_text.trim()
+    }
+    if (!reviewId.value || form.academic_year.trim()) {
+      payload.academic_year = form.academic_year.trim()
+    }
+    if (!reviewId.value || form.semester.trim()) {
+      payload.semester = form.semester.trim()
+    }
     if (reviewId.value) await reviewAPI.update(reviewId.value, payload)
     else await reviewAPI.create(payload)
     emit('saved')
