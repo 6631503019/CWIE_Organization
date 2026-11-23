@@ -22,12 +22,10 @@
 
         <section class="filter_section">
           <input type="text" :placeholder="text('Search organization...', 'ค้นหาองค์กร...')" class="search_input" v-model="searchText" />
-          <div class="filter_labels">
-            <span>{{ text('Business Category', 'หมวดธุรกิจ') }}</span><span>{{ text('School', 'สำนักวิชา') }}</span><span>{{ text('Country', 'ประเทศ') }}</span><span>{{ text('Type', 'ประเภท') }}</span><span>{{ text('Province', 'จังหวัด') }}</span>
-          </div>
           <div class="dropdowns_grid">
-          <!-- Business Category dropdown -->
-          <div class="dropdown_container business_category" :class="{ active: dropdowns.businessCategory }">
+          <div class="filter_field business_category" :class="{ active: dropdowns.businessCategory }">
+            <span class="filter_label">{{ text('Business Category', 'หมวดธุรกิจ') }}</span>
+            <div class="dropdown_container">
             <div class="dropdown_header" @click="toggleDropdown('businessCategory')">
               <span class="dropdown_text">{{ getSelectedFilterLabel('businessCategory', selectedFilters.businessCategory) }}</span>
               <div class="dropdown_arrow"></div>
@@ -40,9 +38,11 @@
                 {{ getFilterOptionLabel('businessCategory', option) }}
               </div>
             </div>
+            </div>
           </div>
-          <!-- School dropdown -->
-          <div class="dropdown_container industry_cat" :class="{ active: dropdowns.industryCat }">
+          <div class="filter_field industry_cat" :class="{ active: dropdowns.industryCat }">
+            <span class="filter_label">{{ text('School', 'สำนักวิชา') }}</span>
+            <div class="dropdown_container">
             <div class="dropdown_header" @click="toggleDropdown('industryCat')">
               <span class="dropdown_text">{{ getSelectedFilterLabel('industryCat', selectedFilters.industryCat) }}</span>
               <div class="dropdown_arrow"></div>
@@ -61,10 +61,11 @@
                 {{ getFilterOptionLabel('industryCat', option) }}
               </div>
             </div>
+            </div>
           </div>
-          
-          <!-- Country dropdown -->
-          <div class="dropdown_container country" :class="{ active: dropdowns.country }">
+          <div class="filter_field country" :class="{ active: dropdowns.country }">
+            <span class="filter_label">{{ text('Country', 'ประเทศ') }}</span>
+            <div class="dropdown_container">
             <div class="dropdown_header" @click="toggleDropdown('country')">
               <span class="dropdown_text">{{ getSelectedFilterLabel('country', selectedFilters.country) }}</span>
               <div class="dropdown_arrow"></div>
@@ -83,10 +84,11 @@
                 {{ getFilterOptionLabel('country', option) }}
               </div>
             </div>
+            </div>
           </div>
-          
-          <!-- Type dropdown -->
-          <div class="dropdown_container type" :class="{ active: dropdowns.type }">
+          <div class="filter_field type" :class="{ active: dropdowns.type }">
+            <span class="filter_label">{{ text('Type', 'ประเภท') }}</span>
+            <div class="dropdown_container">
             <div class="dropdown_header" @click="toggleDropdown('type')">
               <span class="dropdown_text">{{ getSelectedFilterLabel('type', selectedFilters.type) }}</span>
               <div class="dropdown_arrow"></div>
@@ -105,10 +107,11 @@
                 {{ getFilterOptionLabel('type', option) }}
               </div>
             </div>
+            </div>
           </div>
-
-          <!-- Province dropdown -->
-          <div class="dropdown_container province" :class="{ active: dropdowns.province }">
+          <div class="filter_field province" :class="{ active: dropdowns.province }">
+            <span class="filter_label">{{ text('Province', 'จังหวัด') }}</span>
+            <div class="dropdown_container">
             <div class="dropdown_header" @click="toggleDropdown('province')">
               <span class="dropdown_text">{{ getSelectedFilterLabel('province', selectedFilters.province) }}</span>
               <div class="dropdown_arrow"></div>
@@ -126,6 +129,7 @@
               <div class="dropdown_option" v-for="option in filteredProvince" :key="option" @click="selectOption('province', option)">
                 {{ getFilterOptionLabel('province', option) }}
               </div>
+            </div>
             </div>
           </div>
         </div>
@@ -4206,9 +4210,31 @@ onBeforeUnmount(() => {
 
 .filter_section { width: 100%; height: auto; min-height: 146px; box-sizing: border-box; margin: 0 0 22px; padding: 12px 20px 11px; background: #ffffff; border-radius: 0; box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25); }
 .search_input { width: 100%; height: 30px; box-sizing: border-box; padding: 9px 12px; border: 0.4px solid #a8a8ac; border-radius: 8px; font: 400 10px/12px Inter, sans-serif; color: #1f2937; }
-.filter_labels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin-top: 14px; padding: 0 2px; font: 500 10px/12px Inter, sans-serif; color: #000000; }
-.dropdowns_grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 0; }
-.dropdown_container { margin: 0; min-width: 0; }
+.filter_labels { display: none; }
+.dropdowns_grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 8px;
+  row-gap: 12px;
+  margin: 14px 0 0;
+}
+.filter_field {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.filter_field.province {
+  grid-column: 1;
+  grid-row: 2;
+  width: 100%;
+}
+.filter_label {
+  min-width: 0;
+  font: 500 10px/12px Inter, sans-serif;
+  color: #000000;
+}
+.dropdown_container { margin: 0; min-width: 0; width: 100%; }
 .dropdown_header { height: 28px; box-sizing: border-box; padding: 7px; border: 0.4px solid #a8a8ac; border-radius: 8px; }
 .dropdown_text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 10px/12px Inter, sans-serif; color: #73737a; }
 .dropdown_arrow { width: 8px; height: 6px; background: #000000; }
@@ -4330,11 +4356,14 @@ onBeforeUnmount(() => {
   min-height: 146px;
 }
 
-.filter_labels,
 .dropdowns_grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
+  .filter_field.province {
+    grid-column: 1;
+    grid-row: 2;
+  }
 
 .table_container {
   width: 100%;
@@ -4357,7 +4386,6 @@ onBeforeUnmount(() => {
     width: calc(100% - 32px);
   }
 
-  .filter_labels,
   .dropdowns_grid {
     gap: 6px;
   }
@@ -4387,9 +4415,12 @@ onBeforeUnmount(() => {
     justify-content: flex-end;
   }
 
-  .filter_labels,
   .dropdowns_grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .filter_field.province {
+    grid-column: 1;
+    grid-row: auto;
   }
 
   .filter_section {
@@ -4475,7 +4506,47 @@ onBeforeUnmount(() => {
   .dropdowns_grid { gap: 6px; }
   .table_header,
   .table_row {
-    grid-template-columns: minmax(0, 2fr) minmax(64px, .9fr) minmax(60px, .75fr) minmax(76px, .9fr) minmax(70px, .8fr) minmax(70px, .8fr) minmax(116px, 1.2fr);
+    grid-template-columns: minmax(0, 2fr) minmax(64px, .9fr) minmax(82px, 1fr) minmax(60px, .75fr) minmax(76px, .9fr) minmax(70px, .8fr) minmax(70px, .8fr) minmax(116px, 1.2fr);
+  }
+}
+
+.filter_field,
+.dropdown_container {
+  min-width: 0;
+}
+
+.filter_buttons {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  column-gap: 8px;
+  margin-top: 13px;
+}
+
+@media (max-width: 900px) {
+  .dropdowns_grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 8px;
+    row-gap: 12px;
+  }
+  .filter_field.province {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .dropdowns_grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 12px;
+  }
+  .filter_field,
+  .filter_field.province {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .filter_buttons {
+    width: 100%;
   }
 }
 
