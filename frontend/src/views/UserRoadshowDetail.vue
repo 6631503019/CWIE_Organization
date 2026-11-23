@@ -97,15 +97,15 @@ const Get_Status = (roadshow: any) => {
     const deleted = new Date(roadshow.deleted_date)
     if (!Number.isNaN(deleted.getTime())) {
       const today = new Date(); today.setHours(0, 0, 0, 0)
-      if (deleted.getTime() < today.getTime()) return text('Completed', '??????')
+      if (deleted.getTime() < today.getTime()) return text('Completed', 'เสร็จสิ้น')
     }
   }
-  return roadshow.is_public ? text('Active', '??????') : text('Upcoming', '?????????')
+  return roadshow.is_public ? text('Active', 'กำลังดำเนินการ') : text('Upcoming', 'กำลังจะมาถึง')
 }
 const Get_Status_Class = (roadshow: any) => {
   const status = Get_Status(roadshow)
-  if (status === text('Completed', '??????')) return 'status_completed'
-  if (status === text('Active', '??????')) return 'status_active'
+  if (status === text('Completed', 'เสร็จสิ้น')) return 'status_completed'
+  if (status === text('Active', 'กำลังดำเนินการ')) return 'status_active'
   return 'status_upcoming'
 }
 const Format_Date = (value: any) => {

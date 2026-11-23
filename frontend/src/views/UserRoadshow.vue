@@ -136,14 +136,14 @@ const Format_Table_Date = (value: any) => {
 const Get_Date_Status = (roadshow: any) => {
   if (roadshow.deleted_date) {
     const deleted = new Date(roadshow.deleted_date)
-    if (!Number.isNaN(deleted.getTime()) && deleted < new Date()) return text('Completed', '??????')
+    if (!Number.isNaN(deleted.getTime()) && deleted < new Date()) return text('Completed', 'เสร็จสิ้น')
   }
-  return roadshow.is_public ? text('Active', '??????') : text('Upcoming', '?????????')
+  return roadshow.is_public ? text('Active', 'กำลังดำเนินการ') : text('Upcoming', 'กำลังจะมาถึง')
 }
 const Get_Date_Status_Class = (roadshow: any) => {
   const status = Get_Date_Status(roadshow)
-  if (status === text('Completed', '??????')) return 'status_completed'
-  if (status === text('Active', '??????')) return 'status_active'
+  if (status === text('Completed', 'เสร็จสิ้น')) return 'status_completed'
+  if (status === text('Active', 'กำลังดำเนินการ')) return 'status_active'
   return 'status_upcoming'
 }
 const Arr_Get_Filtered_Roadshows = computed(() => {

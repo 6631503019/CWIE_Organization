@@ -974,30 +974,30 @@ const Get_Table_Status_Class = (obj_Roadshow: any): string => {
 const Get_Date_Status = (obj_Roadshow: any): string => {
   const str_Event_Date = obj_Roadshow?.event_date || obj_Roadshow?.posted_date || ''
 
-  if (!str_Event_Date) return 'Upcoming'
+  if (!str_Event_Date) return text('Upcoming', 'กำลังจะมาถึง')
 
   const obj_Event_Date = new Date(`${str_Event_Date}T00:00:00`)
-  if (Number.isNaN(obj_Event_Date.getTime())) return 'Upcoming'
+  if (Number.isNaN(obj_Event_Date.getTime())) return text('Upcoming', 'กำลังจะมาถึง')
 
   const obj_Today = new Date()
   obj_Today.setHours(0, 0, 0, 0)
 
   if (obj_Event_Date.getTime() < obj_Today.getTime()) {
-    return 'Completed'
+    return text('Completed', 'เสร็จสิ้น')
   }
 
   if (obj_Event_Date.getTime() === obj_Today.getTime()) {
-    return 'Active'
+    return text('Active', 'กำลังดำเนินการ')
   }
 
-  return 'Upcoming'
+  return text('Upcoming', 'กำลังจะมาถึง')
 }
 
 const Get_Date_Status_Class = (obj_Roadshow: any): string => {
   const str_Status = Get_Date_Status(obj_Roadshow)
 
-  if (str_Status === 'Completed') return 'status_completed'
-  if (str_Status === 'Active') return 'status_active'
+  if (str_Status === text('Completed', 'เสร็จสิ้น')) return 'status_completed'
+  if (str_Status === text('Active', 'กำลังดำเนินการ')) return 'status_active'
   return 'status_upcoming'
 }
 

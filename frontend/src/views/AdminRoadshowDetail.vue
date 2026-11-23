@@ -176,7 +176,7 @@ function revokeDetailBlobUrls(): void {
 // Purpose: Convert roadshow data into the status text shown in the detail page
 // ============================================================================
 function Get_Status(obj_Roadshow: any): string {
-  if (!obj_Roadshow) return 'Upcoming'
+  if (!obj_Roadshow) return text('Upcoming', 'กำลังจะมาถึง')
 
   if (obj_Roadshow.deleted_date) {
     const obj_Deleted_Date = new Date(obj_Roadshow.deleted_date)
@@ -184,14 +184,14 @@ function Get_Status(obj_Roadshow: any): string {
       const obj_Today = new Date()
       obj_Today.setHours(0, 0, 0, 0)
       if (obj_Deleted_Date.getTime() < obj_Today.getTime()) {
-        return 'Completed'
+        return text('Completed', 'เสร็จสิ้น')
       }
     }
   }
 
   return (obj_Roadshow.is_public ?? obj_Roadshow.isPublic)
-    ? 'Active'
-    : 'Upcoming'
+    ? text('Active', 'กำลังดำเนินการ')
+    : text('Upcoming', 'กำลังจะมาถึง')
 }
 
 // ============================================================================
@@ -201,8 +201,8 @@ function Get_Status(obj_Roadshow: any): string {
 function Get_Status_Class(obj_Roadshow: any): string {
   const str_Status = Get_Status(obj_Roadshow)
 
-  if (str_Status === 'Completed') return 'status_completed'
-  if (str_Status === 'Active') return 'status_active'
+  if (str_Status === text('Completed', 'เสร็จสิ้น')) return 'status_completed'
+  if (str_Status === text('Active', 'กำลังดำเนินการ')) return 'status_active'
   return 'status_upcoming'
 }
 
