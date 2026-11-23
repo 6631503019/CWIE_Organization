@@ -9,7 +9,13 @@
     <div v-else-if="error" class="state error">{{ error }}</div>
     <div v-else-if="reviews.length === 0" class="state">{{ text('No Reviews Available', 'ไม่มีรีวิว') }}</div>
 
-    <div v-else class="carousel" @touchstart.passive="handleTouchStart" @touchend.passive="handleTouchEnd">
+    <div
+      v-else
+      class="carousel"
+      :class="{ 'single-review': reviews.length === 1 }"
+      @touchstart.passive="handleTouchStart"
+      @touchend.passive="handleTouchEnd"
+    >
       <button
         v-if="reviews.length > 1"
         type="button"
@@ -221,6 +227,17 @@ onBeforeUnmount(clearReviewImage)
   align-items: center;
   gap: 12px;
 }
+.carousel.single-review {
+  display: block;
+  width: 100%;
+}
+.carousel.single-review .review-card {
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 24px;
+}
 .review-card {
   min-width: 0;
   min-height: 180px;
@@ -275,6 +292,13 @@ onBeforeUnmount(clearReviewImage)
 @media (max-width: 700px) {
   .reviews-panel { padding: 20px 12px; }
   .carousel { grid-template-columns: 36px minmax(0, 1fr) 36px; gap: 6px; }
+  .carousel.single-review {
+    display: block;
+  }
+  .carousel.single-review .review-card {
+    width: 100%;
+    padding: 16px;
+  }
   .carousel-arrow { width: 36px; height: 36px; font-size: 28px; }
   .review-card { flex-direction: column; min-height: 160px; padding: 16px; }
   .review-actions { justify-content: flex-end; }
