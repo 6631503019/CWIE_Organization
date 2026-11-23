@@ -19,118 +19,96 @@
         <section class="filter_section">
           <input type="text" :placeholder="text('Search organization...', 'ค้นหาองค์กร...')" class="search_input" v-model="searchText" />
           <div class="dropdowns_grid">
-          <div class="filter_field business_category" :class="{ active: dropdowns.businessCategory }">
-            <span class="filter_label">{{ text('Business Category', 'หมวดธุรกิจ') }}</span>
-            <div class="dropdown_container">
-            <div class="dropdown_header" @click="toggleDropdown('businessCategory')">
-              <span class="dropdown_text">{{ getSelectedFilterLabel('businessCategory', selectedFilters.businessCategory) }}</span>
-              <div class="dropdown_arrow"></div>
-            </div>
-            <div v-if="dropdowns.businessCategory" class="dropdown_options">
-              <div class="dropdown_search">
-                <input type="text" v-model="dropdownSearch.businessCategory" placeholder="Search..." @click.stop class="dropdown_search_input" />
-              </div>
-              <div class="dropdown_option" v-for="option in filteredBusinessCategory" :key="option" @click="selectOption('businessCategory', option)">
-                {{ getFilterOptionLabel('businessCategory', option) }}
-              </div>
-            </div>
-              </div>
-            </div>
-          </div>
-          <div class="filter_field industry_cat" :class="{ active: dropdowns.industryCat }">
-            <span class="filter_label">{{ text('School', 'สำนักวิชา') }}</span>
-            <div class="dropdown_container">
-            <div class="dropdown_header" @click="toggleDropdown('industryCat')">
-              <span class="dropdown_text">{{ getSelectedFilterLabel('industryCat', selectedFilters.industryCat) }}</span>
-              <div class="dropdown_arrow"></div>
-            </div>
-            <div v-if="dropdowns.industryCat" class="dropdown_options">
-              <div class="dropdown_search">
-                <input 
-                  type="text" 
-                  v-model="dropdownSearch.industryCat" 
-                  placeholder="Search..."
-                  @click.stop
-                  class="dropdown_search_input"
-                />
-              </div>
-              <div class="dropdown_option" v-for="option in filteredIndustryCat" :key="option" @click="selectOption('industryCat', option)">
-                {{ getFilterOptionLabel('industryCat', option) }}
+            <div class="filter_field business_category" :class="{ active: dropdowns.businessCategory }">
+              <span class="filter_label">{{ text('Business Category', 'หมวดธุรกิจ') }}</span>
+              <div class="dropdown_container">
+                <div class="dropdown_header" @click="toggleDropdown('businessCategory')">
+                  <span class="dropdown_text">{{ getSelectedFilterLabel('businessCategory', selectedFilters.businessCategory) }}</span>
+                  <div class="dropdown_arrow"></div>
+                </div>
+                <div v-if="dropdowns.businessCategory" class="dropdown_options">
+                  <div class="dropdown_search">
+                    <input type="text" v-model="dropdownSearch.businessCategory" placeholder="Search..." @click.stop class="dropdown_search_input" />
+                  </div>
+                  <div class="dropdown_option" v-for="option in filteredBusinessCategory" :key="option" @click="selectOption('businessCategory', option)">
+                    {{ getFilterOptionLabel('businessCategory', option) }}
+                  </div>
+                </div>
               </div>
             </div>
-            </div>
-          </div>
-          <div class="filter_field country" :class="{ active: dropdowns.country }">
-            <span class="filter_label">{{ text('Country', 'ประเทศ') }}</span>
-            <div class="dropdown_container">
-            <div class="dropdown_header" @click="toggleDropdown('country')">
-              <span class="dropdown_text">{{ getSelectedFilterLabel('country', selectedFilters.country) }}</span>
-              <div class="dropdown_arrow"></div>
-            </div>
-            <div v-if="dropdowns.country" class="dropdown_options">
-              <div class="dropdown_search">
-                <input 
-                  type="text" 
-                  v-model="dropdownSearch.country" 
-                  placeholder="Search..."
-                  @click.stop
-                  class="dropdown_search_input"
-                />
-              </div>
-              <div class="dropdown_option" v-for="option in filteredCountry" :key="option" @click="selectOption('country', option)">
-                {{ getFilterOptionLabel('country', option) }}
+            <div class="filter_field industry_cat" :class="{ active: dropdowns.industryCat }">
+              <span class="filter_label">{{ text('School', 'สำนักวิชา') }}</span>
+              <div class="dropdown_container">
+                <div class="dropdown_header" @click="toggleDropdown('industryCat')">
+                  <span class="dropdown_text">{{ getSelectedFilterLabel('industryCat', selectedFilters.industryCat) }}</span>
+                  <div class="dropdown_arrow"></div>
+                </div>
+                <div v-if="dropdowns.industryCat" class="dropdown_options">
+                  <div class="dropdown_search">
+                    <input type="text" v-model="dropdownSearch.industryCat" placeholder="Search..." @click.stop class="dropdown_search_input" />
+                  </div>
+                  <div class="dropdown_option" v-for="option in filteredIndustryCat" :key="option" @click="selectOption('industryCat', option)">
+                    {{ getFilterOptionLabel('industryCat', option) }}
+                  </div>
+                </div>
               </div>
             </div>
-            </div>
-          </div>
-          <div class="filter_field type" :class="{ active: dropdowns.type }">
-            <span class="filter_label">{{ text('Type', 'ประเภท') }}</span>
-            <div class="dropdown_container">
-            <div class="dropdown_header" @click="toggleDropdown('type')">
-              <span class="dropdown_text">{{ getSelectedFilterLabel('type', selectedFilters.type) }}</span>
-              <div class="dropdown_arrow"></div>
-            </div>
-            <div v-if="dropdowns.type" class="dropdown_options">
-              <div class="dropdown_search">
-                <input
-                  type="text"
-                  v-model="dropdownSearch.type"
-                  placeholder="Search..."
-                  @click.stop
-                  class="dropdown_search_input"
-                />
-              </div>
-              <div class="dropdown_option" v-for="option in filteredType" :key="option" @click="selectOption('type', option)">
-                {{ getFilterOptionLabel('type', option) }}
+            <div class="filter_field country" :class="{ active: dropdowns.country }">
+              <span class="filter_label">{{ text('Country', 'ประเทศ') }}</span>
+              <div class="dropdown_container">
+                <div class="dropdown_header" @click="toggleDropdown('country')">
+                  <span class="dropdown_text">{{ getSelectedFilterLabel('country', selectedFilters.country) }}</span>
+                  <div class="dropdown_arrow"></div>
+                </div>
+                <div v-if="dropdowns.country" class="dropdown_options">
+                  <div class="dropdown_search">
+                    <input type="text" v-model="dropdownSearch.country" placeholder="Search..." @click.stop class="dropdown_search_input" />
+                  </div>
+                  <div class="dropdown_option" v-for="option in filteredCountry" :key="option" @click="selectOption('country', option)">
+                    {{ getFilterOptionLabel('country', option) }}
+                  </div>
+                </div>
               </div>
             </div>
-            </div>
-          </div>
-          <div class="filter_field province" :class="{ active: dropdowns.province }">
-            <span class="filter_label">{{ text('Province', 'จังหวัด') }}</span>
-            <div class="dropdown_container">
-            <div class="dropdown_header" @click="toggleDropdown('province')">
-              <span class="dropdown_text">{{ getSelectedFilterLabel('province', selectedFilters.province) }}</span>
-              <div class="dropdown_arrow"></div>
-            </div>
-            <div v-if="dropdowns.province" class="dropdown_options">
-              <div class="dropdown_search">
-                <input 
-                  type="text" 
-                  v-model="dropdownSearch.province" 
-                 :placeholder="text('Search province...', 'ค้นหาจังหวัด...')"
-                  @click.stop
-                  class="dropdown_search_input"
-                />
+            <div class="filter_field type" :class="{ active: dropdowns.type }">
+              <span class="filter_label">{{ text('Type', 'ประเภท') }}</span>
+              <div class="dropdown_container">
+                <div class="dropdown_header" @click="toggleDropdown('type')">
+                  <span class="dropdown_text">{{ getSelectedFilterLabel('type', selectedFilters.type) }}</span>
+                  <div class="dropdown_arrow"></div>
+                </div>
+                <div v-if="dropdowns.type" class="dropdown_options">
+                  <div class="dropdown_search">
+                    <input type="text" v-model="dropdownSearch.type" placeholder="Search..." @click.stop class="dropdown_search_input" />
+                  </div>
+                  <div class="dropdown_option" v-for="option in filteredType" :key="option" @click="selectOption('type', option)">
+                    {{ getFilterOptionLabel('type', option) }}
+                  </div>
+                </div>
               </div>
-              <div class="dropdown_option" v-for="option in filteredProvince" :key="option" @click="selectOption('province', option)">
-                {{ getFilterOptionLabel('province', option) }}
+            </div>
+            <div class="filter_field province" :class="{ active: dropdowns.province }">
+              <span class="filter_label">{{ text('Province', 'จังหวัด') }}</span>
+              <div class="dropdown_container">
+                <div class="dropdown_header" @click="toggleDropdown('province')">
+                  <span class="dropdown_text">{{ getSelectedFilterLabel('province', selectedFilters.province) }}</span>
+                  <div class="dropdown_arrow"></div>
+                </div>
+                <div v-if="dropdowns.province" class="dropdown_options">
+                  <div class="dropdown_search">
+                    <input type="text" v-model="dropdownSearch.province" :placeholder="text('Search province...', 'ค้นหาจังหวัด...')" @click.stop class="dropdown_search_input" />
+                  </div>
+                  <div class="dropdown_option" v-for="option in filteredProvince" :key="option" @click="selectOption('province', option)">
+                    {{ getFilterOptionLabel('province', option) }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
-          <div class="filter_buttons"><button class="reset_btn" @click="resetFilters">{{ text('Reset', 'รีเซ็ต') }}</button><button class="search_btn" @click="searchOrganizations">{{ text('search', 'ค้นหา') }}</button></div>
+          <div class="filter_buttons">
+            <button class="reset_btn" @click="resetFilters">{{ text('Reset', 'รีเซ็ต') }}</button>
+            <button class="search_btn" @click="searchOrganizations">{{ text('Search', 'ค้นหา') }}</button>
+          </div>
         </section>
 
         <div class="table_container">
@@ -2487,4 +2465,221 @@ onBeforeUnmount(() => {
   }
 }
 
+.admin-reference-filter {
+  display: none;
+}
+
+.filter_section {
+  width: 100%;
+  height: auto;
+  min-height: 146px;
+  box-sizing: border-box;
+  margin: 0 0 22px;
+  padding: 12px 20px 11px;
+  background: #ffffff;
+  border-radius: 0;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  overflow: visible;
+}
+
+.search_input {
+  width: 100%;
+  height: 30px;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 0.4px solid #a8a8ac;
+  border-radius: 8px;
+  font: 400 10px/12px Inter, sans-serif;
+  color: #1f2937;
+}
+
+.filter_labels {
+  display: none;
+}
+
+.dropdowns_grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 8px;
+  row-gap: 12px;
+  margin: 14px 0 0;
+}
+
+.filter_field {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter_field.active {
+  z-index: 1000;
+}
+
+.filter_field.province {
+  grid-column: 1;
+  grid-row: 2;
+  width: 100%;
+}
+
+.filter_label {
+  min-width: 0;
+  font: 500 10px/12px Inter, sans-serif;
+  color: #000000;
+}
+
+.dropdown_container {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  margin: 0;
+  min-width: 0;
+}
+
+.dropdown_container.active,
+.filter_field.active .dropdown_container {
+  z-index: 2000;
+}
+
+.dropdown_header {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 28px;
+  padding: 7px;
+  background: #ffffff;
+  border: 0.4px solid #a8a8ac;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.dropdown_text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 10px/12px Inter, sans-serif;
+  color: #73737a;
+}
+
+.dropdown_arrow {
+  width: 8px;
+  height: 6px;
+  background: #000000;
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+}
+
+.dropdown_options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 250px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 2000;
+  background: #ffffff;
+  border: 1px solid #b1b1b1;
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown_search {
+  position: sticky;
+  top: 0;
+  z-index: 2001;
+  padding: 8px;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.dropdown_search_input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #333333;
+}
+
+.dropdown_option {
+  padding: 8px 12px;
+  cursor: pointer;
+  font: 400 12px/16px Inter, sans-serif;
+  color: #333333;
+}
+
+.dropdown_option:hover {
+  background: #f5f5f5;
+}
+
+.filter_buttons {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  column-gap: 8px;
+  margin-top: 13px;
+}
+
+.reset_btn,
+.search_btn {
+  height: 20px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font: 400 10px/12px Inter, sans-serif;
+  cursor: pointer;
+}
+
+.reset_btn {
+  background: #ffffff;
+  border: 1px solid #b1b1b1;
+  color: #000000;
+}
+
+.search_btn {
+  background: #ab1c03;
+  border: 0;
+  color: #ffffff;
+}
+
+@media (max-width: 1250px) {
+  .dropdowns_grid {
+    column-gap: 6px;
+  }
+}
+
+@media (max-width: 900px) {
+  .dropdowns_grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 8px;
+    row-gap: 12px;
+  }
+
+  .filter_field.province {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .dropdowns_grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 12px;
+  }
+
+  .filter_field,
+  .filter_field.province {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .filter_buttons {
+    width: 100%;
+  }
+}
 </style>
