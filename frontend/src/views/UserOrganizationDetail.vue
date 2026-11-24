@@ -164,25 +164,27 @@ button { cursor: pointer; border: 0; border-radius: 6px; padding: 10px 16px; fon
 .review-content :deep(.review-meta),
 .review-content :deep(.review-text) {
   display: grid !important;
-  grid-template-columns: 150px minmax(0, 1fr) !important;
-  column-gap: 12px !important;
-  row-gap: 0 !important;
-  align-items: start !important;
-  justify-content: initial !important;
+  grid-template-columns: 150px minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: start;
+  justify-content: start;
   width: 100%;
   min-width: 0;
-  margin: 10px 0 0 !important;
-  text-align: left;
+  margin: 10px 0 0;
+  padding: 0;
+  text-align: left !important;
+  direction: ltr;
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
 .review-content :deep(.review-meta strong),
 .review-content :deep(.review-text strong) {
   grid-column: 1;
+  grid-row: 1;
   width: 150px;
   min-width: 150px;
   max-width: 150px;
-  text-align: left;
+  text-align: left !important;
   overflow-wrap: anywhere;
 }
 .review-actions { display: flex; align-items: flex-start; gap: 8px; flex-shrink: 0; } .review-actions button { padding: 7px 10px; background: #f1f1f1; } .review-actions .danger { color: #b91c1c; }
@@ -194,9 +196,9 @@ button { cursor: pointer; border: 0; border-radius: 6px; padding: 10px 16px; fon
   .profile-header { align-items: flex-start; }
   .profile-header h1 { font-size: 22px; }
   .review-card { flex-direction: column; }
-  .review-actions { justify-content: flex-end; }
+  .review-actions { justify-content: flex-start; }
   .review-content :deep(.review-meta),
-  .review-content :deep(.review-text) { grid-template-columns: 118px minmax(0, 1fr) !important; column-gap: 8px !important; }
+  .review-content :deep(.review-text) { grid-template-columns: 118px minmax(0, 1fr); column-gap: 8px; }
   .review-content :deep(.review-meta strong),
   .review-content :deep(.review-text strong) { width: 118px; min-width: 118px; max-width: 118px; }
 }
