@@ -28,12 +28,24 @@
       </button>
 
       <article :key="activeReviewKey" class="review-card">
-        <div class="review-content">
-          <div class="review-meta"><strong>{{ text('Job Position', 'ตำแหน่งงาน') }}</strong> {{ displayReviewValue(activeReview.job_position) }}</div>
-          <div class="review-meta"><strong>{{ text('Academic Year', 'ปีการศึกษา') }}</strong> {{ displayReviewValue(activeReview.academic_year) }}</div>
-          <div class="review-meta"><strong>{{ text('Semester', 'ภาคการศึกษา') }}</strong> {{ displayReviewValue(activeReview.semester) }}</div>
-          <p class="review-text"><strong>{{ text('Review', 'รีวิว') }}</strong> {{ displayReviewValue(activeReview.review_text) }}</p>
-        </div>
+        <dl class="review-content">
+          <div class="review-row">
+            <dt>{{ text('Job Position', 'ตำแหน่งงาน') }}</dt>
+            <dd>{{ displayReviewValue(activeReview.job_position) }}</dd>
+          </div>
+          <div class="review-row">
+            <dt>{{ text('Academic Year', 'ปีการศึกษา') }}</dt>
+            <dd>{{ displayReviewValue(activeReview.academic_year) }}</dd>
+          </div>
+          <div class="review-row">
+            <dt>{{ text('Semester', 'ภาคการศึกษา') }}</dt>
+            <dd>{{ displayReviewValue(activeReview.semester) }}</dd>
+          </div>
+          <div class="review-row review-row-text">
+            <dt>{{ text('Review', 'รีวิว') }}</dt>
+            <dd>{{ displayReviewValue(activeReview.review_text) }}</dd>
+          </div>
+        </dl>
 
         <div v-if="admin" class="review-actions">
           <button type="button" @click="$emit('edit', activeReview)">{{ text('Edit', 'แก้ไข') }}</button>
@@ -241,13 +253,40 @@ onBeforeUnmount(clearReviewImage)
   background: #fff;
   animation: slide-in 180ms ease-out;
 }
-.review-content { min-width: 0; flex: 1; }
-.review-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
-.review-meta strong { overflow-wrap: anywhere; }
+.review-content {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+.review-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  column-gap: 12px;
+  align-items: start;
+  min-width: 0;
+  text-align: left;
+}
+.review-row dt,
+.review-row dd {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.review-row dt { font-weight: 700; }
+.review-row-text dd {
+  white-space: pre-line;
+  line-height: 1.6;
+}
 .review-date { color: #777; font-size: 13px; }
 .review-rating { margin-top: 10px; color: #d1d5db; letter-spacing: 2px; }
 .review-rating .filled { color: #d97706; }
-.review-text { margin: 10px 0 0; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.6; }
 .review-image { display: block; max-width: 220px; max-height: 160px; margin-top: 14px; object-fit: cover; border-radius: 8px; }
 .carousel-arrow {
   width: 44px;
@@ -292,7 +331,8 @@ onBeforeUnmount(clearReviewImage)
   }
   .carousel-arrow { width: 36px; height: 36px; font-size: 28px; }
   .review-card { flex-direction: column; min-height: 160px; padding: 16px; }
-  .review-actions { justify-content: flex-end; }
+  .review-actions { justify-content: flex-start; }
+  .review-row { grid-template-columns: 118px minmax(0, 1fr); column-gap: 8px; }
   .review-image { max-width: 100%; }
 }
 </style>
