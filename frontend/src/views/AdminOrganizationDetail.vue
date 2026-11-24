@@ -250,8 +250,33 @@ button { cursor: pointer; border: 0; border-radius: 6px; padding: 10px 16px; fon
 .description { border-top: 1px solid #eee; padding-top: 18px; } .description h2, .reviews-heading h2 { margin: 0; font: 700 20px Outfit, sans-serif; } .description p { white-space: pre-line; overflow-wrap: anywhere; }
 .reviews-panel { margin-top: 24px; } .review-list { display: grid; gap: 12px; margin-top: 18px; }
 .review-card { display: flex; justify-content: space-between; gap: 18px; padding: 16px; border: 1px solid #e5e5e5; border-radius: 8px; min-width: 0; }
-.review-content { min-width: 0; flex: 1; } .review-meta { display: flex; flex-wrap: wrap; gap: 10px; } .review-meta span { color: #777; font-size: 13px; } .review-card p { margin: 10px 0 0; white-space: pre-line; overflow-wrap: anywhere; }
+.review-content { min-width: 0; flex: 1; }
+.review-content :deep(.review-meta),
+.review-content :deep(.review-text) {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  column-gap: 10px;
+  align-items: start;
+  margin: 10px 0 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+.review-content :deep(.review-meta strong),
+.review-content :deep(.review-text strong) {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .review-actions { display: flex; align-items: flex-start; gap: 8px; flex-shrink: 0; } .review-actions button { padding: 7px 10px; background: #f1f1f1; } .review-actions .danger { color: #b91c1c; }
 .state { padding: 24px 0; color: #666; } .error { color: #b91c1c; }
-@media (max-width: 700px) { main { margin-left: 0; } .content { padding: 18px 12px 40px; } .details { grid-template-columns: 1fr; } .profile-header { align-items: flex-start; } .profile-header h1 { font-size: 22px; } .review-card { flex-direction: column; } .review-actions { justify-content: flex-end; } }
+@media (max-width: 700px) {
+  main { margin-left: 0; }
+  .content { padding: 18px 12px 40px; }
+  .details { grid-template-columns: 1fr; }
+  .profile-header { align-items: flex-start; }
+  .profile-header h1 { font-size: 22px; }
+  .review-card { flex-direction: column; }
+  .review-actions { justify-content: flex-end; }
+  .review-content :deep(.review-meta),
+  .review-content :deep(.review-text) { grid-template-columns: 118px minmax(0, 1fr); column-gap: 8px; }
+}
 </style>
