@@ -165,18 +165,24 @@ button { cursor: pointer; border: 0; border-radius: 6px; padding: 10px 16px; fon
 .review-content :deep(.review-text) {
   display: grid !important;
   grid-template-columns: 150px minmax(0, 1fr) !important;
-  column-gap: 10px !important;
+  column-gap: 12px !important;
+  row-gap: 0 !important;
   align-items: start !important;
-  justify-content: start !important;
+  justify-content: initial !important;
+  width: 100%;
+  min-width: 0;
   margin: 10px 0 0 !important;
+  text-align: left;
   white-space: pre-line;
   overflow-wrap: anywhere;
 }
 .review-content :deep(.review-meta strong),
 .review-content :deep(.review-text strong) {
+  grid-column: 1;
   width: 150px;
   min-width: 150px;
   max-width: 150px;
+  text-align: left;
   overflow-wrap: anywhere;
 }
 .review-actions { display: flex; align-items: flex-start; gap: 8px; flex-shrink: 0; } .review-actions button { padding: 7px 10px; background: #f1f1f1; } .review-actions .danger { color: #b91c1c; }
