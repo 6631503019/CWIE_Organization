@@ -318,6 +318,16 @@ const updateMOU = async (req, res, next) => {
             throw createNotFoundError('mou', req.params.id);
         }
 
+        if (req.body.organization_id) {
+            const organization = await InternshipRecord.findOne({
+                _id: req.body.organization_id,
+                record_type: 'organization'
+            });
+            if (!organization) {
+                throw createNotFoundError('organization', req.body.organization_id);
+            }
+        }
+
         // Convert is_published from string to boolean if needed
         if (req.body.is_published !== undefined) {
             console.log('Received is_published:', req.body.is_published, 'Type:', typeof req.body.is_published);

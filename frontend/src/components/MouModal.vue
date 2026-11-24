@@ -16,9 +16,17 @@
             <div class="form_grid">
               <label class="form_field">
                 <span>Organization <b>*</b></span>
+                <input
+                  v-if="!mouId"
+                  v-model="organizationSearch"
+                  type="search"
+                  :disabled="loading"
+                  placeholder="Search organization by name"
+                  aria-label="Search organization"
+                >
                 <select v-model="form.organizationId" :disabled="loading || Boolean(mouId)">
                   <option value="">Select organization</option>
-                  <option v-for="organization in organizations" :key="organization._id" :value="organization._id">
+                  <option v-for="organization in filteredOrganizations" :key="organization._id" :value="organization._id">
                     {{ organization.name_en || organization.organization_name_en || organization.name_th || organization.organization_name_th }}
                   </option>
                 </select>
@@ -86,6 +94,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [] }>()
 const loading = ref(false)
 const error = ref('')
 const organizations = ref<any[]>([])
+const organizationSearch = ref('')
 const selectedFile = ref<File | null>(null)
 const existingDocumentUrl = ref('')
 const mouRecord = ref<any>(null)
@@ -98,6 +107,19 @@ const form = reactive({
 })
 
 const selectedFileName = computed(() => selectedFile.value?.name || '')
+const filteredOrganizations = computed(() => {
+  const search = organizationSearch.value.trim().toLocaleLowerCase()
+  if (!search) return organizations.value
+  return organizations.value.filter((organization: any) => {
+    const names = [
+      organization.name_en,
+      organization.organization_name_en,
+      organization.name_th,
+      organization.organization_name_th
+    ]
+    return names.some(name => String(name || '').toLocaleLowerCase().includes(search))
+  })
+})
 
 const toDateTimeLocal = (value: unknown) => {
   if (!value) return ''
@@ -138,8 +160,17 @@ const load = async () => {
   loading.value = true
   error.value = ''
   try {
-    const organizationResponse = await organizationAPI.getAll({ limit: 10000, public: 'false' })
-    organizations.value = organizationResponse.data.data || []
+    const organizationList: any[] = []
+    let page = 1
+    let pages = 1
+    do {
+      const organizationResponse = await organizationAPI.getAll({ limit: 100, page, public: 'false' })
+      organizationList.push(...(organizationResponse.data.data || []))
+      pages = Number(organizationResponse.data.pagination?.pages || 1)
+      page += 1
+    } while (page <= pages)
+    organizations.value = organizationList
+    organizationSearch.value = ''
 
     if (props.mouId) {
       const mouResponse = await mouAPI.getById(props.mouId)
