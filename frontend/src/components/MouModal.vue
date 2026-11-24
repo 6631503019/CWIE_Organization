@@ -16,20 +16,51 @@
             <div class="form_grid">
               <label class="form_field">
                 <span>Organization <b>*</b></span>
-                <input
-                  v-if="!mouId"
-                  v-model="organizationSearch"
-                  type="search"
-                  :disabled="loading"
-                  placeholder="Search organization by name"
-                  aria-label="Search organization"
-                >
-                <select v-model="form.organizationId" :disabled="loading || Boolean(mouId)">
-                  <option value="">Select organization</option>
-                  <option v-for="organization in filteredOrganizations" :key="organization._id" :value="organization._id">
-                    {{ organization.name_en || organization.organization_name_en || organization.name_th || organization.organization_name_th }}
-                  </option>
-                </select>
+                <div ref="organizationDropdownRef" class="organization_dropdown" :class="{ organization_dropdown_open: organizationDropdownOpen }">
+                  <button
+                    type="button"
+                    class="organization_select"
+                    :disabled="loading"
+                    :aria-expanded="organizationDropdownOpen"
+                    @click="toggleOrganizationDropdown"
+                  >
+                    <span>{{ selectedOrganizationName || text('Select organization', 'เลือกองค์กร') }}</span>
+                    <span class="organization_dropdown_arrow" aria-hidden="true"></span>
+                  </button>
+                  <div v-if="organizationDropdownOpen" class="organization_menu">
+                    <div class="organization_search">
+                      <input
+                        v-model="organizationSearch"
+                        type="search"
+                        :placeholder="text('Search organization', 'ค้นหาองค์กร')"
+                        :aria-label="text('Search organization', 'ค้นหาองค์กร')"
+                        @input="scheduleOrganizationSearch"
+                        @keydown.esc.stop="closeOrganizationDropdown"
+                      >
+                    </div>
+                    <div class="organization_options" role="listbox">
+                      <div v-if="organizationLoading" class="organization_state">Loading organizations...</div>
+                      <button
+                        v-for="organization in filteredOrganizations"
+                        :key="organization._id"
+                        type="button"
+                        class="organization_option"
+                        :class="{ organization_option_selected: form.organizationId === String(organization._id) }"
+                        role="option"
+                        :aria-selected="form.organizationId === String(organization._id)"
+                        @click="selectOrganization(organization)"
+                      >
+                        {{ getOrganizationName(organization) }}
+                      </button>
+                      <div v-if="!organizationLoading && organizationLoadError" class="organization_state">
+                        {{ organizationLoadError }}
+                      </div>
+                      <div v-else-if="!organizationLoading && filteredOrganizations.length === 0" class="organization_state">
+                        {{ organizationSearch.trim() ? text('No Organization Found', 'ไม่พบองค์กร') : text('No organizations available.', 'ไม่มีองค์กร') }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </label>
             </div>
           </section>
@@ -85,16 +116,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { organizationAPI, mouAPI, fetchMouFileBlob } from '../services/api'
+import { useLanguage } from '../composables/useLanguage'
 
 const props = defineProps<{ modelValue: boolean; mouId?: string | null }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean]; saved: [] }>()
+const { currentLanguage, text } = useLanguage()
 
 const loading = ref(false)
 const error = ref('')
 const organizations = ref<any[]>([])
 const organizationSearch = ref('')
+const organizationLoading = ref(false)
+const organizationLoadError = ref('')
+const organizationDropdownOpen = ref(false)
+const organizationDropdownRef = ref<HTMLElement | null>(null)
+const selectedOrganizationRecord = ref<any>(null)
+let organizationSearchTimer: ReturnType<typeof setTimeout> | null = null
+let organizationSearchRequest = 0
 const selectedFile = ref<File | null>(null)
 const existingDocumentUrl = ref('')
 const mouRecord = ref<any>(null)
@@ -107,19 +147,87 @@ const form = reactive({
 })
 
 const selectedFileName = computed(() => selectedFile.value?.name || '')
-const filteredOrganizations = computed(() => {
-  const search = organizationSearch.value.trim().toLocaleLowerCase()
-  if (!search) return organizations.value
-  return organizations.value.filter((organization: any) => {
-    const names = [
-      organization.name_en,
-      organization.organization_name_en,
-      organization.name_th,
-      organization.organization_name_th
-    ]
-    return names.some(name => String(name || '').toLocaleLowerCase().includes(search))
-  })
+const filteredOrganizations = computed(() => organizations.value)
+const getOrganizationName = (organization: any): string => {
+  if (!organization) return ''
+  if (currentLanguage.value === 'TH') {
+    return String(
+      organization.name_th ||
+      organization.organization_name_th ||
+      organization.name_en ||
+      organization.organization_name_en ||
+      ''
+    )
+  }
+  return String(
+    organization.name_en ||
+    organization.organization_name_en ||
+    organization.name_th ||
+    organization.organization_name_th ||
+    ''
+  )
+}
+const selectedOrganizationName = computed(() => {
+  const selected = organizations.value.find(
+    organization => String(organization._id) === form.organizationId
+  )
+  return getOrganizationName(selected || selectedOrganizationRecord.value)
 })
+
+const closeOrganizationDropdown = () => {
+  organizationDropdownOpen.value = false
+}
+
+const toggleOrganizationDropdown = async () => {
+  organizationDropdownOpen.value = !organizationDropdownOpen.value
+  if (organizationDropdownOpen.value) {
+    organizationSearch.value = ''
+    await searchOrganizations('')
+  }
+}
+
+const selectOrganization = (organization: any) => {
+  form.organizationId = String(organization._id)
+  selectedOrganizationRecord.value = organization
+  closeOrganizationDropdown()
+}
+
+const searchOrganizations = async (searchText: string) => {
+  const requestId = ++organizationSearchRequest
+  organizationLoading.value = true
+  organizationLoadError.value = ''
+  try {
+    const params: any = { limit: 100, page: 1, public: 'false' }
+    if (searchText.trim()) params.search = searchText.trim()
+    const response = await organizationAPI.getAll(params)
+    if (requestId !== organizationSearchRequest) return
+    organizations.value = response.data.data || []
+  } catch (searchError: any) {
+    if (requestId === organizationSearchRequest) {
+      organizations.value = []
+      organizationLoadError.value = searchError?.response?.data?.message || 'Failed to load organizations.'
+    }
+  } finally {
+    if (requestId === organizationSearchRequest) organizationLoading.value = false
+  }
+}
+
+const scheduleOrganizationSearch = () => {
+  if (organizationSearchTimer) clearTimeout(organizationSearchTimer)
+  organizationSearchTimer = setTimeout(() => {
+    searchOrganizations(organizationSearch.value)
+  }, 250)
+}
+
+const handleDocumentClick = (event: MouseEvent) => {
+  if (
+    organizationDropdownOpen.value &&
+    organizationDropdownRef.value &&
+    !organizationDropdownRef.value.contains(event.target as Node)
+  ) {
+    closeOrganizationDropdown()
+  }
+}
 
 const toDateTimeLocal = (value: unknown) => {
   if (!value) return ''
@@ -160,23 +268,20 @@ const load = async () => {
   loading.value = true
   error.value = ''
   try {
-    const organizationList: any[] = []
-    let page = 1
-    let pages = 1
-    do {
-      const organizationResponse = await organizationAPI.getAll({ limit: 100, page, public: 'false' })
-      organizationList.push(...(organizationResponse.data.data || []))
-      pages = Number(organizationResponse.data.pagination?.pages || 1)
-      page += 1
-    } while (page <= pages)
-    organizations.value = organizationList
-    organizationSearch.value = ''
+    await searchOrganizations('')
 
     if (props.mouId) {
       const mouResponse = await mouAPI.getById(props.mouId)
       mouRecord.value = mouResponse.data.data
       const organization = mouRecord.value.organization_id
       form.organizationId = String(typeof organization === 'object' ? organization._id : organization || '')
+      selectedOrganizationRecord.value = typeof organization === 'object' ? organization : null
+      if (organization && typeof organization === 'object') {
+        const organizationId = String(organization._id || '')
+        if (organizationId && !organizations.value.some(item => String(item._id) === organizationId)) {
+          organizations.value = [organization, ...organizations.value]
+        }
+      }
       form.publicationStartAt = toDateTimeLocal(mouRecord.value.publication_start_at)
       form.publicationEndAt = toDateTimeLocal(mouRecord.value.publication_end_at)
       form.isPublished = mouRecord.value.is_published !== false
@@ -189,6 +294,7 @@ const load = async () => {
     } else {
       mouRecord.value = null
       form.organizationId = ''
+      selectedOrganizationRecord.value = null
       form.publicationStartAt = ''
       form.publicationEndAt = ''
       form.isPublished = true
@@ -242,6 +348,12 @@ const save = async () => {
 watch(() => props.modelValue, value => {
   if (value) load()
 })
+
+onMounted(() => document.addEventListener('mousedown', handleDocumentClick))
+onBeforeUnmount(() => {
+  document.removeEventListener('mousedown', handleDocumentClick)
+  if (organizationSearchTimer) clearTimeout(organizationSearchTimer)
+})
 </script>
 
 <style scoped>
@@ -260,6 +372,18 @@ watch(() => props.modelValue, value => {
 .form_field { min-width: 0; display: flex; flex-direction: column; gap: 7px; color: #3f3f3f; font-size: 13px; font-weight: 600; }
 .form_field b { color: #9d0000; }
 .form_field input, .form_field select { width: 100%; height: 42px; box-sizing: border-box; border: 1px solid #bfc3c8; border-radius: 6px; background: #fff; padding: 0 11px; color: #222; font: inherit; }
+.organization_dropdown { position: relative; z-index: 2; min-width: 0; }
+.organization_dropdown_open { z-index: 10020; }
+.organization_select { width: 100%; height: 42px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid #bfc3c8; border-radius: 6px; background: #fff; padding: 0 11px; color: #222; font: inherit; text-align: left; cursor: pointer; }
+.organization_select span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.organization_dropdown_arrow { width: 8px; height: 8px; flex: 0 0 auto; border-right: 2px solid #666; border-bottom: 2px solid #666; transform: rotate(45deg) translateY(-2px); }
+.organization_menu { position: absolute; top: calc(100% + 5px); left: 0; z-index: 10030; width: 100%; box-sizing: border-box; border: 1px solid #bfc3c8; border-radius: 6px; background: #fff; box-shadow: 0 10px 28px rgba(0,0,0,.18); overflow: hidden; }
+.organization_search { padding: 8px; border-bottom: 1px solid #ececec; }
+.organization_search input { width: 100%; height: 38px; box-sizing: border-box; border: 1px solid #d1d5db; border-radius: 5px; background: #fff; padding: 0 10px; font: inherit; }
+.organization_options { max-height: 220px; overflow-y: auto; }
+.organization_option { width: 100%; min-height: 40px; box-sizing: border-box; border: 0; border-bottom: 1px solid #f1f1f1; background: #fff; padding: 9px 11px; color: #222; font: 500 13px/18px inherit; text-align: left; cursor: pointer; }
+.organization_option:hover, .organization_option_selected { background: #f6eeee; color: #780000; }
+.organization_state { min-height: 52px; display: grid; place-items: center; padding: 10px; color: #777; font-size: 13px; text-align: center; }
 .file_box { min-height: 82px; display: flex; align-items: center; gap: 12px; box-sizing: border-box; border: 1px dashed #9da3aa; border-radius: 8px; padding: 12px; background: #fafafa; cursor: pointer; }
 .file_box input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .file_icon { width: 48px; height: 48px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 6px; background: #8b0000; color: #fff; font-size: 12px; font-weight: 700; }
