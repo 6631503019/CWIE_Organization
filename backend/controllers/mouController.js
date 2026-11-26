@@ -170,11 +170,6 @@ const getMOU = async (req, res, next) => {
 // @access  Private (Admin)
 const createMOU = async (req, res, next) => {
     try {
-        console.log('========== CREATE MOU REQUEST ==========');
-        console.log('req.body:', req.body);
-        console.log('req.file:', req.file ? req.file.filename : 'No file');
-        console.log('=====================================');
-
         const { organization_id } = req.body;
         validatePublicationWindow(req.body);
 
@@ -305,12 +300,6 @@ const createMOU = async (req, res, next) => {
 // @access  Private (Admin)
 const updateMOU = async (req, res, next) => {
     try {
-        console.log('========== UPDATE MOU REQUEST ==========');
-        console.log('req.params.id:', req.params.id);
-        console.log('req.body:', req.body);
-        console.log('req.file:', req.file ? req.file.filename : 'No file');
-        console.log('=====================================');
-
         const mou = await MOU.findById(req.params.id);
         validatePublicationWindow(req.body);
 

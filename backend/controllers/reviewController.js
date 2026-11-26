@@ -3,6 +3,46 @@ const InternshipRecord = require('../models/InternshipRecord');
 const { CustomError, createNotFoundError, ERROR_CODES } = require('../utils/customError');
 
 const normalizeReviewValue = value => String(value ?? '').trim();
+const redactKnownStudentIdentifiers = (value, review) => {
+    let sanitized = String(value ?? '');
+    const identifiers = [review.student_id, review.student_name]
+        .map(normalizeReviewValue)
+        .filter(Boolean);
+
+    identifiers.forEach(identifier => {
+        const escapedIdentifier = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        sanitized = sanitized.replace(new RegExp(escapedIdentifier, 'gi'), '[redacted]');
+    });
+
+    return sanitized;
+};
+const serializePublicReview = review => {
+    const organization = review.organization_id;
+    const organizationId = organization && typeof organization === 'object'
+        ? organization._id || String(organization)
+        : organization;
+    const populatedOrganization = organization &&
+        typeof organization === 'object' &&
+        (organization.organization_name_en !== undefined || organization.organization_name_th !== undefined)
+        ? {
+            _id: organizationId,
+            organization_name_en: organization.organization_name_en,
+            organization_name_th: organization.organization_name_th
+        }
+        : organizationId;
+
+    return {
+        _id: review._id,
+        organization_id: populatedOrganization,
+        job_position: redactKnownStudentIdentifiers(review.job_position, review),
+        academic_year: redactKnownStudentIdentifiers(review.academic_year, review),
+        semester: redactKnownStudentIdentifiers(review.semester, review),
+        review_text: redactKnownStudentIdentifiers(review.review_text, review),
+        rating: review.rating,
+        createdAt: review.createdAt,
+        updatedAt: review.updatedAt
+    };
+};
 const getReviewOrganizationId = review => {
     const organization = review?.organization_id;
     if (!organization) return '';
@@ -91,7 +131,7 @@ const getAllReviews = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: 'All reviews retrieved successfully',
-            data: enrichedReviews,
+            data: enrichedReviews.map(serializePublicReview),
             pagination: {
                 page,
                 pages: Math.ceil(total / limit),
@@ -134,7 +174,7 @@ const getReviews = async (req, res, next) => {
         res.status(200).json({
             success: true,
             message: 'Reviews retrieved successfully',
-            data: enrichedReviews,
+            data: enrichedReviews.map(serializePublicReview),
             pagination: {
                 page,
                 pages: Math.ceil(total / limit),
@@ -150,7 +190,7 @@ const getReviews = async (req, res, next) => {
 
 // @desc    Create a review
 // @route   POST /api/reviews
-// @access  Public
+// @access  Private (Admin)
 const createReview = async (req, res, next) => {
     try {
         const { organization_id, job_position, review_text, rating, academic_year, semester } = req.body;
@@ -258,5 +298,6 @@ module.exports = {
     getReviews,
     createReview,
     updateReview,
-    deleteReview
+    deleteReview,
+    serializePublicReview
 };

@@ -107,6 +107,27 @@ Content-Type: application/json
 
 Only verified `@mfu.ac.th` accounts are allowed. User roles are managed in MongoDB.
 
+## Data protection and recovery
+
+### Database and student information
+
+The backend uses one Mongoose connection from `MONGODB_URI`; `MONGODB_URI_FALLBACK` is only used for the configured Atlas SRV DNS failure case. The local development URI uses the `cwie_organization` database. Render declares these variables as externally supplied secrets, so the production database name and separation from MFU's main database must be verified in the Render environment and MongoDB provider before deployment. Never paste connection strings or credentials into source code, API responses, or logs.
+
+The import retains these student-related values for internship/review relationships and administration; this implementation does not delete or migrate existing values:
+
+- Internship records: `student_id`, `student_name_th`, `student_name_en`, `major_th`, `major_en`, `school_th`, `school_en`, `academic_year`, and `semester`; linked placement context also retains `organization_id`, `position_department`, `attention_to_th`, `attention_to_en`, and import source sheet/row metadata.
+- Review records: `student_id`, `student_name`, `academic_year`, `semester`, `job_position`, `review_text`, and the imported `review_data` fields (`strength`, `improvement`, `assignment`, `accommodation`, `supervisor`, `welfare`, `other`, `recommendations`, `recommended_skills`, and `employment_status`), plus `organization_name` and import source sheet/row metadata.
+
+Public review endpoints return an allowlisted response containing only review content, job position, academic period, rating, record timestamps/ID, and the linked organization's ID/names. They do not serialize student fields or the imported `review_data`, and mask the exact imported student ID/name if either appears in a returned review field. Review create/update/delete and import/status routes require an active administrator; import status is also limited to the user who created that job. Private organization and roadshow list requests (`public=false`) also require an administrator.
+
+### Encryption
+
+No application-level encryption for MongoDB fields or stored files is implemented. The backend does not configure MongoDB TLS itself; TLS must be enabled and verified through the configured MongoDB URI/provider. Encryption at rest is a MongoDB provider/cluster setting and is not verifiable from this repository. Render's service definition does not establish a custom HTTPS/TLS policy; verify HTTPS certificates and HTTPS-only access for deployed frontend/backend domains in Render.
+
+### Backup and recovery
+
+No automated MongoDB backup, retention, or restore configuration is present in this repository or `render.yaml`. Backup status, retention, restoration procedure, RPO, and RTO are therefore unverified/not defined here. Configure automated snapshots or point-in-time recovery and retention with the MongoDB provider, then document and test a restore into a separate non-production database. Set and record recovery point/time objectives with the service owner; do not test by restoring over production data.
+
 ### Get Current User
 ```bash
 GET /api/auth/me

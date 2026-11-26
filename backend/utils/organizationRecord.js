@@ -10,9 +10,15 @@ const toOrganizationResponse = record => {
     const obj = typeof record.toObject === 'function'
         ? record.toObject()
         : { ...record };
+    const organizationData = { ...obj };
+    delete organizationData.student_id;
+    delete organizationData.student_name_th;
+    delete organizationData.student_name_en;
+    delete organizationData.major_th;
+    delete organizationData.major_en;
 
     return {
-        ...obj,
+        ...organizationData,
         name_th: obj.organization_name_th || obj.name_th || '',
         name_en: obj.organization_name_en || obj.name_en || '',
         address_th: obj.address_th || '',

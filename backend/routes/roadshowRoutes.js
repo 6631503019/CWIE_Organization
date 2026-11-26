@@ -15,7 +15,7 @@ const uploadRoadshow = upload.uploadRoadshow;
 const router = express.Router();
 
 router.route('/')
-    .get(getRoadshows)
+    .get(optionalAuth, getRoadshows)
     .post(protect, authorize('admin'),
         uploadRoadshow.fields([
             { name: 'poster', maxCount: 1 },

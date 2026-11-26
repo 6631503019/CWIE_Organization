@@ -2,22 +2,12 @@ const { CustomError, ERROR_CODES } = require('../utils/customError');
 const multer = require('multer');
 
 const errorHandler = (err, req, res, next) => {
-    const sanitizedBody = { ...req.body };
-    if (sanitizedBody.idToken) sanitizedBody.idToken = '[REDACTED]';
-    if (sanitizedBody.refreshToken) sanitizedBody.refreshToken = '[REDACTED]';
-
     console.error('Error Details:', {
-        message: err.message,
-        stack: err.stack,
+        errorName: err.name,
         errorCode: err.errorCode,
-        path: req.path,
+        route: req.route?.path || 'unmatched',
         method: req.method,
-        body: sanitizedBody,
-        query: req.query,
-        params: req.params,
-        timestamp: new Date().toISOString(),
-        userAgent: req.get('User-Agent'),
-        ip: req.ip
+        timestamp: new Date().toISOString()
     });
 
     // Custom operational error
@@ -142,8 +132,7 @@ const errorHandler = (err, req, res, next) => {
     // Default Server Error
     const error = new CustomError(
         ERROR_CODES.SERVER_INTERNAL_ERROR,
-        process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
-        process.env.NODE_ENV === 'development' ? { stack: err.stack } : {}
+        'Something went wrong'
     );
 
     return res.status(error.statusCode).json(error.toJSON());
@@ -152,8 +141,8 @@ const errorHandler = (err, req, res, next) => {
 const notFound = (req, res, next) => {
     const error = new CustomError(
         ERROR_CODES.NOT_FOUND_ENDPOINT,
-        `Route ${req.originalUrl} not found`,
-        { method: req.method, path: req.originalUrl }
+        'Route not found',
+        { method: req.method }
     );
     res.status(error.statusCode).json(error.toJSON());
 };

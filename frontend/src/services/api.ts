@@ -20,6 +20,35 @@ const CONST_HTTP_UNAUTHORIZED = 401
 let obj_Refresh_Promise: Promise<string> | null = null
 let bln_Session_Expiry_Handled = false
 
+const Sanitize_API_Error_For_Logging = (error: unknown): unknown => {
+    if (!axios.isAxiosError(error)) return error
+
+    if (error.config) {
+        error.config.headers?.delete('Authorization')
+        error.config.headers?.delete('Cookie')
+        error.config.headers?.delete('X-API-Key')
+        error.config.data = undefined
+    }
+
+    if (error.response) {
+        const responseBody: unknown = error.response.data
+        if (responseBody && typeof responseBody === 'object' && !Array.isArray(responseBody)) {
+            const safeBody = responseBody as Record<string, unknown>
+            error.response.data = {
+                success: safeBody.success,
+                message: safeBody.message,
+                errorCode: safeBody.errorCode,
+                statusCode: safeBody.statusCode,
+                timestamp: safeBody.timestamp
+            }
+        } else if (responseBody !== undefined) {
+            error.response.data = '[REDACTED]'
+        }
+    }
+
+    return error
+}
+
 if (typeof window !== 'undefined') {
     window.addEventListener('auth:started', () => {
         bln_Session_Expiry_Handled = false
@@ -38,8 +67,8 @@ const Str_Get_Stored_Auth_Token = (): string | null => {
         const str_Token = localStorage.getItem(CONST_AUTH_TOKEN_STORAGE_KEY) ||
             localStorage.getItem('token')
         return str_Token
-    } catch (error) {
-        console.error('Error retrieving auth token:', error)
+    } catch {
+        console.error('Error retrieving auth token from storage')
         return null
     }
 }
@@ -61,8 +90,8 @@ const Clear_All_Auth_Data = (): void => {
             window.dispatchEvent(new CustomEvent('auth:expired'))
         }
 
-    } catch (error) {
-        console.error('Error clearing auth data:', error)
+    } catch {
+        console.error('Error clearing auth data from storage')
     }
 }
 
@@ -107,6 +136,8 @@ const Refresh_Access_Token = (): Promise<string> => {
         obj_API_Client.defaults.headers.common[CONST_AUTH_HEADER_NAME] = `Bearer ${token}`
         bln_Session_Expiry_Handled = false
         return token
+    }).catch(error => {
+        return Promise.reject(Sanitize_API_Error_For_Logging(error))
     }).finally(() => {
         obj_Refresh_Promise = null
     })
@@ -139,7 +170,7 @@ obj_API_Client.interceptors.request.use(
             }
             return config
         } catch (error) {
-            console.debug('Request interceptor error:', error)
+            console.debug('Request interceptor failed')
             return Promise.reject(error)
         }
     },
@@ -157,7 +188,7 @@ obj_API_Client.interceptors.response.use(
         try {
             const obj_Original_Request = error.config
             if (!obj_Original_Request) {
-                return Promise.reject(error)
+                return Promise.reject(Sanitize_API_Error_For_Logging(error))
             }
             const str_Skip_Redirect = obj_Original_Request?._skipAuthRedirect
             const int_Status = error.response?.status
@@ -166,9 +197,7 @@ obj_API_Client.interceptors.response.use(
                 status: int_Status,
                 url: obj_Original_Request?.url,
                 skipRedirect: str_Skip_Redirect,
-                message: error.response?.data?.message,
-                errorCode: error.response?.data?.errorCode,
-                fullError: error.response?.data
+                errorCode: error.response?.data?.errorCode
             })
 
             // Step 1: Check if error is 401 Unauthorized
@@ -180,7 +209,7 @@ obj_API_Client.interceptors.response.use(
                 if (!str_Had_Token) {
                     console.debug('No token present - 401 is expected for public endpoints without auth')
                     // Don't attempt refresh if user never had a token
-                    return Promise.reject(error)
+                    return Promise.reject(Sanitize_API_Error_For_Logging(error))
                 }
 
                 obj_Original_Request._retry = true
@@ -191,7 +220,7 @@ obj_API_Client.interceptors.response.use(
                 } catch (err) {
                     Clear_All_Auth_Data()
                     if (!str_Skip_Redirect) Redirect_To_Login_Once()
-                    return Promise.reject(err)
+                    return Promise.reject(Sanitize_API_Error_For_Logging(err))
                 }
             }
 
@@ -210,10 +239,10 @@ obj_API_Client.interceptors.response.use(
                 if (bln_Should_Redirect) Redirect_To_Login_Once()
             }
 
-            return Promise.reject(error)
+            return Promise.reject(Sanitize_API_Error_For_Logging(error))
         } catch (error) {
-            console.debug('Response interceptor error:', error)
-            return Promise.reject(error)
+            console.debug('Response interceptor failed')
+            return Promise.reject(Sanitize_API_Error_For_Logging(error))
         }
     }
 )
@@ -255,8 +284,8 @@ export const Bln_Is_Token_Expired = (str_Token: string): boolean => {
         const i_Expiration_Time = obj_Payload.exp * 1000 // Convert to milliseconds
 
         return Date.now() >= i_Expiration_Time
-    } catch (error) {
-        console.error('Error checking token expiration:', error)
+    } catch {
+        console.error('Unable to decode stored auth token')
         return true // Consider invalid token as expired
     }
 }
@@ -285,8 +314,8 @@ export const Bln_Check_Token_Validity = (): boolean => {
         }
 
         return true
-    } catch (error) {
-        console.error('Error checking token validity:', error)
+    } catch {
+        console.error('Unable to determine stored auth token validity')
         return false
     }
 }

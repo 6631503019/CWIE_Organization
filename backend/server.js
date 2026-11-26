@@ -153,11 +153,17 @@ const connectMongo = async () => {
                 console.log(`📡 Database: ${mongoose.connection.db.databaseName}`);
                 return;
             } catch (fallbackError) {
-                console.error('❌ MongoDB fallback connection error:', fallbackError);
+                console.error('❌ MongoDB fallback connection failed', {
+                    errorName: fallbackError.name,
+                    errorCode: fallbackError.code
+                });
             }
         }
 
-        console.error('❌ MongoDB connection error:', error);
+        console.error('❌ MongoDB connection failed', {
+            errorName: error.name,
+            errorCode: error.code
+        });
         process.exit(1);
     }
 };

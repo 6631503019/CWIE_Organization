@@ -17,6 +17,13 @@ const escapeRegex = value => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'
 const getOrganizations = async (req, res, next) => {
     const startedAt = process.hrtime.bigint();
     try {
+        if (req.query.public === 'false' && req.user?.role !== 'admin') {
+            throw new CustomError(
+                ERROR_CODES.FORBIDDEN_RESOURCE_ACCESS_DENIED,
+                'Administrator access is required to view private organizations'
+            );
+        }
+
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         if (page < 1 || limit < 1 || limit > 100) {
@@ -312,7 +319,7 @@ const updateOrganization = async (req, res, next) => {
             { new: true, runValidators: true }
         );
         if (req.file) {
-            if (existing.logo_gridfs_id) await deleteGridFSFile(existing.logo_gridfs_id, 'organizationLogos').catch(error => console.error('Failed to remove old organization logo from GridFS:', error.message));
+            if (existing.logo_gridfs_id) await deleteGridFSFile(existing.logo_gridfs_id, 'organizationLogos').catch(error => console.error('Failed to remove old organization logo from GridFS', { errorName: error.name, errorCode: error.code }));
             if (existing.logo_path) deleteStoredFile(existing.logo_path, 'old logo file');
         }
 
@@ -332,7 +339,7 @@ const deleteOrganization = async (req, res, next) => {
         const organization = await InternshipRecord.findOne({ _id: req.params.id, ...ORGANIZATION_FILTER });
         if (!organization) throw createNotFoundError('organization', req.params.id);
         if (organization.logo_path) deleteStoredFile(organization.logo_path, 'logo file');
-        if (organization.logo_gridfs_id) await deleteGridFSFile(organization.logo_gridfs_id, 'organizationLogos').catch(error => console.error('Failed to remove organization logo from GridFS:', error.message));
+        if (organization.logo_gridfs_id) await deleteGridFSFile(organization.logo_gridfs_id, 'organizationLogos').catch(error => console.error('Failed to remove organization logo from GridFS', { errorName: error.name, errorCode: error.code }));
         await InternshipRecord.findByIdAndDelete(req.params.id);
         res.status(200).json({ success: true, message: 'Organization deleted successfully', data: null });
     } catch (error) {
