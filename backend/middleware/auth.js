@@ -99,7 +99,7 @@ const optionalAuth = async (req, res, next) => {
         next();
     } catch (error) {
         // Silently ignore auth errors - allow unauthenticated access
-        console.debug('Optional auth error (non-blocking):', error.message);
+        console.debug('Optional authentication token was not accepted');
         next();
     }
 };

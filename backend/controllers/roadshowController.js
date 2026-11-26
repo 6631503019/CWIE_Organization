@@ -18,9 +18,16 @@ const {
 
 // @desc    Get all roadshows
 // @route   GET /api/roadshows
-// @access  Public
+// @access  Public (private listings require an admin)
 const getRoadshows = async (req, res, next) => {
     try {
+        if (req.query.public === 'false' && req.user?.role !== 'admin') {
+            throw new CustomError(
+                ERROR_CODES.FORBIDDEN_RESOURCE_ACCESS_DENIED,
+                'Administrator access is required to view private roadshows'
+            );
+        }
+
         const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
         const limit = Math.max(parseInt(req.query.limit, 10) || 10, 1);
         const skip = (page - 1) * limit;
@@ -280,7 +287,7 @@ const createRoadshow = async (req, res, next) => {
             ).catch(cleanupError => {
                 console.error(
                     '[Roadshow] Poster cleanup failed:',
-                    cleanupError.message
+                    { errorName: cleanupError.name, errorCode: cleanupError.code }
                 );
             });
         }
@@ -292,7 +299,7 @@ const createRoadshow = async (req, res, next) => {
                         console.error(
                             '[Roadshow] Activity image cleanup failed:',
                             id,
-                            cleanupError.message
+                            { errorName: cleanupError.name, errorCode: cleanupError.code }
                         );
                     })
                 )
@@ -531,7 +538,7 @@ const updateRoadshow = async (req, res, next) => {
             ).catch(error => {
                 console.error(
                     '[Roadshow] Failed to delete old poster:',
-                    error.message
+                    { errorName: error.name, errorCode: error.code }
                 );
             });
         }
@@ -544,7 +551,7 @@ const updateRoadshow = async (req, res, next) => {
                         console.error(
                             '[Roadshow] Failed to delete removed activity image:',
                             id,
-                            error.message
+                            { errorName: error.name, errorCode: error.code }
                         );
                     })
                 )
@@ -568,7 +575,7 @@ const updateRoadshow = async (req, res, next) => {
             ).catch(cleanupError => {
                 console.error(
                     '[Roadshow] Failed to clean up new poster:',
-                    cleanupError.message
+                    { errorName: cleanupError.name, errorCode: cleanupError.code }
                 );
             });
         }
@@ -580,7 +587,7 @@ const updateRoadshow = async (req, res, next) => {
                         console.error(
                             '[Roadshow] Failed to clean up new activity image:',
                             id,
-                            cleanupError.message
+                            { errorName: cleanupError.name, errorCode: cleanupError.code }
                         );
                     })
                 )
@@ -619,7 +626,7 @@ const deleteRoadshow = async (req, res, next) => {
             ).catch(error => {
                 console.error(
                     '[Roadshow] Failed to delete poster:',
-                    error.message
+                    { errorName: error.name, errorCode: error.code }
                 );
             });
         }
@@ -631,7 +638,7 @@ const deleteRoadshow = async (req, res, next) => {
                         console.error(
                             '[Roadshow] Failed to delete activity image:',
                             id,
-                            error.message
+                            { errorName: error.name, errorCode: error.code }
                         );
                     })
                 )
@@ -714,7 +721,7 @@ const streamRoadshowImage = async (
             gridfs.stream.on('error', error => {
                 console.error(
                     '[Roadshow] GridFS stream error:',
-                    error.message
+                    { errorName: error.name, errorCode: error.code }
                 );
 
                 if (!res.headersSent) {
@@ -740,7 +747,7 @@ const streamRoadshowImage = async (
 
             console.error(
                 '[Roadshow] Unable to open GridFS image:',
-                error.message
+                { errorName: error.name, errorCode: error.code }
             );
 
             throw new CustomError(
@@ -782,7 +789,7 @@ const streamRoadshowImage = async (
             fileStream.on('error', error => {
                 console.error(
                     '[Roadshow] Legacy image stream error:',
-                    error.message
+                    { errorName: error.name, errorCode: error.code }
                 );
 
                 if (!res.headersSent) {

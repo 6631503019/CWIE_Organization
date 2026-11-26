@@ -121,10 +121,7 @@ const loginWithGoogle = async (req, res, next) => {
 
     } catch (error) {
         if (error.code?.startsWith('auth/')) {
-            console.error('Firebase token verification error:', {
-                code: error.code,
-                message: error.message
-            });
+            console.error('Firebase token verification failed', { errorCode: error.code });
 
             return next(
                 new CustomError(
@@ -134,7 +131,10 @@ const loginWithGoogle = async (req, res, next) => {
             );
         }
 
-        console.error('Google login error:', error);
+        console.error('Google login failed', {
+            errorName: error.name,
+            errorCode: error.code
+        });
         return next(error);
     }
 };

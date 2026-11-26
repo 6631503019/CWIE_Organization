@@ -13,7 +13,7 @@ const upload = require('../middleware/upload');
 const router = express.Router();
 
 router.route('/')
-    .get(getOrganizations)
+    .get(optionalAuth, getOrganizations)
     .post(protect, authorize('admin'), upload.single('logo'), createOrganization);
 
 router.route('/:id')

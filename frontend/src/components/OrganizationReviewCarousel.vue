@@ -86,7 +86,7 @@ defineEmits<{
   delete: [review: any]
 }>()
 
-const { currentLanguage, text } = useLanguage()
+const { text } = useLanguage()
 const currentIndex = ref(0)
 const reviewImageUrl = ref('')
 let reviewImageObjectUrl = ''
@@ -97,23 +97,6 @@ const activeReviewKey = computed(() => String(activeReview.value._id || activeRe
 const displayReviewValue = (value: unknown): string => {
   const normalized = String(value ?? '').trim()
   return normalized || 'N/A'
-}
-
-const reviewerName = (review: any): string => {
-  const organizationName = typeof review.organization_id === 'object'
-    ? (currentLanguage.value === 'TH'
-      ? review.organization_id.organization_name_th
-      : review.organization_id.organization_name_en)
-    : ''
-  return String(review.student_name || organizationName || review.organization_name || review.job_position || text('Senior review', 'รีวิวจากรุ่นพี่'))
-}
-
-const reviewDate = (review: any): string => {
-  const value = review.createdAt || review.updatedAt || review.review_date
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleDateString(currentLanguage.value === 'TH' ? 'th-TH' : 'en-US')
 }
 
 const clearReviewImage = () => {

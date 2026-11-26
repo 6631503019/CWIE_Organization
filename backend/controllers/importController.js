@@ -258,7 +258,6 @@ const processImportJob = async job => {
         const rows = parseWorkbookRows(workbook);
         console.info('[import] workbook parsing completed', {
             jobId: job.jobId,
-            sheets: workbook.SheetNames,
             rowCount: rows.length,
             heapUsedMb: getMemoryUsageMb()
         });
@@ -347,7 +346,7 @@ const processImportJob = async job => {
             jobId: job.jobId,
             stage,
             errorName: error.name,
-            errorMessage: error.message,
+            errorCode: error.code,
             heapUsedMb: getMemoryUsageMb()
         });
         job.fileBuffer = null;
